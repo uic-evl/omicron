@@ -153,14 +153,20 @@ if(OMICRON_TOOL_VS10)
 	set(OMICRON_USE_KINECT_FOR_WINDOWS false CACHE BOOL "Enable/disable Kinect for Windows support (Kinect for Windows SDK Redistributable must be installed - The full SDK must be installed if using an Xbox 360 Kinect)")
 	if(OMICRON_USE_KINECT_FOR_WINDOWS)
 		set( srcs	 ${srcs} omicron/MSKinectService.cpp
-			#				 omicron/mskinect/DrawDevice.cpp
-			#				 omicron/mskinect/stdafx.cpp
 			)
 		set( headers ${headers} ${CMAKE_SOURCE_DIR}/include/omicron/MSKinectService.h
-			#					${CMAKE_SOURCE_DIR}/include/omicron/mskinect/DrawDevice.h
-			#					${CMAKE_SOURCE_DIR}/include/omicron/mskinect/stdafx.h
 			)
 		include_directories($ENV{KINECTSDK10_DIR}/inc)
+		
+		set(OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO false CACHE BOOL "Enable/disable Kinect for Windows Audio/Speech recognition support (Microsoft Speech Platform SDK Version 11 must be installed)")
+	endif()
+	if(OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO)
+		set( srcs	 ${srcs} omicron/mskinect/KinectAudioStream.cpp
+			)
+		set( headers ${headers} ${CMAKE_SOURCE_DIR}/external/include/mskinect/KinectAudioStream.h
+								${CMAKE_SOURCE_DIR}/external/include/mskinect/stdafx.h
+			)
+		include_directories($ENV{PROGRAMFILES}/Microsoft\ SDKs/Speech/v11.0/Include)
 	endif()
 endif()
 endif()
@@ -325,6 +331,15 @@ if(OMICRON_USE_KINECT_FOR_WINDOWS)
 		configure_file(${EXT_LIB_DIR}/Microsoft.Kinect.dll ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE} COPYONLY)
 	endif(WIN32)
 endif(OMICRON_USE_KINECT_FOR_WINDOWS)
+
+if(OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO)
+	if(WIN32)
+		target_link_libraries( omicron Msdmo.lib )
+		target_link_libraries( omicron dmoguids.lib )
+		target_link_libraries( omicron amstrmid.lib )
+		target_link_libraries( omicron avrt.lib )
+	endif(WIN32)
+endif(OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO)
 
 if(OMICRON_USE_DIRECTINPUT)
 	if(WIN32)

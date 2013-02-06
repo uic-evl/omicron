@@ -36,7 +36,28 @@
 #include "mskinect/resource.h"
 #include "mskinect/DrawDevice.h"
 
-/*
+// Kinect Audio
+#ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
+#include "mskinect/KinectAudioStream.h"
+#include "mskinect/stdafx.h"
+#include <Propsys.h> // IPropertyStore (Kinect Audio)
+
+// For configuring DMO properties
+#include <wmcodecdsp.h>
+
+// For FORMAT_WaveFormatEx and such
+#include <uuids.h>
+
+// For speech APIs
+// NOTE: To ensure that application compiles and links against correct SAPI versions (from Microsoft Speech
+//       SDK), VC++ include and library paths should be configured to list appropriate paths within Microsoft
+//       Speech SDK installation directory before listing the default system include and library directories,
+//       which might contain a version of SAPI that is not appropriate for use together with Kinect sensor.
+#include <sapi.h>
+#include <sphelper.h>
+#endif
+
+/* OpenNI and KinectSDK joint ID reference
 typedef enum XnSkeletonJoint (XnTypes.h - OpenNI)
 {
 	XN_SKEL_HEAD			= 1,
@@ -137,6 +158,13 @@ private:
 	void UpdateRange( int mode );
 	void UpdateSkeletonTrackingFlag( DWORD flag, bool value );
 
+	// Kinect Speech
+	HRESULT                 InitializeAudioStream();
+    HRESULT                 CreateSpeechRecognizer();
+    HRESULT                 LoadSpeechGrammar();
+	HRESULT                 StartSpeechRecognition();
+    void                    ProcessSpeech();
+
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	inline void MSKinectService::setUpdateInterval(float value) 
 	{ myUpdateInterval = value; }
@@ -188,6 +216,28 @@ private:
 
 	std::map<String,INuiSensor*> sensorList;
 	std::map<String,int> sensorIndexList;
+
+#ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
+	static LPCWSTR          GrammarFileName;
+
+	// Audio stream captured from Kinect.
+    KinectAudioStream*      m_pKinectAudioStream;
+
+    // Stream given to speech recognition engine
+    ISpStream*              m_pSpeechStream;
+
+    // Speech recognizer
+    ISpRecognizer*          m_pSpeechRecognizer;
+
+    // Speech recognizer context
+    ISpRecoContext*         m_pSpeechContext;
+
+    // Speech grammar
+    ISpRecoGrammar*         m_pSpeechGrammar;
+
+    // Event triggered when we detect speech recognition
+    HANDLE                  m_hSpeechEvent;
+#endif
 };
 
 }; // namespace omicron

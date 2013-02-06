@@ -27,6 +27,11 @@
 #include "omicron/MSKinectService.h"
 using namespace omicron;
 
+// Static initializers
+#ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
+LPCWSTR MSKinectService::GrammarFileName = L"S:/EVL/OmegaLib/omegalib/omegalib/external/omicron/data/kinectSpeech.grxml";
+#endif
+
 enum TRACKED_SKELETONS
 {
     SV_TRACKED_SKELETONS_DEFAULT = 0,
@@ -56,6 +61,15 @@ MSKinectService::MSKinectService(){
 	m_hNextSkeletonEvent = NULL;
 	skeletonEngineKinectID = -1;
 	m_SkeletonTrackingFlags = NUI_SKELETON_TRACKING_FLAG_ENABLE_IN_NEAR_RANGE;
+
+#ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
+	m_pKinectAudioStream = NULL;
+	m_pSpeechStream = NULL;
+	m_pSpeechRecognizer = NULL;
+	m_pSpeechContext = NULL;
+	m_pSpeechGrammar = NULL;
+	m_hSpeechEvent = NULL;
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -65,6 +79,9 @@ void MSKinectService::setup(Setting& settings)
 	myCheckKinectInterval = Config::getFloatValue("checkInterval", settings, 2.00f);
 
 	m_bSeatedMode = Config::getBoolValue("seatedMode", settings, false);
+
+	//GrammarFileName = (LPCWSTR)Config::getStringValue("speechGrammerFileName", settings, "kinectSpeech.grxml").c_str();
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -81,7 +98,7 @@ void MSKinectService::initialize()
 
 	INuiSensor* sensor;
 
-	ofmsg("MSKinectService: %1% Kinect(s) detected. Initializing.", %iSensorCount );
+	ofmsg("MSKinectService: %1% Kinect(s) detected.", %iSensorCount );
 
 	// Look at each Kinect sensor
     for (int i = 0; i < iSensorCount; ++i)
@@ -236,7 +253,7 @@ HRESULT MSKinectService::InitializeKinect()
     }
     */
     //DWORD nuiFlags = NUI_INITIALIZE_FLAG_USES_DEPTH_AND_PLAYER_INDEX | NUI_INITIALIZE_FLAG_USES_SKELETON |  NUI_INITIALIZE_FLAG_USES_COLOR;
-	DWORD nuiFlags = NUI_INITIALIZE_FLAG_USES_SKELETON;
+	DWORD nuiFlags = NUI_INITIALIZE_FLAG_USES_SKELETON; // | NUI_INITIALIZE_FLAG_USES_AUDIO;
 
     hr = m_pNuiSensor->NuiInitialize(nuiFlags);
     if ( E_NUI_SKELETAL_ENGINE_BUSY == hr )
@@ -250,7 +267,7 @@ HRESULT MSKinectService::InitializeKinect()
     {
         if ( E_NUI_DEVICE_IN_USE == hr )
         {
-            //MessageBoxResource( IDS_ERROR_IN_USE, MB_OK | MB_ICONHAND );
+            printf("MSKinectService: Kinect %d cannot start - already in use. \n", sensorID );
         }
         else
         {
@@ -311,6 +328,37 @@ HRESULT MSKinectService::InitializeKinect()
     //m_hEvNuiProcessStop = CreateEvent( NULL, FALSE, FALSE, NULL );
     //m_hThNuiProcess = CreateThread( NULL, 0, Nui_ProcessThread, this, 0, NULL );
 	*/
+	
+#ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
+	// Audio/Speech Recognition
+	hr = InitializeAudioStream();
+    if (FAILED(hr))
+    {
+        printf("MSKinectService: Kinect %d could not initialize audio stream. \n", sensorID );
+        return hr;
+    }
+
+    hr = CreateSpeechRecognizer();
+    if (FAILED(hr))
+    {
+        printf("MSKinectService: Kinect %d could not create speech recognizer. Please ensure that Microsoft Speech SDK and other sample requirements are installed. \n", sensorID );
+        return hr;
+    }
+
+    hr = LoadSpeechGrammar();
+    if (FAILED(hr))
+    {
+        printf("MSKinectService: Kinect %d could not load speech grammar. Please ensure that grammar configuration file was properly deployed. \n", sensorID );
+        return hr;
+    }
+
+    hr = StartSpeechRecognition();
+    if (FAILED(hr))
+    {
+        printf("MSKinectService: Kinect %d could not start recognizing speech. \n", sensorID );
+        return hr;
+    }
+#endif
     return hr;
 }
 
@@ -577,3 +625,223 @@ void MSKinectService::UpdateSkeletonTrackingFlag( DWORD flag, bool value )
         }
     }
 }
+
+#ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Kinect Speech Recognition
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// <summary>
+/// Initialize Kinect audio stream object.
+/// </summary>
+/// <returns>
+/// <para>S_OK on success, otherwise failure code.</para>
+/// </returns>
+HRESULT MSKinectService::InitializeAudioStream()
+{
+    INuiAudioBeam*      pNuiAudioSource = NULL;
+    IMediaObject*       pDMO = NULL;
+    IPropertyStore*     pPropertyStore = NULL;
+    IStream*            pStream = NULL;
+
+    // Get the audio source
+    HRESULT hr = m_pNuiSensor->NuiGetAudioSource(&pNuiAudioSource);
+    if (SUCCEEDED(hr))
+    {
+        hr = pNuiAudioSource->QueryInterface(IID_IMediaObject, (void**)&pDMO);
+
+        if (SUCCEEDED(hr))
+        {
+            hr = pNuiAudioSource->QueryInterface(IID_IPropertyStore, (void**)&pPropertyStore);
+    
+            // Set AEC-MicArray DMO system mode. This must be set for the DMO to work properly.
+            // Possible values are:
+            //   SINGLE_CHANNEL_AEC = 0
+            //   OPTIBEAM_ARRAY_ONLY = 2
+            //   OPTIBEAM_ARRAY_AND_AEC = 4
+            //   SINGLE_CHANNEL_NSAGC = 5
+            PROPVARIANT pvSysMode;
+            PropVariantInit(&pvSysMode);
+            pvSysMode.vt = VT_I4;
+            pvSysMode.lVal = (LONG)(2); // Use OPTIBEAM_ARRAY_ONLY setting. Set OPTIBEAM_ARRAY_AND_AEC instead if you expect to have sound playing from speakers.
+            pPropertyStore->SetValue(MFPKEY_WMAAECMA_SYSTEM_MODE, pvSysMode);
+            PropVariantClear(&pvSysMode);
+
+            // Set DMO output format
+            WAVEFORMATEX wfxOut = {AudioFormat, AudioChannels, AudioSamplesPerSecond, AudioAverageBytesPerSecond, AudioBlockAlign, AudioBitsPerSample, 0};
+            DMO_MEDIA_TYPE mt = {0};
+            MoInitMediaType(&mt, sizeof(WAVEFORMATEX));
+    
+            mt.majortype = MEDIATYPE_Audio;
+            mt.subtype = MEDIASUBTYPE_PCM;
+            mt.lSampleSize = 0;
+            mt.bFixedSizeSamples = TRUE;
+            mt.bTemporalCompression = FALSE;
+            mt.formattype = FORMAT_WaveFormatEx;	
+            memcpy(mt.pbFormat, &wfxOut, sizeof(WAVEFORMATEX));
+    
+            hr = pDMO->SetOutputType(0, &mt, 0);
+
+            if (SUCCEEDED(hr))
+            {
+                m_pKinectAudioStream = new KinectAudioStream(pDMO);
+
+                hr = m_pKinectAudioStream->QueryInterface(IID_IStream, (void**)&pStream);
+
+                if (SUCCEEDED(hr))
+                {
+					if (FAILED(::CoInitialize(NULL)))
+						return FALSE;
+
+                    hr = CoCreateInstance(CLSID_SpStream, NULL, CLSCTX_INPROC_SERVER, __uuidof(ISpStream), (void**)&m_pSpeechStream);
+
+                    if (SUCCEEDED(hr))
+                    {
+                        hr = m_pSpeechStream->SetBaseStream(pStream, SPDFID_WaveFormatEx, &wfxOut);
+                    }
+                }
+            }
+
+            MoFreeMediaType(&mt);
+        }
+    }
+
+    SafeRelease(pStream);
+    SafeRelease(pPropertyStore);
+    SafeRelease(pDMO);
+    SafeRelease(pNuiAudioSource);
+
+    return hr;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// <summary>
+/// Create speech recognizer that will read Kinect audio stream data.
+/// </summary>
+/// <returns>
+/// <para>S_OK on success, otherwise failure code.</para>
+/// </returns>
+HRESULT MSKinectService::CreateSpeechRecognizer()
+{
+    ISpObjectToken *pEngineToken = NULL;
+    
+    HRESULT hr = CoCreateInstance(CLSID_SpInprocRecognizer, NULL, CLSCTX_INPROC_SERVER, __uuidof(ISpRecognizer), (void**)&m_pSpeechRecognizer);
+
+    if (SUCCEEDED(hr))
+    {
+        m_pSpeechRecognizer->SetInput(m_pSpeechStream, FALSE);
+        hr = SpFindBestToken(SPCAT_RECOGNIZERS,L"Language=409;Kinect=True",NULL,&pEngineToken);
+
+        if (SUCCEEDED(hr))
+        {
+            m_pSpeechRecognizer->SetRecognizer(pEngineToken);
+            hr = m_pSpeechRecognizer->CreateRecoContext(&m_pSpeechContext);
+        }
+    }
+
+    SafeRelease(pEngineToken);
+
+    return hr;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// <summary>
+/// Load speech recognition grammar into recognizer.
+/// </summary>
+/// <returns>
+/// <para>S_OK on success, otherwise failure code.</para>
+/// </returns>
+HRESULT MSKinectService::LoadSpeechGrammar()
+{
+    HRESULT hr = m_pSpeechContext->CreateGrammar(1, &m_pSpeechGrammar);
+
+    if (SUCCEEDED(hr))
+    {
+        // Populate recognition grammar from file
+		hr = m_pSpeechGrammar->LoadCmdFromFile(GrammarFileName, SPLO_STATIC);
+    }
+    return hr;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// <summary>
+/// Start recognizing speech asynchronously.
+/// </summary>
+/// <returns>
+/// <para>S_OK on success, otherwise failure code.</para>
+/// </returns>
+HRESULT MSKinectService::StartSpeechRecognition()
+{
+    HRESULT hr = m_pKinectAudioStream->StartCapture();
+
+    if (SUCCEEDED(hr))
+    {
+        // Specify that all top level rules in grammar are now active
+        m_pSpeechGrammar->SetRuleState(NULL, NULL, SPRS_ACTIVE);
+
+        // Specify that engine should always be reading audio
+        m_pSpeechRecognizer->SetRecoState(SPRST_ACTIVE_ALWAYS);
+
+        // Specify that we're only interested in receiving recognition events
+        m_pSpeechContext->SetInterest(SPFEI(SPEI_RECOGNITION), SPFEI(SPEI_RECOGNITION));
+
+        // Ensure that engine is recognizing speech and not in paused state
+        hr = m_pSpeechContext->Resume(0);
+        if (SUCCEEDED(hr))
+        {
+            m_hSpeechEvent = m_pSpeechContext->GetNotifyEventHandle();
+        }
+    }
+        
+    return hr;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// <summary>
+/// Process recently triggered speech recognition events.
+/// </summary>
+void MSKinectService::ProcessSpeech()
+{
+    const float ConfidenceThreshold = 0.3f;
+
+    SPEVENT curEvent;
+    ULONG fetched = 0;
+    HRESULT hr = S_OK;
+
+    m_pSpeechContext->GetEvents(1, &curEvent, &fetched);
+
+    while (fetched > 0)
+    {
+        switch (curEvent.eEventId)
+        {
+            case SPEI_RECOGNITION:
+                if (SPET_LPARAM_IS_OBJECT == curEvent.elParamType)
+                {
+                    // this is an ISpRecoResult
+                    ISpRecoResult* result = reinterpret_cast<ISpRecoResult*>(curEvent.lParam);
+                    SPPHRASE* pPhrase = NULL;
+                    
+                    hr = result->GetPhrase(&pPhrase);
+                    if (SUCCEEDED(hr))
+                    {
+                        if ((pPhrase->pProperties != NULL) && (pPhrase->pProperties->pFirstChild != NULL))
+                        {
+                            const SPPHRASEPROPERTY* pSemanticTag = pPhrase->pProperties->pFirstChild;
+                            if (pSemanticTag->SREngineConfidence > ConfidenceThreshold)
+                            {
+                                //TurtleAction action = MapSpeechTagToAction(pSemanticTag->pszValue);
+                                //m_pTurtleController->DoAction(action);
+                            }
+                        }
+                        ::CoTaskMemFree(pPhrase);
+                    }
+                }
+                break;
+        }
+
+        m_pSpeechContext->GetEvents(1, &curEvent, &fetched);
+    }
+
+    return;
+}
+
+#endif

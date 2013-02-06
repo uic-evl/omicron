@@ -128,6 +128,7 @@ namespace omicron
 		Vector3f getExtraDataVector3(int index) const;
 		void setExtraDataVector3(int index, const Vector3f value);
 		const char* getExtraDataString() const;
+		const char* getExtraDataKinectSpeech(const Vector3f value) const;
 		void setExtraDataString(const String& value);
 		void resetExtraData();
 		bool isExtraDataNull(int pointId) const;
@@ -414,6 +415,20 @@ namespace omicron
 		oassert(myExtraDataType == ExtraDataString);
 		return (const char*)myExtraData;
 	}
+
+	///////////////////////////////////////////////////////////////////////////////////////////////
+	inline const char* Event::getExtraDataKinectSpeech(const Vector3f value) const
+	{
+		int index = 0;
+		oassert(myExtraDataType == ExtraDataKinectSpeech);
+
+		int offset = 0 * 3 * 4;
+		FLOAT_PTR(myExtraData[offset]) = value[0]; // Recognition confidence
+		FLOAT_PTR(myExtraData[offset + 4]) = value[1]; // Angle
+		FLOAT_PTR(myExtraData[offset + 8]) = value[2]; // Angle confidence
+		return (const char*)myExtraData[offset + 12];
+	}
+
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	inline void* Event::getExtraDataBuffer() const

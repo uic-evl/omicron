@@ -53,7 +53,9 @@ void WandService::setup(Setting& settings)
 	{
 		ofwarn("WandService::setup: could not find input service %1%", %controllerSvc);
 	}
+	
 	myControllerSourceId = Config::getIntValue("controllerSourceId", settings);
+	ofmsg("WandService::setup RayID: %1%  ControllerID %2%", %myRaySourceId %myControllerSourceId);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

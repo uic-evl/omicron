@@ -149,7 +149,7 @@ namespace omicron
 			ServiceTypeGeneric, 
 			ServiceTypeBrain, 
 			ServiceTypeWand, 
-			ServiceTypeAudio }; 
+			ServiceTypeSpeech }; 
 
 		//! #PYAPI Supported event types.
 		//! The python API exposed this enum in the EventType object.
@@ -265,7 +265,8 @@ namespace omicron
 			ExtraDataFloatArray,
 			ExtraDataIntArray,
 			ExtraDataVector3Array,
-			ExtraDataString
+			ExtraDataString,
+			ExtraDataKinectSpeech
 		};
 
 		//! Joint enumerations for Kinect (Uses OpenNI's enumerations with additional Kinect for Windows values)
@@ -484,7 +485,7 @@ namespace omicronConnector
 	inline void OmicronConnectorClient::initHandshake() 
 	{
 		char sendbuf[50];
-		sprintf(sendbuf, "data_on,%d", dataPort);
+		sprintf(sendbuf, "omicron_data_on,%d", dataPort);
 		printf("NetService: Sending handshake: '%s'\n", sendbuf);
 
 		iResult = send(ConnectSocket, sendbuf, (int) strlen(sendbuf), 0);

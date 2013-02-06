@@ -219,10 +219,17 @@ void SoundInstance::play()
 	msg.pushInt32(instanceID);
 	msg.pushInt32(sound->getBufferID());
 
+	float scaledVolume = volume;
 	if( volume * sound->getVolumeScale() > 1 )
-		msg.pushFloat( 1.0 );
+	{
+		scaledVolume = 1.0;
+	}
 	else
-		msg.pushFloat( volume * sound->getVolumeScale() );
+	{
+		scaledVolume =  volume * sound->getVolumeScale();
+	}
+
+	msg.pushFloat( scaledVolume );
 
 	// Position in Audio System (local) coordinates
 	Vector3f soundLocalPosition = environment->worldToLocal( position );
@@ -268,10 +275,16 @@ void SoundInstance::playStereo()
 	msg.pushInt32(instanceID);
 	msg.pushInt32(sound->getBufferID());
 
+	float scaledVolume = volume;
 	if( volume * sound->getVolumeScale() > 1 )
-		msg.pushFloat( 1.0 );
+	{
+		scaledVolume = 1.0;
+	}
 	else
-		msg.pushFloat( volume * sound->getVolumeScale() );
+	{
+		scaledVolume =  volume * sound->getVolumeScale();
+	}
+	msg.pushFloat( scaledVolume );
 
 	// Loop sound - 0.0 not looping - 1.0 looping
 	if( loop )
@@ -298,10 +311,16 @@ void SoundInstance::play( Vector3f position, float volume, float width, float mi
 	msg.pushInt32(instanceID);
 	msg.pushInt32(sound->getBufferID());
 
+	float scaledVolume = volume;
 	if( volume * sound->getVolumeScale() > 1 )
-		msg.pushFloat( 1.0 );
+	{
+		scaledVolume = 1.0;
+	}
 	else
-		msg.pushFloat( volume * sound->getVolumeScale() );
+	{
+		scaledVolume =  volume * sound->getVolumeScale();
+	}
+	msg.pushFloat( scaledVolume );
 	
 	// Position in Audio System (local) coordinates
 	Vector3f soundLocalPosition = environment->worldToLocal( position );
@@ -422,12 +441,17 @@ void SoundInstance::setEnvironmentSound(bool value)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::setVolume(float value)
 {
-	this->volume = value;
+	if( value * sound->getVolumeScale() > 1 )
+		this->volume = 1.0;
+	else
+		this->volume =  value * sound->getVolumeScale();
 
 	printf( "%s: for instanceID: %d\n", __FUNCTION__, instanceID);
 	Message msg("/setVol");
 	msg.pushInt32(instanceID);
 	msg.pushFloat(this->volume);
+
+
 	environment->getSoundManager()->sendOSCMessage(msg);
 }
 
@@ -435,6 +459,31 @@ void SoundInstance::setVolume(float value)
 float SoundInstance::getVolume()
 {
 	return volume;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SoundInstance::setGate(float attTime, float susTime, float relTime, float susLevel)
+{
+	printf( "%s: for instanceID: %d\n", __FUNCTION__, instanceID);
+
+	attackTime = attTime;
+	sustainTime = susTime;
+	releaseTime = relTime;
+	setVolume(susLevel);
+
+	Message msg("/setGate");
+	msg.pushInt32(instanceID);
+
+	// Attack/sustain/release time (seconds)
+	msg.pushFloat(attTime);
+	msg.pushFloat(susTime);
+	msg.pushFloat(relTime);
+
+	// Sustain level ( Volume during sustain time 0.0-1.0 )
+	msg.pushFloat(volume);
+
+	environment->getSoundManager()->sendOSCMessage(msg);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

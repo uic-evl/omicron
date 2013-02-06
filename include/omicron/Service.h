@@ -60,7 +60,7 @@ namespace omicron
 			Generic = EventBase::ServiceTypeGeneric, 
 			Brain = EventBase::ServiceTypeBrain, 
 			Wand = EventBase::ServiceTypeWand, 
-			Audio = EventBase::ServiceTypeAudio }; 
+			Speech = EventBase::ServiceTypeSpeech }; 
 
 		enum ServicePollPriority { PollFirst, PollNormal, PollLast }; 
 

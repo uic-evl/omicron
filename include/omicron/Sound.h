@@ -1,11 +1,11 @@
 /********************************************************************************************************************** 
-* THE OMICRON PROJECT
+ * THE OMICRON PROJECT
  *---------------------------------------------------------------------------------------------------------------------
- * Copyright 2010-2012							Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2013								Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto								anishimoto42@gmail.com
  *---------------------------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2011, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2013, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the 
  * following conditions are met:
@@ -111,7 +111,7 @@ public:
 	void setVolume(float);
 	float getVolume();
 
-	void setGate(float, float, float, float);
+	void fade(float, float, float);
 
 	void setWidth(float);
 	float getWidth();

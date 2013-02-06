@@ -1,9 +1,9 @@
 /********************************************************************************************************************** 
-* THE OMICRON PROJECT
+ * THE OMICRON PROJECT
  *---------------------------------------------------------------------------------------------------------------------
- * Copyright 2010-2013							Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2013								Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
- *  Arthur Nishimoto							anishimoto42@gmail.com
+ *  Arthur Nishimoto								anishimoto42@gmail.com
  *---------------------------------------------------------------------------------------------------------------------
  * Copyright (c) 2010-2013, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
@@ -28,7 +28,7 @@
 using namespace omicron;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-int nextBufferID = 10; // Buffers 0 - 9 are considered reserved by the sound system
+int nextBufferID = 10; // Buffers 0 - 9 are considered reserved by the sound server
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Sound::Sound(const String& soundName)
@@ -463,25 +463,17 @@ float SoundInstance::getVolume()
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void SoundInstance::setGate(float attTime, float susTime, float relTime, float susLevel)
+void SoundInstance::fade(float curAmp, float finalAmp, float duration)
 {
 	printf( "%s: for instanceID: %d\n", __FUNCTION__, instanceID);
 
-	attackTime = attTime;
-	sustainTime = susTime;
-	releaseTime = relTime;
-	setVolume(susLevel);
-
-	Message msg("/setGate");
+	Message msg("/setVolEnv");
 	msg.pushInt32(instanceID);
 
 	// Attack/sustain/release time (seconds)
-	msg.pushFloat(attTime);
-	msg.pushFloat(susTime);
-	msg.pushFloat(relTime);
-
-	// Sustain level ( Volume during sustain time 0.0-1.0 )
-	msg.pushFloat(volume);
+	msg.pushFloat(curAmp);
+	msg.pushFloat(finalAmp);
+	msg.pushFloat(duration);
 
 	environment->getSoundManager()->sendOSCMessage(msg);
 }

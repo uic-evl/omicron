@@ -1,11 +1,11 @@
 /********************************************************************************************************************** 
- * THE OMEGA LIB PROJECT
+ * THE OMICRON PROJECT
  *---------------------------------------------------------------------------------------------------------------------
- * Copyright 2010								Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2013							Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Alessandro Febretti							febret@gmail.com
  *---------------------------------------------------------------------------------------------------------------------
- * Copyright (c) 2010, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2013, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the 
  * following conditions are met:
@@ -32,7 +32,7 @@ using namespace omicron;
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 WandService::WandService():
 	myDebug(false),
-	myRaySourceId(0),
+	myRaySourceId(-1),
 	myControllerService(NULL),
 	myControllerSourceId(0)
 {

@@ -1,7 +1,7 @@
 /********************************************************************************************************************** 
-* THE OMICRON PROJECT
+ * THE OMICRON PROJECT
  *---------------------------------------------------------------------------------------------------------------------
- * Copyright 2010								Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2013							Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto							anishimoto42@gmail.com
  *---------------------------------------------------------------------------------------------------------------------
@@ -9,7 +9,7 @@
  *---------------------------------------------------------------------------------------------------------------------
  * Uses the Microsoft DirectInput component of the DirectX API to access game controllers.
  *---------------------------------------------------------------------------------------------------------------------
- * Copyright (c) 2010, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2013, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the 
  * following conditions are met:
@@ -61,8 +61,6 @@ private:
 	static DirectXInputService* mysInstance;
 	float myUpdateInterval;
 	float myCheckControllerInterval;
-	// 10 = max number of controllers.
-	uint myButtonState[10];
 };
 
 }; // namespace omicron

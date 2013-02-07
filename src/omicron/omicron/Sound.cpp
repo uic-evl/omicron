@@ -1,9 +1,9 @@
 /********************************************************************************************************************** 
  * THE OMICRON PROJECT
  *---------------------------------------------------------------------------------------------------------------------
- * Copyright 2010-2013								Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2013							Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
- *  Arthur Nishimoto								anishimoto42@gmail.com
+ *  Arthur Nishimoto							anishimoto42@gmail.com
  *---------------------------------------------------------------------------------------------------------------------
  * Copyright (c) 2010-2013, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
@@ -28,7 +28,7 @@
 using namespace omicron;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-int nextBufferID = 10; // Buffers 0 - 9 are considered reserved by the sound server
+int nextBufferID = 10; // Buffers 0 - 9 are considered reserved by the sound system
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Sound::Sound(const String& soundName)
@@ -463,17 +463,15 @@ float SoundInstance::getVolume()
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void SoundInstance::fade(float curAmp, float finalAmp, float duration)
+void SoundInstance::fade(float targetAmp, float envelopeDuration)
 {
 	printf( "%s: for instanceID: %d\n", __FUNCTION__, instanceID);
 
 	Message msg("/setVolEnv");
 	msg.pushInt32(instanceID);
 
-	// Attack/sustain/release time (seconds)
-	msg.pushFloat(curAmp);
-	msg.pushFloat(finalAmp);
-	msg.pushFloat(duration);
+	msg.pushFloat(targetAmp); // Target amplitude
+	msg.pushFloat(envelopeDuration); // Duration in seconds to reach new amplitude
 
 	environment->getSoundManager()->sendOSCMessage(msg);
 }

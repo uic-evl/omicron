@@ -111,7 +111,7 @@ public:
 	void setVolume(float);
 	float getVolume();
 
-	void fade(float, float, float);
+	void fade(float, float);
 
 	void setWidth(float);
 	float getWidth();
@@ -146,11 +146,6 @@ private:
 	float reverb;	// Room size / reverb amount (0.0 - 1.0)
 	float pitch;
 	Vector3f position;
-
-	float attackTime; // Time to fade in (seconds)
-	float sustainTime; // Time to sustain volume (seconds)
-	float releaseTime; // Time to fade out (seconds)
-	// float sustainLevel; // Amplitude to sustain (replaced with volume)
 
 	float maxDistance; // Max distance sound amplitude > 0
 	float minRolloffDistance; // Min distance sound amplitude at full before rolling off

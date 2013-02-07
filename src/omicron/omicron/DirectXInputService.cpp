@@ -1,11 +1,11 @@
 /********************************************************************************************************************** 
-* THE OMICRON PROJECT
+ * THE OMICRON PROJECT
  *---------------------------------------------------------------------------------------------------------------------
- * Copyright 2010-2012							Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2013							Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto							anishimoto42@gmail.com
  *---------------------------------------------------------------------------------------------------------------------
- * Copyright (c) 2010, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2013, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the 
  * following conditions are met:
@@ -26,108 +26,24 @@
 
 using namespace omicron;
 
-LPDIRECTINPUTDEVICE8 sJoystick[10];
 LPDIRECTINPUT8 sDI;
 
 int gNumControllers = 0;
-//int nWiimotes = 0;
-//int nConnectedWiimotes = 0;
-//int wiimoteID = -1;
-int gControllerType[10]; // Stores the type enum for each controller added
 
 struct ControllerInfo{
 	DirectXInputService::ControllerType type;
 	bool connected;
+	bool dataSet;
+	bool callbackSet;
+	bool rangeSet;
 	int controllerID;
+	uint myButtonState;
 	unsigned long guidInstanceID;
+	LPDIRECTINPUTDEVICE8 deviceInterface;
 };
 
 std::map<int,ControllerInfo*> controllerInfo;
-
-//-----------------------------------------------------------------------------
-// Name: EnumJoysticksCallback()
-// Desc: Called once for each enumerated joystick. If we find one, create a
-//       device interface on it so we can play with it.
-//-----------------------------------------------------------------------------
-BOOL CALLBACK enumJoysticksCallback( const DIDEVICEINSTANCE* pdidInstance,
-                                     VOID* pContext )
-{
-	// Iterate through added controllers to find controller callback belongs to
-	for( int i = 0; i < controllerInfo.size(); i++ )
-	{
-		ControllerInfo* controller = controllerInfo[i];
-		
-		// Is this the right controller?
-		if( controller->guidInstanceID == pdidInstance->guidInstance.Data1 )
-		{
-			if( !controller->connected ){
-				printf("DirectXInputService: Controller ID %d reconnected.\n",controller->controllerID);
-				controller->connected = true;
-			}
-			return DIENUM_CONTINUE; // Controller exists do not add again
-		}
-	}
-
-	HRESULT hr; // Result flag
-	printf("DirectXInputService: EnumJoysticksCallback called.\n");
-
-	// Obtain an interface to the enumerated joystick.
-	if( FAILED( hr = sDI->CreateDevice( pdidInstance->guidInstance, &sJoystick[gNumControllers], NULL ) ) ){
-		printf("DirectXInputService: Failed to enumerate joystick.\n");
-		return DIENUM_CONTINUE;
-	}
-	else
-	{
-		if( pdidInstance->guidProduct.Data1 == 44106846 )
-		{ 
-			// 'Xbox360' product ID: 44106846
-			printf("DirectXInputService: Connecting to Xbox 360 controller.\n",pdidInstance->guidProduct.Data1);
-			gControllerType[gNumControllers] = omicron::DirectXInputService::Xbox360;
-
-			ControllerInfo* newController = new ControllerInfo();
-			newController->controllerID = gNumControllers;
-			newController->guidInstanceID = pdidInstance->guidInstance.Data1;
-			newController->type = omicron::DirectXInputService::Xbox360;
-			newController->connected = true;
-			controllerInfo[gNumControllers] = newController;
-		} 
-		else if( pdidInstance->guidProduct.Data1 == 50890888 )
-		{ 
-			// 'PS3 Sixaxis' product ID: 44106846
-			printf("DirectXInputService: Connecting to PS3 Sixaxis controller.\n",pdidInstance->guidProduct.Data1);
-			gControllerType[gNumControllers] = omicron::DirectXInputService::PS3;
-
-			ControllerInfo* newController = new ControllerInfo();
-			newController->controllerID = gNumControllers;
-			newController->guidInstanceID = pdidInstance->guidInstance.Data1;
-			newController->type = omicron::DirectXInputService::PS3;
-			newController->connected = true;
-			controllerInfo[gNumControllers] = newController;
-		}
-		else 
-		{
-			printf("DirectXInputService: Connecting to controller GUID %d.\n",pdidInstance->guidProduct.Data1);
-			gControllerType[gNumControllers] = omicron::DirectXInputService::Invalid;
-
-			ControllerInfo* newController = new ControllerInfo();
-			newController->controllerID = gNumControllers;
-			newController->guidInstanceID = pdidInstance->guidInstance.Data1;
-			newController->type = omicron::DirectXInputService::Invalid;
-			newController->connected = true;
-			controllerInfo[gNumControllers] = newController;
-		}
-		printf("DirectXInputService: Connecting to controller ID %d.\n",gNumControllers);
-
-		gNumControllers++;
-		return DIENUM_CONTINUE;
-	}
-
-	// Stop enumeration. Note: we're just taking the first joystick we get. You
-    // could store all the enumerated joysticks and let the user pick.
-    //return DIENUM_STOP;
-	return DIENUM_CONTINUE;
-}
-
+typedef std::map<int,ControllerInfo*>::iterator controllerIter;
 //-----------------------------------------------------------------------------
 // Name: EnumObjectsCallback()
 // Desc: Callback function for enumerating objects (axes, buttons, POVs) on a 
@@ -157,87 +73,84 @@ BOOL CALLBACK enumObjectsCallback( const DIDEVICEOBJECTINSTANCE* pdidoi,
         // Set the range for the axis
 		for( int i = 0; i < gNumControllers; i++ )
 		{
-			if( FAILED( sJoystick[i]->SetProperty( DIPROP_RANGE, &diprg.diph ) ) )
+			if( FAILED( controllerInfo[i]->deviceInterface->SetProperty( DIPROP_RANGE, &diprg.diph ) ) )
 				return DIENUM_STOP;
 		}
     }
 
-
-    //// Set the UI to reflect what objects the joystick supports
-    //if( pdidoi->guidType == GUID_XAxis )
-    //{
-    //    EnableWindow( GetDlgItem( hDlg, IDC_X_AXIS ), TRUE );
-    //    EnableWindow( GetDlgItem( hDlg, IDC_X_AXIS_TEXT ), TRUE );
-    //}
-    //if( pdidoi->guidType == GUID_YAxis )
-    //{
-    //    EnableWindow( GetDlgItem( hDlg, IDC_Y_AXIS ), TRUE );
-    //    EnableWindow( GetDlgItem( hDlg, IDC_Y_AXIS_TEXT ), TRUE );
-    //}
-    //if( pdidoi->guidType == GUID_ZAxis )
-    //{
-    //    EnableWindow( GetDlgItem( hDlg, IDC_Z_AXIS ), TRUE );
-    //    EnableWindow( GetDlgItem( hDlg, IDC_Z_AXIS_TEXT ), TRUE );
-    //}
-    //if( pdidoi->guidType == GUID_RxAxis )
-    //{
-    //    EnableWindow( GetDlgItem( hDlg, IDC_X_ROT ), TRUE );
-    //    EnableWindow( GetDlgItem( hDlg, IDC_X_ROT_TEXT ), TRUE );
-    //}
-    //if( pdidoi->guidType == GUID_RyAxis )
-    //{
-    //    EnableWindow( GetDlgItem( hDlg, IDC_Y_ROT ), TRUE );
-    //    EnableWindow( GetDlgItem( hDlg, IDC_Y_ROT_TEXT ), TRUE );
-    //}
-    //if( pdidoi->guidType == GUID_RzAxis )
-    //{
-    //    EnableWindow( GetDlgItem( hDlg, IDC_Z_ROT ), TRUE );
-    //    EnableWindow( GetDlgItem( hDlg, IDC_Z_ROT_TEXT ), TRUE );
-    //}
-    //if( pdidoi->guidType == GUID_Slider )
-    //{
-    //    switch( nSliderCount++ )
-    //    {
-    //        case 0 :
-    //            EnableWindow( GetDlgItem( hDlg, IDC_SLIDER0 ), TRUE );
-    //            EnableWindow( GetDlgItem( hDlg, IDC_SLIDER0_TEXT ), TRUE );
-    //            break;
-
-    //        case 1 :
-    //            EnableWindow( GetDlgItem( hDlg, IDC_SLIDER1 ), TRUE );
-    //            EnableWindow( GetDlgItem( hDlg, IDC_SLIDER1_TEXT ), TRUE );
-    //            break;
-    //    }
-    //}
-    //if( pdidoi->guidType == GUID_POV )
-    //{
-    //    switch( nPOVCount++ )
-    //    {
-    //        case 0 :
-    //            EnableWindow( GetDlgItem( hDlg, IDC_POV0 ), TRUE );
-    //            EnableWindow( GetDlgItem( hDlg, IDC_POV0_TEXT ), TRUE );
-    //            break;
-
-    //        case 1 :
-    //            EnableWindow( GetDlgItem( hDlg, IDC_POV1 ), TRUE );
-    //            EnableWindow( GetDlgItem( hDlg, IDC_POV1_TEXT ), TRUE );
-    //            break;
-
-    //        case 2 :
-    //            EnableWindow( GetDlgItem( hDlg, IDC_POV2 ), TRUE );
-    //            EnableWindow( GetDlgItem( hDlg, IDC_POV2_TEXT ), TRUE );
-    //            break;
-
-    //        case 3 :
-    //            EnableWindow( GetDlgItem( hDlg, IDC_POV3 ), TRUE );
-    //            EnableWindow( GetDlgItem( hDlg, IDC_POV3_TEXT ), TRUE );
-    //            break;
-    //    }
-    //}
-
     return DIENUM_CONTINUE;
 }
 
+//-----------------------------------------------------------------------------
+// Name: EnumJoysticksCallback()
+// Desc: Called once for each enumerated joystick. If we find one, create a
+//       device interface on it so we can play with it.
+//-----------------------------------------------------------------------------
+BOOL CALLBACK enumJoysticksCallback( const DIDEVICEINSTANCE* pdidInstance,
+                                     VOID* pContext )
+{
+	// Iterate through added controllers to find controller callback belongs to
+	for( int i = 0; i < controllerInfo.size(); i++ )
+	{
+		ControllerInfo* controller = controllerInfo[i];
+		
+		// Is this the right controller?
+		if( controller->guidInstanceID == pdidInstance->guidInstance.Data1 )
+		{
+			if( !controller->connected ){
+				printf("DirectXInputService: Controller ID %d reconnected.\n",controller->controllerID);
+				controller->connected = true;
+			}
+			return DIENUM_CONTINUE; // Controller exists do not add again
+		}
+	}
+
+	HRESULT hr; // Result flag
+	printf("DirectXInputService: EnumJoysticksCallback called.\n");
+
+	ControllerInfo* newController = new ControllerInfo();
+	newController->controllerID = gNumControllers;
+	newController->guidInstanceID = pdidInstance->guidInstance.Data1;
+
+	// Obtain an interface to the enumerated joystick.
+	if( FAILED( hr = sDI->CreateDevice( pdidInstance->guidInstance, &newController->deviceInterface, NULL ) ) ){
+		printf("DirectXInputService: Failed to enumerate joystick.\n");
+		return DIENUM_CONTINUE;
+	}
+	else
+	{
+		if( pdidInstance->guidProduct.Data1 == 44106846 )
+		{ 
+			// 'Xbox360' product ID: 44106846
+			printf("DirectXInputService: New Xbox 360 controller detected.\n",pdidInstance->guidProduct.Data1);
+
+			newController->type = omicron::DirectXInputService::Xbox360;
+		} 
+		else if( pdidInstance->guidProduct.Data1 == 50890888 )
+		{ 
+			// 'PS3 Sixaxis' product ID: 44106846
+			printf("DirectXInputService: New PS3 Sixaxis controller detected.\n",pdidInstance->guidProduct.Data1);
+
+			newController->type = omicron::DirectXInputService::PS3;
+		}
+		else 
+		{
+			printf("DirectXInputService: New controller detected with GUID %d.\n",pdidInstance->guidProduct.Data1);
+
+			newController->type = omicron::DirectXInputService::Invalid;			
+		}
+		printf("DirectXInputService: Controller GUID: %u created as ID %d.\n",newController->guidInstanceID,gNumControllers);
+		controllerInfo[gNumControllers] = newController;
+
+		gNumControllers++;
+		return DIENUM_CONTINUE;
+	}
+
+	// Stop enumeration. Note: we're just taking the first joystick we get. You
+    // could store all the enumerated joysticks and let the user pick.
+    //return DIENUM_STOP;
+	return DIENUM_CONTINUE;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 DirectXInputService* DirectXInputService::mysInstance = NULL;
@@ -255,7 +168,6 @@ void DirectXInputService::initialize()
 	printf("DirectXInputService: Initialize\n");
 	mysInstance = this;
 
-	sJoystick[0] = NULL; // DirectInput Object
 	sDI = NULL; // Pointer to DirectInput8 interface
 
 	HRESULT hr; // Result flag
@@ -268,12 +180,6 @@ void DirectXInputService::initialize()
 	}
 	
 	checkForNewControllers();
-
-	// Reset controller button states.
-	myButtonState[0] = 0;
-	myButtonState[1] = 0;
-	myButtonState[2] = 0;
-	myButtonState[3] = 0;
 
 	if( gNumControllers == 0 )
 	{
@@ -293,11 +199,11 @@ void DirectXInputService::checkForNewControllers()
 	{
 		printf("DirectXInputService: Failed to enumerate input devices.\n");
 	}
-
+	
 	 // Make sure we got a joystick
-	for(int i = 0; i < gNumControllers; i++ )
+	for(controllerIter iterator = controllerInfo.begin(); iterator != controllerInfo.end(); iterator++)
 	{
-		if( NULL == sJoystick[i] )
+		if( NULL == iterator->second )
 		{
 			printf("DirectXInputService: Joystick not found.\n");
 			return;
@@ -309,25 +215,40 @@ void DirectXInputService::checkForNewControllers()
     // A data format specifies which controls on a device we are interested in,
     // and how they should be reported. This tells DInput that we will be
     // passing a DIJOYSTATE2 structure to IDirectInputDevice::GetDeviceState().
-	for(int i = 0; i < gNumControllers; i++)
+	for(controllerIter iterator = controllerInfo.begin(); iterator != controllerInfo.end(); iterator++)
 	{
-		if( FAILED( hr = sJoystick[i]->SetDataFormat( &c_dfDIJoystick2 ) ) )
-		{
-			//printf("DirectXInputService: Failed set joystick data format.\n");
-			return;
-		}
-	}
+		ControllerInfo* controller = iterator->second;
+		//if( controllerInfo[i]->dataSet == true )
+		//	continue;
 
+		if( FAILED( hr = controller->deviceInterface->SetDataFormat( &c_dfDIJoystick2 ) ) )
+		{
+			switch(hr)
+			{
+				//case(DIERR_ACQUIRED):
+				//	printf("DirectXInputService: Failed set joystick %d data format. Already acquired.\n", controller->controllerID); break;
+				case(DIERR_INVALIDPARAM):
+					printf("DirectXInputService: Failed set joystick %d data format. Invalid parameter.\n", controller->controllerID); break;
+				case(DIERR_NOTINITIALIZED):
+					printf("DirectXInputService: Failed set joystick %d data format. Not initialized.\n", controller->controllerID); break;
+			}
+			continue;
+		}
+		printf("DirectXInputService: Joystick %d data format set.\n", controller->controllerID);
+		controller->dataSet = true;
+	}
+	
 	// Enumerate the joystick objects. The callback function enabled user
     // interface elements for objects that are found, and sets the min/max
     // values property for discovered axes.
-    for(int i = 0; i < gNumControllers; i++)
+    for(controllerIter iterator = controllerInfo.begin(); iterator != controllerInfo.end(); iterator++)
 	{
-		if(FAILED(hr = sJoystick[i]->EnumObjects( enumObjectsCallback, NULL, DIDFT_ALL)))
+		if(FAILED(hr = iterator->second->deviceInterface->EnumObjects( enumObjectsCallback, NULL, DIDFT_ALL)))
 		{
 			printf("DirectXInputService: Failed set joystick callback.\n");
 			return;
 		}
+		iterator->second->callbackSet = true;
 	}
 }
 
@@ -353,23 +274,46 @@ void DirectXInputService::poll()
 	DIJOYSTATE2 js;           // DInput joystick state 
 	//LPDIDEVICEINSTANCE inputInfo;
 
-	for(int j = 0; j < gNumControllers; j++)
-	{
-		if(NULL == sJoystick[j]) return;
+	for(controllerIter iterator = controllerInfo.begin(); iterator != controllerInfo.end(); iterator++) {
+		ControllerInfo* controller = iterator->second;
+		
+		LPDIRECTINPUTDEVICE8 curJoystick = controller->deviceInterface;
+
+		if(NULL == curJoystick || !controller->connected) return;
 
 		// Poll the device to read the current state
-		hr = sJoystick[j]->Poll();
+		hr = curJoystick->Poll();
 		if(FAILED(hr))
 		{
+			if( hr == DIERR_NOTINITIALIZED )
+			{
+				printf("DirectXInputService: Failed to get input's device state for controller %d. Not initialized.\n",controller->controllerID);
+			}
+
 			// DInput is telling us that the input stream has been
 			// interrupted. We aren't tracking any state between polls, so
 			// we don't have any special reset that needs to be done. We
 			// just re-acquire and try again.
-			hr = sJoystick[j]->Acquire();
+			hr = curJoystick->Acquire();
 			while( hr == DIERR_INPUTLOST )
 			{
-				hr = sJoystick[j]->Acquire();
+				hr = curJoystick->Acquire();
 			}
+			
+			if( hr == DIERR_INVALIDPARAM )
+			{
+				printf("DirectXInputService: Failed to get input's device state for controller %d. Invalid parameter.\n",controller->controllerID);
+				continue;
+			}
+			if( hr == DIERR_NOTINITIALIZED )
+			{
+				printf("DirectXInputService: Failed to get input's device state for controller %d. Not initialized.\n",controller->controllerID);
+			}
+			if( hr == DIERR_OTHERAPPHASPRIO )
+			{
+				printf("DirectXInputService: Failed to get input's device state for controller %d. Other app has priority.\n",controller->controllerID);
+			}
+
 
 			// hr may be DIERR_OTHERAPPHASPRIO or other errors.  This
 			// may occur when the app is minimized or in the process of 
@@ -378,21 +322,26 @@ void DirectXInputService::poll()
 		}
 
 		// Get the input's device state
-		if(FAILED( hr = sJoystick[j]->GetDeviceState( sizeof( DIJOYSTATE2 ), &js )))
+		if(FAILED( hr = curJoystick->GetDeviceState( sizeof( DIJOYSTATE2 ), &js )))
 		{
-			
-			ControllerInfo* controller = controllerInfo[j];
+			printf("DirectXInputService: Failed to get input's device state for controller %d. Likely disconnected.\n",controller->controllerID);
 			controller->connected = false;
-			printf("DirectXInputService: Failed to get input's device state for controller %d. Likely disconnected.\n",j);
+			controllerInfo.erase( controller->controllerID );
 			break; // The device should have been acquired during the Poll()
 		}
+
+		// Get the input's device info
+		DIDEVICEINSTANCE* info = new DIDEVICEINSTANCE();
+		hr = curJoystick->GetDeviceInfo( info );
+
+		//printf("New Event from ControllerID %d with GUID %u\n",controller->controllerID, js.lX);
 
 		lockEvents();
 
 		Event* evt = writeHead();
 
 		uint curButtonState = 0;
-		if(gControllerType[j] == Xbox360)
+		if(controller->type == Xbox360)
 		{
 			// A Button
 			if(js.rgbButtons[0] & 0x80) curButtonState |= Event::Button1;
@@ -425,7 +374,7 @@ void DirectXInputService::poll()
 			if(dpad == 18000) curButtonState |= Event::ButtonDown;
 			if(dpad == 27000) curButtonState |= Event::ButtonLeft;
 		}
-		else if(gControllerType[j] == PS3)
+		else if(controller->type == PS3)
 		{
 			// Triangle Button
 			if(js.rgbButtons[0] & 0x80) curButtonState |= Event::Button1;
@@ -460,29 +409,29 @@ void DirectXInputService::poll()
 			if(dpad == 27000) curButtonState |= Event::ButtonLeft;
 		}
 
-		if(curButtonState != myButtonState[j])
+		if(curButtonState != controller->myButtonState)
 		{
 			// If button state is bigger than previous state, it means one additional bit has been
 			// set - so send a down event.
-			if(curButtonState > myButtonState[j])
+			if(curButtonState > controller->myButtonState)
 			{
-				evt->reset(Event::Down, Service::Controller, j);
+				evt->reset(Event::Down, Service::Controller, controller->controllerID);
 				if(isDebugEnabled()) omsg("DirectX button down");
 			}
 			else
 			{
-				evt->reset(Event::Up, Service::Controller, j);
+				evt->reset(Event::Up, Service::Controller, controller->controllerID);
 				if(isDebugEnabled()) omsg("DirectX button up");
 			}
-			myButtonState[j] = curButtonState;
+			controller->myButtonState = curButtonState;
 		}
 		else
 		{
 			// Button state has not changed, just send an update event.
-			evt->reset(Event::Update, Service::Controller, j);
+			evt->reset(Event::Update, Service::Controller, controller->controllerID);
 		}
 
-		evt->setFlags(myButtonState[j]);
+		evt->setFlags(controller->myButtonState);
 
 		evt->setExtraDataType(Event::ExtraDataFloatArray);
 
@@ -492,6 +441,7 @@ void DirectXInputService::poll()
 		evt->setExtraDataFloat(3, js.lRy / 1000.0f); // Right analog (-up, +down)
 		evt->setExtraDataFloat(4, js.lZ / 1000.0f); // Trigger 2 (+left, -right)
 		
+		//printf("Created controller %d event \n", j);
 		unlockEvents();
 	}
 }

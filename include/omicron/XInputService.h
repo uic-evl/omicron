@@ -7,7 +7,7 @@
  *---------------------------------------------------------------------------------------------------------------------
  * [LICENSE NOTE]
  *---------------------------------------------------------------------------------------------------------------------
- * Uses the Microsoft DirectInput component of the DirectX API to access game controllers.
+ * Uses the Microsoft XInput API to access game controllers.
  *---------------------------------------------------------------------------------------------------------------------
  * Copyright (c) 2010-2013, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
@@ -26,22 +26,23 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE 
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************************************************************/
-#ifndef __DIRECTXINPUT__SERVICE_H__
-#define __DIRECTXINPUT__SERVICE_H__
+#ifndef __XINPUT__SERVICE_H__
+#define __XINPUT__SERVICE_H__
 
 #include "omicron/osystem.h"
 #include "omicron/ServiceManager.h"
-#include "omicron/dinput.h"
 #include <set>
+#include <Windows.h>
+#include <XInput.h>
 
 namespace omicron
 {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-class OMICRON_API DirectXInputService: public Service
+class OMICRON_API XInputService: public Service
 {
 public:
 	// Allocator function
-	static DirectXInputService* New() { return new DirectXInputService(); }
+	static XInputService* New() { return new XInputService(); }
 
 	enum ControllerType { Invalid, Xbox360, PS3 };
 public:
@@ -58,9 +59,11 @@ public:
 	float getUpdateInterval();
 
 private:
-	static DirectXInputService* mysInstance;
+	static XInputService* mysInstance;
 	float myUpdateInterval;
 	float myCheckControllerInterval;
+
+	static int maxControllers;
 };
 
 }; // namespace omicron

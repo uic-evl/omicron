@@ -39,8 +39,9 @@
 	#include "omicron/SoundManager.h"
 #endif
 #ifdef OMICRON_USE_DIRECTINPUT
-	#include "omicron/DirectXInputService.h"
-	#include "omicron/LegacyDirectXInputService.h"
+	#include "omicron/DirectInputService.h"
+	#include "omicron/XInputService.h"
+	#include "omicron/LegacyDirectInputService.h"
 	#include "omicron/WiimoteService.h"
 #endif
 #ifdef OMICRON_USE_NATURAL_POINT
@@ -110,8 +111,9 @@ void ServiceManager::registerDefaultServices()
 	registerService("GestureService", (ServiceAllocator)GestureService::New);
 
 #ifdef OMICRON_USE_DIRECTINPUT
-	registerService("DirectXInputService", (ServiceAllocator)DirectXInputService::New);
-	registerService("LegacyDirectXInputService", (ServiceAllocator)LegacyDirectXInputService::New);
+	registerService("XInputService", (ServiceAllocator)XInputService::New);
+	registerService("DirectInputService", (ServiceAllocator)DirectInputService::New);
+	registerService("LegacyDirectInputService", (ServiceAllocator)LegacyDirectInputService::New);
 	registerService("WiimoteService", (ServiceAllocator)WiimoteService::New);
 #endif
 #ifdef OMICRON_USE_MOUSE

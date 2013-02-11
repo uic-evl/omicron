@@ -632,6 +632,7 @@ SOCKET OInputServer::startListening()
 				// Get data port number
 				dataPort = atoi(portCStr);
 				printf("OInputServer: '%s' requests omicron legacy data to be sent on port '%d'\n", clientAddress, dataPort);
+				printf("OInputServer: WARNING - This server does not support legacy data!\n");
 				createClient( clientAddress, dataPort, true );
 			}
 			else if( strcmp(inMessage, omicronHandshake) == 1 )
@@ -719,7 +720,10 @@ void OInputServer::createClient(const char* clientAddress, int dataPort, bool le
 			if( p->second->isLegacy() != legacy )
 			{
 				if( legacy )
+				{
 					printf("OInputServer: NetClient %s now using legacy omicron data \n", addr );
+					printf("OInputServer: WARNING - This server does not support legacy data!\n");
+				}
 				else
 					printf("OInputServer: NetClient %s now using omicron data \n", addr );
 				p->second->setLegacy(legacy);

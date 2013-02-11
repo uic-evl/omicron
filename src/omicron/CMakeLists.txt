@@ -209,14 +209,16 @@ endif()
 
 # DirectInput support
 if(WIN32)
-	set(OMICRON_USE_DIRECTINPUT true CACHE BOOL "Enable DirectX Input support (Supports Xbox360 and Wiimote controllers)")
+	set(OMICRON_USE_DIRECTINPUT true CACHE BOOL "Enable DirectInput / XInput support (Supports Xbox360 and Wiimote controllers)")
 	if(OMICRON_USE_DIRECTINPUT)
-		set( srcs	 ${srcs} omicron/LegacyDirectXInputService.cpp
-							 omicron/DirectXInputService.cpp
+		set( srcs	 ${srcs} omicron/LegacyDirectInputService.cpp
+							 omicron/DirectInputService.cpp
+							 omicron/XInputService.cpp
 							 omicron/WiimoteService.cpp
 							 omicron/Wiimote.cpp )
-		set( headers ${headers} ${CMAKE_SOURCE_DIR}/include/omicron/LegacyDirectXInputService.h
-								${CMAKE_SOURCE_DIR}/include/omicron/DirectXInputService.h
+		set( headers ${headers} ${CMAKE_SOURCE_DIR}/include/omicron/LegacyDirectInputService.h
+								${CMAKE_SOURCE_DIR}/include/omicron/DirectInputService.h
+								${CMAKE_SOURCE_DIR}/include/omicron/XInputService.h
 								${CMAKE_SOURCE_DIR}/include/omicron/Wiimote.h 
 								${CMAKE_SOURCE_DIR}/include/omicron/WiimoteService.h 
 								${CMAKE_SOURCE_DIR}/include/omicron/wiimote_common.h 
@@ -347,6 +349,7 @@ if(OMICRON_USE_DIRECTINPUT)
 		target_link_libraries( omicron ${EXT_LIB_DIR}/dxguid.lib)
 		target_link_libraries( omicron ${EXT_LIB_DIR}/hid.lib)
 		target_link_libraries( omicron ${EXT_LIB_DIR}/setupapi.lib)
+		target_link_libraries( omicron ${EXT_LIB_DIR}/XInput.lib)
 	endif(WIN32)
 endif(OMICRON_USE_DIRECTINPUT)
 

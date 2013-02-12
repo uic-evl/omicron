@@ -74,6 +74,8 @@ namespace omicron
 	OMICRON_API void oerror(const String& str);
 	OMICRON_API void oexit(int code);
 	OMICRON_API void oabort(const char* file, int line, const char* reason);
+
+	OMICRON_API void osleep(uint msecs);
 };
 
 #define odbg(str) omsg(str);

@@ -29,6 +29,14 @@
 #include "omicron/FilesystemDataSource.h"
 #include "omicron/StringUtils.h"
 
+#ifdef WIN32
+#include <windows.h> // needed for Sleep 
+#else
+#include <unistd.h>
+#include<sys/wait.h>
+#define Sleep(x) usleep((x)*1000)
+#endif
+
 namespace omicron
 {
 	//////////////////////////////////////////////////////////////////////////////////////////////////
@@ -182,5 +190,15 @@ namespace omicron
 		{
 			ofmsg("%1%: %2%", %item.first %item.second);
 		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+	void osleep(uint msecs)
+	{
+#ifdef WIN32
+		Sleep(msecs);
+#else
+		usleep((msecs)*1000);
+#endif
 	}
 }

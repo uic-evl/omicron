@@ -31,6 +31,7 @@ using namespace omicron;
 ThinkGearService* ThinkGearService::mysInstance = NULL;
 int ThinkGearService::driverVersion = 0;
 int ThinkGearService::connectionID = 0;
+int ThinkGearService::baudRate = 0;
 const char* ThinkGearService::comPortName = "\\\\.\\COM10";
 bool ThinkGearService::enableStreamLogging = false;
 bool ThinkGearService::enableDataLogging = false;
@@ -42,7 +43,10 @@ void ThinkGearService::setup(Setting& settings)
 	{
 		comPortName =  (const char*)settings["comPortName"];
 	}
-	
+	if(settings.exists("baudRate"))
+	{
+		baudRate = (int)settings["baudRate"];
+	}
 	//myUpdateInterval = 0.0f;
 	//if(settings.exists("updateInterval"))
 	//{
@@ -92,16 +96,29 @@ void ThinkGearService::initialize()
 		}
 	}
 
+	// make sure baud rate is valid
+	switch(baudRate)
+	{
+		case(TG_BAUD_1200): break;
+		case(TG_BAUD_2400): break;
+		case(TG_BAUD_4800): break;
+		case(TG_BAUD_9600): break;
+		case(TG_BAUD_57600): break;
+		case(TG_BAUD_115200): break;
+		default:
+			baudRate = TG_BAUD_4800; break;
+	}
+
     errorCode = TG_Connect( connectionID, 
                           comPortName, 
-                          TG_BAUD_9600, 
+                          baudRate, 
                           TG_STREAM_PACKETS );
 
     if( errorCode < 0 ) {
         printf("ThinkGearService: Failed to connect on '%s'. Error code: %d \n", comPortName, errorCode);
 		return;
 	} else {
-		printf("ThinkGearService: Connected on com port '%s'.\n", comPortName);
+		printf("ThinkGearService: Connected on com port '%s'. Baud rate: %d\n", comPortName, baudRate);
 		printf("ThinkGearService: Connecting to device (~10 seconds)... \n");
 	}
 
@@ -171,10 +188,7 @@ void ThinkGearService::generateEvent( int myConnectionID )
 
 	if( eventSum == 0 ) // Device is still connecting, don't send event.
 		return;
-	//printf(" Battery: %f Signal: %f Attention: %f Meditation %f \n",
-	//			battery, signal, attention, meditation );
-	//printf(" delta: %f theta: %f alpha1: %f beta1 %f \n\n",
-	//			delta, theta, alpha1, beta1 );
+
 	mysInstance->lockEvents();
 	Event* evt = mysInstance->writeHead();
 	evt->reset(Event::Update, Service::Brain, myConnectionID);
@@ -193,4 +207,13 @@ void ThinkGearService::generateEvent( int myConnectionID )
 	evt->setExtraDataFloat(10, gamma2);
 	evt->setExtraDataFloat(11, blinkStrength);
 	mysInstance->unlockEvents();
+
+	if( isDebugEnabled() )
+	{
+		omsg("ThinkGearService:\n");
+		ofmsg(" Battery: %1% Signal: %2% Attention: %3% Meditation %4% \n",
+					%battery %signal %attention %meditation );
+		ofmsg(" delta: %1% theta: %2% alpha1: %3% beta1 %4% \n\n",
+				%delta %theta %alpha1 %beta1 );
+	}
 }

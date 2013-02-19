@@ -67,6 +67,7 @@ private:
 
 	static const char *comPortName;
 	static int connectionID;
+	static int baudRate;
 
 	static bool enableStreamLogging;
 	static bool enableDataLogging;

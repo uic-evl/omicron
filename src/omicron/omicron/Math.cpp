@@ -1228,3 +1228,10 @@ Vector3f Math::quaternionToEuler(const Quaternion& q)
 	res[2] = atan2(2 * (q0 * q1 + q2 * q3), 1 - 2 * (q1 * q1 + q2 * q2));
 	return res;
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+Quaternion Math::quaternionFromEuler(const Vector3f& pitchYawRoll)
+{
+	return AngleAxis(pitchYawRoll[1], Vector3f::UnitY()) * AngleAxis(pitchYawRoll[0], Vector3f::UnitX()) * 
+			AngleAxis(pitchYawRoll[2], Vector3f::UnitZ());
+}

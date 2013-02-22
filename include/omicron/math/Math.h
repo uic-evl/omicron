@@ -392,6 +392,7 @@ namespace omicron {
 
 		//! Converts a quaternion to euler angles (pitch, yaw, roll)
 		static Vector3f quaternionToEuler(const Quaternion& quat);
+		static Quaternion quaternionFromEuler(const Vector3f& pitchYawRoll);
 
 		static 
 		Ray unproject(const Vector2f& point, const AffineTransform3& modelview, const Transform3& projection, const Rect& viewport);
@@ -405,7 +406,6 @@ namespace omicron {
 		static AffineTransform3 computeMatchingPointsTransform(const Vectors3f& src, const Vectors3f& dst);
 
 		static void swapMinMax(real& min, real& max);
-
 
         static const real PositiveInfinity;
         static const real NegativeInfinity;

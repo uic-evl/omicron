@@ -112,6 +112,8 @@ namespace omicron
 		//! Utility method to check if the event is a button down event.
 		bool isButtonDown(Flags button) const;
 		bool isButtonUp(Flags button) const;
+		//! Utility method to read an axis value from the event extra data.
+		float getAxis(int axisId) const;
 
 		//! Utility method to check if an event is from a specific source service and source id.
 		bool isFrom(Service* svc, int sourceId) const;
@@ -335,6 +337,16 @@ namespace omicron
 	inline bool Event::isFrom(Service::ServiceType type, int sourceId) const
 	{
 		return (myServiceType == type && mySourceId == sourceId);
+	}
+
+	///////////////////////////////////////////////////////////////////////////////////////////////
+	inline float Event::getAxis(int axisId) const
+	{
+		if(myExtraDataType == ExtraDataFloatArray && myExtraDataItems > axisId)
+		{
+			return getExtraDataFloat(axisId);
+		}
+		return 0;
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////

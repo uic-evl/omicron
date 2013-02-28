@@ -418,7 +418,7 @@ namespace omicronConnector
 		int serverPort;
 		int dataPort;
 
-		#define DEFAULT_BUFLEN 512
+		#define DEFAULT_BUFLEN 1024
 		char recvbuf[DEFAULT_BUFLEN];
 		int iResult, iSendResult;
 

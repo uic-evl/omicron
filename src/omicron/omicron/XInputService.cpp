@@ -146,6 +146,12 @@ void XInputService::poll()
 		// Left Analog Pad Pressed (L3)
 		if(_controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) curButtonState |= Event::Button6;
 
+		float analog4 = _controllerState.Gamepad.bLeftTrigger / 255.0f;
+
+		// Analog 4 (Wand L2)
+		if( analog4 > 0.5 )
+			curButtonState |= Event::Button7;
+
 		// NOTE: We are NOT mapping right shoulder, trigger and analog pad buttons.
 		// This implementation is mostly targeted at PS3 Move controllers.
 		// We could use SpecialButton3 but we leave it out for now.

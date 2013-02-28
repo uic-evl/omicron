@@ -143,7 +143,13 @@ void vrpn_XInputGamepad::update(const Event& evt) {
 		buttons[4] = (evt.getFlags() == Event::ButtonDown) != 0;
 		buttons[5] = (evt.getFlags() == Event::ButtonLeft) != 0;
 		buttons[6] = (evt.getFlags() == Event::ButtonRight) != 0;
-
+		
+		// Analog 4 (Wand L2)
+		if( !evt.isExtraDataNull(4) && evt.getExtraDataFloat(4) > 0.5 )
+			buttons[2] = 1;
+		else if( buttons[2] != 1 )
+			buttons[2] = 0;
+			
 		if( !evt.isExtraDataNull(0) )
 			channel[0] = evt.getExtraDataFloat(0);
 		if( !evt.isExtraDataNull(1) )

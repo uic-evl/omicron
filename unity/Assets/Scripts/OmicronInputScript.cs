@@ -145,7 +145,9 @@ class OmicronInputScript : MonoBehaviour
 		omicronManager = new OmicronConnectorClient(omicronListener);
 		
 		if( connectToServer )
+		{
 			omicronManager.Connect( serverIP, serverMsgPort, dataPort );
+		}
 		
 		eventList = new ArrayList();
 	}// start

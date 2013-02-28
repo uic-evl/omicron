@@ -38,6 +38,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 using omicron;
+using UnityEngine;
 
 namespace omicron
 {
@@ -108,7 +109,7 @@ namespace omicron
             ServiceTypeGeneric,
             ServiceTypeBrain,
             ServiceTypeWand,
-            ServiceTypeAudio
+            ServiceTypeSpeech
         };
 
         //! #PYAPI Supported event types.
@@ -358,6 +359,16 @@ namespace omicronConnector
             if (index >= extraDataItems) return 0;
             return BitConverter.ToInt32(extraData, index * 4);
         }
+		
+		///////////////////////////////////////////////////////////////////////////////////////////////
+        public string getExtraDataString()
+        {
+            if (extraDataType != omicron.EventBase.ExtraDataType.ExtraDataString) return "";
+			extraData = Encoding.Convert(Encoding.GetEncoding("iso-8859-1"), Encoding.UTF8, extraData);
+            string dataString = Encoding.UTF8.GetString(extraData, 0, (int)extraDataItems);
+			dataString = dataString.Substring(0, ((int)extraDataItems / sizeof(char)) - 1 );
+			return dataString;
+        }
     };
 
     abstract class IOmicronConnectorClientListener
@@ -365,7 +376,7 @@ namespace omicronConnector
 		public abstract void onEvent(EventData e);
 	};
 
-    class OmicronConnectorClient
+    class OmicronConnectorClient 
     {
         // TCP Connection
         TcpClient client;
@@ -398,11 +409,12 @@ namespace omicronConnector
             {
                 //dgrams = new ArrayList();
 
-                Console.WriteLine("OmicronConnector: Initializing... ");
+                Debug.Log("OmicronConnector: Initializing... ");
                 try
                 {
                     // Create a TcpClient.
-                    client = new TcpClient(InputServer, msgPort);
+					Debug.Log("InputService: Connecting to to " + serverIP);
+                    client = new TcpClient(serverIP, msgPort);
 
                     // Translate the passed message into ASCII and store it as a Byte array.
                     String message = "omicron_data_on," + dataPort;
@@ -414,11 +426,10 @@ namespace omicronConnector
                     udpClient = new UdpClient(dataPort);
 
                     // Send the handshake message to the server.
-                    Console.WriteLine("InputService: Connecting to to " + InputServer);
                     streamToServer.Write(data, 0, data.Length);
 
                     //Console.WriteLine("Handshake Sent: {0}", message);
-                    Console.WriteLine("InputService: Connected to " + InputServer);
+                    Debug.Log("InputService: Connected to " + serverIP);
 
                     // Creates a separate thread to listen for incoming data
                     listenerThread = new Thread(Listen);
@@ -426,11 +437,11 @@ namespace omicronConnector
                 }
                 catch (ArgumentNullException e)
                 {
-                    Console.WriteLine("ArgumentNullException: " + e);
+                    Debug.LogError("ArgumentNullException: " + e);
                 }
                 catch (SocketException e)
                 {
-                    Console.WriteLine("SocketException: " + e);
+                    Debug.LogError("SocketException: " + e);
                 }
             }
         }// CTOR
@@ -438,7 +449,7 @@ namespace omicronConnector
         public void Dispose() 
 	    {
 		    // Close the socket when finished receiving datagrams
-            Console.WriteLine("OmicronConnectorClient: Finished receiving. Closing socket.\n");
+            Debug.Log("OmicronConnectorClient: Finished receiving. Closing socket.\n");
             udpClient.Close();
             listenerThread.Abort();
 
@@ -446,7 +457,7 @@ namespace omicronConnector
             streamToServer.Close();
             client.Close();
 
-            Console.WriteLine("OmicronConnectorClient: Shutting down.");
+            Debug.Log("OmicronConnectorClient: Shutting down.");
 	    }
 
         private static void Listen()

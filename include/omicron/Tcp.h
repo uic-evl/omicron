@@ -78,6 +78,7 @@ namespace omicron {
 		//@{
 		bool poll();
 		void close();
+		void waitClose();
 		//! Opens a connection to a server.
 		void open(const String& host, int port);
 		//@}

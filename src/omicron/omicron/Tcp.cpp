@@ -155,7 +155,7 @@ bool TcpConnection::poll()
 		}
 		else if(mySocket.available() != 0)
 		{
-			while(mySocket.available() != 0) handleData();
+			while(myState == ConnectionOpen && mySocket.available()) handleData();
 		}
 	} 
 	else if(myState == ConnectionClosed)
@@ -181,12 +181,33 @@ void TcpConnection::close()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+void TcpConnection::waitClose()
+{
+	char buf[20];
+	asio::error_code error;
+	while(true)
+	{
+		mySocket.read_some(asio::buffer(buf,20), error);
+		if(error == asio::error::eof)
+		{
+			close();
+			break;
+		}
+		else if(error)
+		{
+			handleError(error);
+			break;
+		}
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 void TcpConnection::write(const String& data)
 {
 	if(mySocket.is_open())
 	{
 		asio::error_code error;
-		asio::write(mySocket, asio::buffer(data), error);
+		asio::write(mySocket, asio::buffer(data), asio::transfer_all(), error);
 		if(error)
 		{
 			mySocket.close();
@@ -201,7 +222,7 @@ void TcpConnection::write(void* data, size_t size)
 	if(mySocket.is_open())
 	{
 		asio::error_code error;
-		asio::write(mySocket, asio::buffer(data, size), error);
+		asio::write(mySocket, asio::buffer(data, size), asio::transfer_all(), error);
 		if(error)
 		{
 			mySocket.close();
@@ -278,6 +299,7 @@ void TcpConnection::handleClosed()
 void TcpConnection::handleError(const ConnectionError& err)
 {
 	ofwarn("TcpConnection:handleError (id=%1%): %2%", %myConnectionInfo.id %err.message());
+	myState = ConnectionClosed;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -291,11 +313,15 @@ void TcpConnection::open(const String& host, int port)
 	myHost = host;
 	myPort = port;
 	
+	myState = ConnectionListening;
 	asio::ip::tcp::resolver resolver(myConnectionInfo.ioService);
     asio::ip::tcp::resolver::query query(host, ostr("%1%", %port));
     asio::ip::tcp::resolver::iterator iterator = resolver.resolve(query);
 
-	mySocket.async_connect(*iterator, boost::bind(&TcpConnection::handle_connect, this, asio::placeholders::error));
+	ConnectionError err;
+	mySocket.connect(*iterator, err);
+	handle_connect(err);
+	//mySocket.async_connect(*iterator, boost::bind(&TcpConnection::handle_connect, this, asio::placeholders::error));
 	//asio::connect(mySocket, iterator, boost::bind(&TcpClientConnection::handle_connect, this, asio::placeholders::error));
 	//asio::async_connect(mySocket, iterator, boost::bind(&TcpClientConnection::handle_connect, this, asio::placeholders::error));
 }
@@ -305,10 +331,12 @@ void TcpConnection::handle_connect(const asio::error_code& error)
 {
 	if(!error)
 	{
-		doHandleConnected();
+		myState = ConnectionOpen;
+		handleConnected();
 	}
 	else
 	{
+		myState = ConnectionClosed;
 		handleError(error);
 	}
 }

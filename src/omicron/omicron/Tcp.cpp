@@ -286,7 +286,7 @@ void TcpConnection::handleData()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-void TcpClientConnection::open(const String& host, int port)
+void TcpConnection::open(const String& host, int port)
 {
 	myHost = host;
 	myPort = port;
@@ -295,13 +295,13 @@ void TcpClientConnection::open(const String& host, int port)
     asio::ip::tcp::resolver::query query(host, ostr("%1%", %port));
     asio::ip::tcp::resolver::iterator iterator = resolver.resolve(query);
 
-	mySocket.async_connect(*iterator, boost::bind(&TcpClientConnection::handle_connect, this, asio::placeholders::error));
+	mySocket.async_connect(*iterator, boost::bind(&TcpConnection::handle_connect, this, asio::placeholders::error));
 	//asio::connect(mySocket, iterator, boost::bind(&TcpClientConnection::handle_connect, this, asio::placeholders::error));
 	//asio::async_connect(mySocket, iterator, boost::bind(&TcpClientConnection::handle_connect, this, asio::placeholders::error));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-void TcpClientConnection::handle_connect(const asio::error_code& error)
+void TcpConnection::handle_connect(const asio::error_code& error)
 {
 	if(!error)
 	{

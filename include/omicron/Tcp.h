@@ -78,6 +78,8 @@ namespace omicron {
 		//@{
 		bool poll();
 		void close();
+		//! Opens a connection to a server.
+		void open(const String& host, int port);
 		//@}
 
 		//! Data IO
@@ -99,10 +101,14 @@ namespace omicron {
 		virtual void handleData();
 		//@}
 
+		//! @internal
+		void handle_connect(const asio::error_code& error);
 	private:
 		TcpConnection(const TcpConnection&);
 		
 	protected:
+		String myHost;
+		int myPort;
 		ConnectionInfo myConnectionInfo;
 		ConnectionState myState;
 		tcp::socket mySocket;
@@ -110,23 +116,6 @@ namespace omicron {
 
 	protected:
 		void doHandleConnected();
-	};
-
-	///////////////////////////////////////////////////////////////////////////////////////////////
-	class OMICRON_API TcpClientConnection: public TcpConnection
-	{
-	public:
-		TcpClientConnection(const ConnectionInfo& ci): TcpConnection(ci) {}
-		void open(const String& host, int port);
-
-	private:
-		TcpClientConnection(const TcpClientConnection&);
-	private:
-		String myHost;
-		int myPort;
-
-	public:
-		void handle_connect(const asio::error_code& error);
 	};
 
 	///////////////////////////////////////////////////////////////////////////////////////////////

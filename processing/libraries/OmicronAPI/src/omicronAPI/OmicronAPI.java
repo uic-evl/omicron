@@ -109,6 +109,8 @@ public class OmicronAPI
 	private boolean trackerOn = false;
 	private boolean legacyMode = false;
 	
+	private boolean mouseTouchEmulation = true;
+	
 	// Fullscreen
 	private boolean fullscreenEnabled = false;
 	private float frameSetDelay = 3; // Delay in seconds before java frame is set
@@ -247,8 +249,9 @@ public class OmicronAPI
 		{
 			applet.frame.setLocation(0, 0);
 		}
-
-		processMouseEvent(); // Maps Processing mouse to pointer event
+		
+		if( mouseTouchEmulation )
+			processMouseEvent(); // Maps Processing mouse to pointer event
 
 		// Only get events if an event type is enabled
 		if (trackerOn)
@@ -269,7 +272,7 @@ public class OmicronAPI
 		{
 			processSpeechEvent(e);
 			processMocapEvent(e);
-			 processPointerEvent(e);
+			processPointerEvent(e);
 
 			if (eventListener != null)
 				eventListener.onEvent(e);
@@ -338,6 +341,22 @@ public class OmicronAPI
 	private int mouseID = -1;
 	private int secondMouseID = -100;
 	PVector lastMovePosition;
+	
+	/**
+	 * Disables the creation of touch events from mouse events
+	 */
+	public void disableMouseTouchEmulation()
+	{
+		mouseTouchEmulation = false;
+	}
+	
+	/**
+	 * Enables the creation of touch events from mouse events
+	 */
+	public void enableMouseTouchEmulation()
+	{
+		mouseTouchEmulation = true;
+	}
 	
 	private void processMouseEvent()
 	{

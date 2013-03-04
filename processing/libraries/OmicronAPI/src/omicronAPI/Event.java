@@ -37,7 +37,7 @@ import processing.core.PVector;
 public class Event
 {
 	public int sourceID; // Device IDs (touch ids, mocap joints, etc.)
-	public int serviceID; // Used for pointer to denote types (Mouse, touch)
+	public int serviceID; // Used for pointer to denote types (Mouse, touch) usually -1
 	public int flags; // Used mostly for Wand/Controller to denote button ID
 						// during down/up events
 	public OmicronAPI.ServiceType serviceType = OmicronAPI.ServiceType.Generic; // Pointer, mocap, voice, etc.

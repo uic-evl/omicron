@@ -136,13 +136,13 @@ void vrpn_XInputGamepad::update(const Event& evt) {
 	// Middle mouse = Analog button
 	// Mouse wheel = Analog up/down
 	if( evt.getServiceType() == Event::ServiceTypeController || evt.getServiceType() == Event::ServiceTypeWand ){
-		buttons[0] = (evt.getFlags() == Event::Button3) != 0;
-		buttons[1] = (evt.getFlags() == Event::Button2) != 0;
-		buttons[2] = (evt.getFlags() == Event::Button6) != 0;
-		buttons[3] = (evt.getFlags() == Event::ButtonUp) != 0;
-		buttons[4] = (evt.getFlags() == Event::ButtonDown) != 0;
-		buttons[5] = (evt.getFlags() == Event::ButtonLeft) != 0;
-		buttons[6] = (evt.getFlags() == Event::ButtonRight) != 0;
+		buttons[0] = (evt.getFlags() & Event::Button3) == Event::Button3;
+		buttons[1] = (evt.getFlags() & Event::Button2) == Event::Button2;
+		buttons[2] = (evt.getFlags() & Event::Button6) == Event::Button6;
+		buttons[3] = (evt.getFlags() & Event::ButtonUp) == Event::ButtonUp;
+		buttons[4] = (evt.getFlags() & Event::ButtonDown) == Event::ButtonDown;
+		buttons[5] = (evt.getFlags() & Event::ButtonLeft) == Event::ButtonLeft;
+		buttons[6] = (evt.getFlags() & Event::ButtonRight) == Event::ButtonRight;
 		
 		// Analog 4 (Wand L2)
 		if( !evt.isExtraDataNull(4) && evt.getExtraDataFloat(4) > 0.5 )

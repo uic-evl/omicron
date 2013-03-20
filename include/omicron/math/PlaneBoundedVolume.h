@@ -109,7 +109,7 @@ namespace omicron {
         @returns std::pair of hit (bool) and distance
         @remarks May return false positives but will never miss an intersection.
         */
-        inline std::pair<bool, float> intersects(const Ray& ray)
+        inline std::pair<bool, real> intersects(const Ray& ray)
         {
             return Math::intersects(ray, planes, outside == POSITIVE_SIDE);
         }

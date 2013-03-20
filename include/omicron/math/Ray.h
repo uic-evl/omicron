@@ -72,7 +72,7 @@ namespace omicron {
 			indicate the distance along the ray at which it intersects. 
 			This can be converted to a point in space by calling getPoint().
 		*/
-		std::pair<bool, float> intersects(const Plane& p) const
+		std::pair<bool, real> intersects(const Plane& p) const
 		{
 			return Math::intersects(*this, p);
 		}
@@ -82,7 +82,7 @@ namespace omicron {
         indicate the distance along the ray at which it intersects. 
         This can be converted to a point in space by calling getPoint().
         */
-        std::pair<bool, float> intersects(const PlaneBoundedVolume& p) const
+        std::pair<bool, real> intersects(const PlaneBoundedVolume& p) const
         {
             return Math::intersects(*this, p.planes, p.outside == POSITIVE_SIDE);
         }
@@ -92,7 +92,7 @@ namespace omicron {
 			indicate the distance along the ray at which it intersects. 
 			This can be converted to a point in space by calling getPoint().
 		*/
-		std::pair<bool, float> intersects(const Sphere& s) const
+		std::pair<bool, real> intersects(const Sphere& s) const
 		{
 			return Math::intersects(*this, s);
 		}
@@ -102,7 +102,7 @@ namespace omicron {
 			indicate the distance along the ray at which it intersects. 
 			This can be converted to a point in space by calling getPoint().
 		*/
-		std::pair<bool, float> intersects(const AlignedBox3& box) const
+		std::pair<bool, real> intersects(const AlignedBox3& box) const
 		{
 			return Math::intersects(*this, box);
 		}

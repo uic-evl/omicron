@@ -1133,23 +1133,23 @@ Vector3f Math::project(
 	const Vector3f& point, const AffineTransform3& mmodelview, 
 	const Transform3& mprojection, const Rect& rviewport)
 {
-		const float* modelview = mmodelview.data();
-		const float* projection = mprojection.data();
-		float viewport[4];
+		const real* modelview = mmodelview.data();
+		const real* projection = mprojection.data();
+		real viewport[4];
 
 		viewport[0] = rviewport.x();
 		viewport[1] = rviewport.y();
 		viewport[2] = rviewport.width();
 		viewport[3] = rviewport.height();
 
-		float objx = point[0];
-		float objy = point[1];
-		float objz = point[2];
+		real objx = point[0];
+		real objy = point[1];
+		real objz = point[2];
 
 		Vector3f windowCoordinate;
 
 		//Transformation vectors
-		float fTempo[8];
+		real fTempo[8];
 		//Modelview transform
 		fTempo[0]=modelview[0]*objx+modelview[4]*objy+modelview[8]*objz+modelview[12];  //w is always 1
 		fTempo[1]=modelview[1]*objx+modelview[5]*objy+modelview[9]*objz+modelview[13];

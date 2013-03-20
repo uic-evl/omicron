@@ -40,7 +40,7 @@
 // wrappers use low-case names to avoid clashes with their Eigen base classes.
 namespace omicron {  
 	// Typedef for real numbers. swithing this we can change precision of most math types and functions.
-	typedef float real;
+	typedef double real;
 
 	//! A 3x3 float matrix using the Eigen math library. More information here: http://eigen.tuxfamily.org/dox/TutorialMatrixClass.html
 	typedef Eigen::Matrix<real, 3, 3>  Matrix3f; 
@@ -50,8 +50,10 @@ namespace omicron {
 	typedef Eigen::Matrix<real, 3, Eigen::Dynamic>  Vectors3f; 
 	//! A two-component float vector using the Eigen math library. More information here: http://eigen.tuxfamily.org/dox/TutorialMatrixClass.html
 	typedef Eigen::Matrix<real, 2, 1> Vector2f;
-	//! A three-component float vector using the Eigen math library. More information here: http://eigen.tuxfamily.org/dox/TutorialMatrixClass.html
+	//! A three-component float vector of varying precision using the Eigen math library. More information here: http://eigen.tuxfamily.org/dox/TutorialMatrixClass.html
 	typedef Eigen::Matrix<real, 3, 1> Vector3f;
+	//! A three-component vector of single precision using the Eigen math library. More information here: http://eigen.tuxfamily.org/dox/TutorialMatrixClass.html
+	typedef Eigen::Matrix<float, 3, 1> Vector3s;
 	//! A four-component float vector using the Eigen math library. More information here: http://eigen.tuxfamily.org/dox/TutorialMatrixClass.html
 	typedef Eigen::Matrix<real, 4, 1> Vector4f; 
 	//! A two-component int vector using the Eigen math library. More information here: http://eigen.tuxfamily.org/dox/TutorialMatrixClass.html

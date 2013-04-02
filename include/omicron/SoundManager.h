@@ -74,8 +74,16 @@ public:
 	void setUserPosition(Vector3f);
 	void setUserOrientation(Quaternion);
 
+	// Environment settings
 	void setAssetDirectory(const String&);
 	String& getAssetDirectory();
+
+	void setVolumeScale(float);
+	float getVolumeScale();
+	void setRoomSize(float);
+	float getRoomSize();
+	void setWetness(float);
+	float getWetness();
 
 	void addInstanceID(int);
 	void addBufferID(int);
@@ -83,7 +91,9 @@ public:
 	Vector3f worldToLocal(Vector3f& position);
 private:
 	SoundManager* soundManager;
-	float globalVolume;
+	float environmentVolumeScale;
+	float environmentRoomSize;
+	float environmentWetness;
 
 	// This is assumed to be the navigative position
 	// of the listener in world coordinates

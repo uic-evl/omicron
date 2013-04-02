@@ -40,16 +40,17 @@ Sound::Sound(const String& soundName)
 	volumeScale = 1.0f;
 	volume = 0.5f;
 	width = 1.0f;
-	mix = 0.0f;
-	reverb = 0.0f;
+	wetness = 0.0f;
+	roomSize = 0.0f;
 	loop = false;
+	useEnvironmentParameters = true;
 
 	minRolloffDistance = 1.0f;
 	maxDistance = 500.0f;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Sound::Sound(const String& soundName, float volume, float width, float mix, float reverb, bool loop, bool env)
+Sound::Sound(const String& soundName, float volume, float width, float roomSize, float wetness, bool loop, bool env)
 {
 	this->soundName = soundName;
 	bufferID = nextBufferID;
@@ -58,22 +59,23 @@ Sound::Sound(const String& soundName, float volume, float width, float mix, floa
 	volumeScale = 1.0f;
 	this->volume = volume;
 	this->width = width;
-	this->mix = mix;
-	this->reverb = reverb;
+	this->wetness = wetness;
+	this->roomSize = roomSize;
 	this->loop = loop;
 	this->environmentSound = env;
+	useEnvironmentParameters = false;
 
 	minRolloffDistance = 1.0f;
 	maxDistance = 500.0f;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void Sound::setDefaultParameters(float volume, float width, float mix, float reverb, bool loop, bool env)
+void Sound::setDefaultParameters(float volume, float width, float roomSize, float wetness, bool loop, bool env)
 {
 	this->volume = volume;
 	this->width = width;
-	this->mix = mix;
-	this->reverb = reverb;
+	this->wetness = wetness;
+	this->roomSize = roomSize;
 	this->loop = loop;
 	this->environmentSound = env;
 }
@@ -124,15 +126,15 @@ float Sound::getDefaultVolume()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-float Sound::getDefaultMix()
+float Sound::getDefaultWetness()
 {
-	return mix;
+	return wetness;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-float Sound::getDefaultReverb()
+float Sound::getDefaultRoomSize()
 {
-	return mix;
+	return roomSize;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -151,6 +153,18 @@ bool Sound::isDefaultLooping()
 bool Sound::isEnvironmentSound()
 {
 	return environmentSound;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void Sound::resetToEnvironmentParameters()
+{
+	useEnvironmentParameters = true;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool Sound::isUsingEnvironmentParameters()
+{
+	return useEnvironmentParameters;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -190,13 +204,15 @@ SoundInstance::SoundInstance(Sound* sound)
 	
 	volume = sound->getDefaultVolume();
 	width = sound->getDefaultWidth();
-	mix = sound->getDefaultMix();
-	reverb = sound->getDefaultReverb();
+	roomSize = sound->getDefaultRoomSize();
+	wetness = sound->getDefaultWetness();
 	loop = sound->isDefaultLooping();
 	environmentSound = sound->isEnvironmentSound();
 
 	environment = sound->getSoundEnvironment();
 	environment->addInstanceID(instanceID);
+
+	useEnvironmentParameters = sound->isUsingEnvironmentParameters();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -250,11 +266,20 @@ void SoundInstance::play()
 	else
 		msg.pushFloat( width );
 
+	float wetness = this->wetness;
+	float roomSize = this->roomSize;
+
+	if( useEnvironmentParameters )
+	{
+		wetness = environment->getWetness();
+		roomSize = environment->getRoomSize();
+	}
+
 	// Mix - wetness of sound 0.0 - 1.0
-	msg.pushFloat( mix );
+	msg.pushFloat( wetness );
 
 	// Room size - reverb amount 0.0 - 1.0
-	msg.pushFloat( reverb );
+	msg.pushFloat( roomSize );
 
 	// Loop sound - 0.0 not looping - 1.0 looping
 	if( loop )
@@ -338,10 +363,10 @@ void SoundInstance::play( Vector3f position, float volume, float width, float mi
 	msg.pushFloat( width );
 
 	// Mix - wetness of sound 0.0 - 1.0
-	msg.pushFloat( mix );
+	msg.pushFloat( wetness );
 
 	// Room size - reverb amount 0.0 - 1.0
-	msg.pushFloat( reverb );
+	msg.pushFloat( roomSize );
 
 	// Loop sound - 0.0 not looping - 1.0 looping
 	if( loop )
@@ -446,7 +471,7 @@ void SoundInstance::setVolume(float value)
 	else
 		this->volume =  value * sound->getVolumeScale();
 
-	printf( "%s: for instanceID: %d\n", __FUNCTION__, instanceID);
+	//printf( "%s: for instanceID: %d\n", __FUNCTION__, instanceID);
 	Message msg("/setVol");
 	msg.pushInt32(instanceID);
 	msg.pushFloat(this->volume);
@@ -465,7 +490,7 @@ float SoundInstance::getVolume()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::fade(float targetAmp, float envelopeDuration)
 {
-	printf( "%s: for instanceID: %d\n", __FUNCTION__, instanceID);
+	//printf( "%s: for instanceID: %d\n", __FUNCTION__, instanceID);
 
 	Message msg("/setVolEnv");
 	msg.pushInt32(instanceID);
@@ -480,6 +505,7 @@ void SoundInstance::fade(float targetAmp, float envelopeDuration)
 void SoundInstance::setWidth(float value)
 {
 	this->width = value;
+	useEnvironmentParameters = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -489,27 +515,58 @@ float SoundInstance::getWidth()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void SoundInstance::setMix(float value)
+void SoundInstance::setRoomSize(float value)
 {
-	this->mix = value;
+	this->roomSize = value;
+	useEnvironmentParameters = false;
+	
+	Message msg("/setReverb");
+	msg.pushInt32(instanceID);
+	msg.pushFloat(wetness);
+	msg.pushFloat(roomSize);
+
+	environment->getSoundManager()->sendOSCMessage(msg);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-float SoundInstance::getMix()
+float SoundInstance::getRoomSize()
 {
-	return mix;
+	return roomSize;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void SoundInstance::setReverb(float value)
+void SoundInstance::setWetness(float value)
 {
-	this->reverb = value;
+	this->wetness = value;
+	useEnvironmentParameters = false;
+	
+	Message msg("/setReverb");
+	msg.pushInt32(instanceID);
+	msg.pushFloat(wetness);
+	msg.pushFloat(roomSize);
+
+	environment->getSoundManager()->sendOSCMessage(msg);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-float SoundInstance::getReverb()
+float SoundInstance::getWetness()
 {
-	return reverb;
+	return wetness;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SoundInstance::setReverb(float wetness, float roomSize)
+{
+	this->wetness = wetness;
+	this->roomSize = roomSize;
+	useEnvironmentParameters = false;
+	
+	Message msg("/setReverb");
+	msg.pushInt32(instanceID);
+	msg.pushFloat(wetness);
+	msg.pushFloat(roomSize);
+
+	environment->getSoundManager()->sendOSCMessage(msg);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

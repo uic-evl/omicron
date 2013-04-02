@@ -132,6 +132,10 @@ SoundEnvironment::SoundEnvironment(SoundManager* soundManager)
 
 	assetDirectory = "";
 	assetDirectorySet = false;
+
+	environmentVolumeScale = 1.0;
+	environmentRoomSize = 0.0;
+	environmentWetness = 0.0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -279,6 +283,58 @@ void SoundEnvironment::setAssetDirectory(const String& directory)
 String& SoundEnvironment::getAssetDirectory()
 {
 	return assetDirectory;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SoundEnvironment::setVolumeScale(float value)
+{
+	environmentVolumeScale = value;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+float SoundEnvironment::getVolumeScale()
+{
+	return environmentVolumeScale;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SoundEnvironment::setRoomSize(float value)
+{
+	environmentRoomSize = value;
+	for( int i = 0; i < instanceNodeIDList.size(); i++ )
+	{
+		Message msg("/setReverb");
+		msg.pushInt32(instanceNodeIDList[i]);
+		msg.pushFloat(environmentWetness);
+		msg.pushFloat(environmentRoomSize);
+		soundManager->sendOSCMessage(msg);
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+float SoundEnvironment::getRoomSize()
+{
+	return environmentRoomSize;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SoundEnvironment::setWetness(float value)
+{
+	environmentWetness = value;
+	for( int i = 0; i < instanceNodeIDList.size(); i++ )
+	{
+		Message msg("/setReverb");
+		msg.pushInt32(instanceNodeIDList[i]);
+		msg.pushFloat(environmentWetness);
+		msg.pushFloat(environmentRoomSize);
+		soundManager->sendOSCMessage(msg);
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+float SoundEnvironment::getWetness()
+{
+	return environmentWetness;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

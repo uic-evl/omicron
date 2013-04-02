@@ -55,11 +55,18 @@ public:
 	String& getFilePath();
 
 	float getDefaultVolume();
-	float getDefaultMix();
+
+	// Reverb
+	float getDefaultRoomSize();
+	float getDefaultWetness();
+
 	float getDefaultWidth();
-	float getDefaultReverb();
+
 	bool isDefaultLooping();
 	bool isEnvironmentSound();
+
+	void resetToEnvironmentParameters();
+	bool isUsingEnvironmentParameters();
 
 	void setSoundEnvironment(SoundEnvironment*);
 	SoundEnvironment* getSoundEnvironment();
@@ -76,15 +83,17 @@ private:
 	// Default sound instance parameters
 	float volume;	// Amplitude (0.0 - 1.0)
 	float width;	// Speaker width / nSpeakers (1-20)
-	float mix;		// Mix - wetness of sound (0.0 - 1.0)
-	float reverb;	// Room size / reverb amount (0.0 - 1.0)
+	float wetness;		// Wetness of sound (0.0 - 1.0)
+	float roomSize;	// Room size / reverb amount (0.0 - 1.0)
 	bool loop;
 	bool environmentSound; // Plays on all 20 speakers
 	float maxDistance;
 	float minRolloffDistance;
+	bool useEnvironmentParameters;
 
 	// Sound environment this sound belongs to
 	SoundEnvironment* environment;
+
 };// Sound
 
 class OMICRON_API SoundInstance: public ReferenceType
@@ -115,11 +124,14 @@ public:
 
 	void setWidth(float);
 	float getWidth();
-	void setMix(float);
-	float getMix();
-	void setReverb(float);
-	float getReverb();
 
+	// Reverb
+	void setRoomSize(float);
+	float getRoomSize();
+	void setWetness(float);
+	float getWetness();
+	void setReverb(float,float);
+	
 	void setMaxDistance(float);
 	float getMaxDistance();
 	void setMinRolloffDistance(float);
@@ -129,7 +141,7 @@ public:
 	int getID();
 	void setSoundEnvironment(SoundEnvironment*);
 private:
-	
+
 public:
 private:
 	Ref<Sound> sound;
@@ -142,16 +154,18 @@ private:
 	bool environmentSound;
 	float volume;	// Amplitude (0.0 - 1.0)
 	float width;	// Speaker width / nSpeakers (1-20)
-	float mix;		// Mix - wetness of sound (0.0 - 1.0)
-	float reverb;	// Room size / reverb amount (0.0 - 1.0)
+	float wetness;		// Wetness of sound (0.0 - 1.0)
+	float roomSize;	// Room size / reverb amount (0.0 - 1.0)
 	float pitch;
 	Vector3f position;
 
 	float maxDistance; // Max distance sound amplitude > 0
 	float minRolloffDistance; // Min distance sound amplitude at full before rolling off
 
+	bool useEnvironmentParameters;
+
 	SoundEnvironment* environment;
-};// Sound
+};// SoundInstance
 
 }; // namespace omicron
 

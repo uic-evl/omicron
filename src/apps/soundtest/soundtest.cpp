@@ -62,6 +62,7 @@ public:
 		soundManager = new SoundManager("xenakis.evl.uic.edu",57120);
 		//soundManager = new SoundManager("localhost",57120);
 		soundManager->startSoundServer();
+		soundManager->showDebugInfo(true);
 
 		// Get default sound environment
 		env = soundManager->getSoundEnvironment();
@@ -83,7 +84,8 @@ public:
 			soundLoop = env->createSound("soundLoop");
 			soundLoop->loadFromFile("/Users/evldemo/sounds/arthur/Enterprise_Bridge.wav");
 			
-			
+			SoundInstance* soundInstance = new SoundInstance(showMenuSound);
+						soundInstance->play();
 		}
 
 		
@@ -169,7 +171,10 @@ public:
 		return false;
 	}
 
-	
+	void update()
+	{
+		env->setListenerPosition( Vector3f(0,0,0) );
+	}
 private:
 	Vector3f position;
 	float volume;
@@ -216,6 +221,7 @@ int main(int argc, char** argv)
 			{
 				app.handleEvent(evts[evtNum]);
 			}
+			app.update();
 			//if( printOutput )
 			//	printf("------------------------------------------------------------------------------\n");
 		}

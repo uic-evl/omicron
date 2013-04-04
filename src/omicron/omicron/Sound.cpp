@@ -39,7 +39,7 @@ Sound::Sound(const String& soundName)
 	
 	volumeScale = 1.0f;
 	volume = 0.5f;
-	width = 1.0f;
+	width = 2.0f;
 	wetness = 0.0f;
 	roomSize = 0.0f;
 	loop = false;
@@ -211,7 +211,7 @@ SoundInstance::SoundInstance(Sound* sound)
 
 	environment = sound->getSoundEnvironment();
 	environment->addInstanceID(instanceID);
-
+	environment->addInstance(this);
 	useEnvironmentParameters = sound->isUsingEnvironmentParameters();
 }
 
@@ -230,7 +230,9 @@ void SoundInstance::setLoop(bool value)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::play()
 {
-	//printf( "%s: Playing buffer %d with instanceID: %d\n", __FUNCTION__, sound->getBufferID(), instanceID);
+	if( environment->getSoundManager()->isDebugEnabled() )
+		ofmsg("%1%: Playing buffer %2% with instanceID: %3%", %__FUNCTION__ %sound->getBufferID() %instanceID);
+
 	Message msg("/play");
 	msg.pushInt32(instanceID);
 	msg.pushInt32(sound->getBufferID());
@@ -247,12 +249,10 @@ void SoundInstance::play()
 
 	msg.pushFloat( scaledVolume );
 
-	// Position in Audio System (local) coordinates
-	Vector3f soundLocalPosition = environment->worldToLocal( position );
-
-	msg.pushFloat( soundLocalPosition[0] );
-	msg.pushFloat( soundLocalPosition[1] );
-	msg.pushFloat( soundLocalPosition[2] );
+	// We're assuming the position was set using setPosition() which has already handled the local coordinates
+	msg.pushFloat( position[0] );
+	msg.pushFloat( position[1] );
+	msg.pushFloat( position[2] );
 	
 	// User's position relative to the audio system
 	Vector3f audioListener = environment->getUserPosition();
@@ -295,7 +295,9 @@ void SoundInstance::play()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::playStereo()
 {
-	//printf( "%s: Playing buffer %d with instanceID: %d\n", __FUNCTION__, sound->getBufferID(), instanceID);
+	if( environment->getSoundManager()->isDebugEnabled() )
+		ofmsg("%1%: Playing buffer %2% with instanceID: %3%", %__FUNCTION__ %sound->getBufferID() %instanceID);
+
 	Message msg("/playStereo");
 	msg.pushInt32(instanceID);
 	msg.pushInt32(sound->getBufferID());
@@ -331,7 +333,9 @@ bool SoundInstance::getLoop()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::play( Vector3f position, float volume, float width, float mix, float reverb, bool loop )
 {
-	//printf( "%s: Playing buffer %d with instanceID: %d\n", __FUNCTION__, sound->getBufferID(), instanceID);
+	if( environment->getSoundManager()->isDebugEnabled() )
+		ofmsg("%1%: Playing buffer %2% with instanceID: %3%", %__FUNCTION__ %sound->getBufferID() %instanceID);
+
 	Message msg("/play");
 	msg.pushInt32(instanceID);
 	msg.pushInt32(sound->getBufferID());
@@ -348,11 +352,11 @@ void SoundInstance::play( Vector3f position, float volume, float width, float mi
 	msg.pushFloat( scaledVolume );
 	
 	// Position in Audio System (local) coordinates
-	Vector3f soundLocalPosition = environment->worldToLocal( position );
+	localPosition = environment->worldToLocalPosition( position );
 
-	msg.pushFloat( soundLocalPosition[0] );
-	msg.pushFloat( soundLocalPosition[1] );
-	msg.pushFloat( soundLocalPosition[2] );
+	msg.pushFloat( localPosition[0] );
+	msg.pushFloat( localPosition[1] );
+	msg.pushFloat( localPosition[2] );
 	
 	Vector3f audioListener = environment->getUserPosition();
 	msg.pushFloat( audioListener[0] );
@@ -382,7 +386,9 @@ void SoundInstance::play( Vector3f position, float volume, float width, float mi
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::playStereo( float volume, bool loop )
 {
-	//printf( "%s: Playing buffer %d with instanceID: %d\n", __FUNCTION__, sound->getBufferID(), instanceID);
+	if( environment->getSoundManager()->isDebugEnabled() )
+		ofmsg("%1%: Playing buffer %2% with instanceID: %3%", %__FUNCTION__ %sound->getBufferID() %instanceID);
+
 	Message msg("/playStereo");
 	msg.pushInt32(instanceID);
 	msg.pushInt32(sound->getBufferID());
@@ -433,7 +439,36 @@ bool SoundInstance::isPlaying()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::setPosition(Vector3f pos)
 {
+	if( environment->getSoundManager()->isDebugEnabled() )
+		ofmsg("%1%: for instanceID: %2%", %__FUNCTION__ %instanceID);
+
 	position = pos;
+
+	Message msg("/setObjectLoc");
+	msg.pushInt32(instanceID);
+
+	localPosition = environment->worldToLocalPosition( position );
+
+	msg.pushFloat( localPosition[0] );
+	msg.pushFloat( localPosition[1] );
+	msg.pushFloat( localPosition[2] );
+
+	environment->getSoundManager()->sendOSCMessage(msg);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+const Vector3f& SoundInstance::getPosition()
+{
+	return position;
+}
+
+void SoundInstance::setLocalPosition(Vector3f pos)
+{
+	if( environment->getSoundManager()->isDebugEnabled() )
+		ofmsg("%1%: for instanceID: %2%", %__FUNCTION__ %instanceID);
+
+	localPosition = pos;
+	position = environment->localToWorldPosition( localPosition );
 
 	Message msg("/setObjectLoc");
 	msg.pushInt32(instanceID);
@@ -446,9 +481,9 @@ void SoundInstance::setPosition(Vector3f pos)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-const Vector3f& SoundInstance::getPosition()
+const Vector3f& SoundInstance::getLocalPosition()
 {
-	return position;
+	return localPosition;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -471,7 +506,9 @@ void SoundInstance::setVolume(float value)
 	else
 		this->volume =  value * sound->getVolumeScale();
 
-	//printf( "%s: for instanceID: %d\n", __FUNCTION__, instanceID);
+	if( environment->getSoundManager()->isDebugEnabled() )
+		ofmsg("%1%: for instanceID: %2%", %__FUNCTION__ %instanceID);
+
 	Message msg("/setVol");
 	msg.pushInt32(instanceID);
 	msg.pushFloat(this->volume);
@@ -490,7 +527,8 @@ float SoundInstance::getVolume()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::fade(float targetAmp, float envelopeDuration)
 {
-	//printf( "%s: for instanceID: %d\n", __FUNCTION__, instanceID);
+	if( environment->getSoundManager()->isDebugEnabled() )
+		ofmsg("%1%: for instanceID: %2%", %__FUNCTION__ %instanceID);
 
 	Message msg("/setVolEnv");
 	msg.pushInt32(instanceID);
@@ -517,6 +555,9 @@ float SoundInstance::getWidth()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::setRoomSize(float value)
 {
+	if( environment->getSoundManager()->isDebugEnabled() )
+		ofmsg("%1%: for instanceID: %2%", %__FUNCTION__ %instanceID);
+
 	this->roomSize = value;
 	useEnvironmentParameters = false;
 	
@@ -537,6 +578,9 @@ float SoundInstance::getRoomSize()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::setWetness(float value)
 {
+	if( environment->getSoundManager()->isDebugEnabled() )
+		ofmsg("%1%: for instanceID: %2%", %__FUNCTION__ %instanceID);
+
 	this->wetness = value;
 	useEnvironmentParameters = false;
 	
@@ -557,6 +601,9 @@ float SoundInstance::getWetness()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::setReverb(float wetness, float roomSize)
 {
+	if( environment->getSoundManager()->isDebugEnabled() )
+		ofmsg("%1%: for instanceID: %2%", %__FUNCTION__ %instanceID);
+
 	this->wetness = wetness;
 	this->roomSize = roomSize;
 	useEnvironmentParameters = false;

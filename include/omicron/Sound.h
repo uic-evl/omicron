@@ -114,6 +114,8 @@ public:
 	
 	void setPosition(Vector3f);
 	const Vector3f& getPosition();
+	void setLocalPosition(Vector3f);
+	const Vector3f& getLocalPosition();
 	bool isEnvironmentSound();
 	void setEnvironmentSound(bool);
 
@@ -158,6 +160,7 @@ private:
 	float roomSize;	// Room size / reverb amount (0.0 - 1.0)
 	float pitch;
 	Vector3f position;
+	Vector3f localPosition;
 
 	float maxDistance; // Max distance sound amplitude > 0
 	float minRolloffDistance; // Min distance sound amplitude at full before rolling off

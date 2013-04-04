@@ -49,6 +49,7 @@ public:
 
 	void stopAllSounds();
 	void cleanupAllSounds();
+	void showDebugInfo(bool);
 
 	SoundManager* getSoundManager();
 
@@ -87,8 +88,12 @@ public:
 
 	void addInstanceID(int);
 	void addBufferID(int);
+	void addInstance( Ref<SoundInstance> );
 
-	Vector3f worldToLocal(Vector3f& position);
+	Vector3f worldToLocalPosition(Vector3f position);
+	Vector3f localToWorldPosition(Vector3f position);
+private:
+	void updateInstancePositions();
 private:
 	SoundManager* soundManager;
 	float environmentVolumeScale;
@@ -109,6 +114,7 @@ private:
 	bool assetDirectorySet;
 
 	map<int, Ref<Sound> > soundList;
+	map<int, Ref<SoundInstance> > instanceList;
 	map<String, int> soundBufferIDList;
 
 	Vector<int> instanceNodeIDList;
@@ -132,9 +138,12 @@ public:
 	void stopSoundServer();
 
 	bool sendOSCMessage(Message);
+	void showDebugInfo(bool);
+	bool isDebugEnabled();
 private:
 	SoundEnvironment* environment;
 	static UdpSocket serverSocket;
+	static bool showDebug;
 };// SoundManager
 
 }; // namespace omicron

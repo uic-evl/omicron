@@ -201,7 +201,7 @@ SoundInstance::SoundInstance(Sound* sound)
 	this->sound = sound;
 	instanceID = nextInstanceID; // This should be globally incremented on each new instance. Must be 1001 or greater.
 	nextInstanceID++;
-	
+
 	volume = sound->getDefaultVolume();
 	width = sound->getDefaultWidth();
 	roomSize = sound->getDefaultRoomSize();
@@ -209,10 +209,16 @@ SoundInstance::SoundInstance(Sound* sound)
 	loop = sound->isDefaultLooping();
 	environmentSound = sound->isEnvironmentSound();
 
+	position = Vector3f(0,0,0);
+	localPosition = Vector3f(0,0,0);
+
 	environment = sound->getSoundEnvironment();
 	environment->addInstanceID(instanceID);
 	environment->addInstance(this);
 	useEnvironmentParameters = sound->isUsingEnvironmentParameters();
+
+	if( environment->getSoundManager()->isDebugEnabled() )
+		ofmsg("Created SoundInstance %1% with node ID %2%", %sound->getFilePath() %instanceID);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

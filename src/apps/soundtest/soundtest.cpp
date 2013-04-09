@@ -56,24 +56,43 @@ public:
 	SoundTest()
 	{
 		//soundManager = new SoundManager();
-		//soundManager->connectToServer("131.193.77.211",57120);
+		//soundManager->connectToServer("localhost",57120);
 		
 		// More concise method of above two lines
-		soundManager = new SoundManager("xenakis.evl.uic.edu",57120);
 		//soundManager = new SoundManager("localhost",57120);
 		soundManager->startSoundServer();
-		soundManager->showDebugInfo(true);
+
+		//Message msg("/notify");
+		//msg.pushInt32(1);
+
+		//soundManager->sendOSCMessage(msg);
+		
+		soundManager->showDebugInfo(false);
 
 		// Get default sound environment
 		env = soundManager->getSoundEnvironment();
 
 		// Load sound assets
-		if( soundManager->isSoundServerRunning() ){
+		//if( soundManager->isSoundServerRunning() ){
 			showMenuSound = env->createSound("showMenuSound");
 			showMenuSound->loadFromFile("/Users/evldemo/sounds/menu_sounds/menu_load.wav");
+			ofmsg("Menu 'showMenuSound' bufferID: %1%", %showMenuSound->getBufferID() );
 
 			hideMenuSound = env->createSound("hideMenuSound");
 			hideMenuSound->loadFromFile("/Users/evldemo/sounds/menu_sounds/menu_closed.wav");
+
+			Sound* menuSound = env->getSound("showMenuSound");
+			ofmsg("Menu get() 'showMenuSound' bufferID: %1%", %menuSound->getBufferID() );
+
+			ofmsg("Menu get() 'hideMenuSound' bufferID: %1%", %hideMenuSound->getBufferID() );
+
+			//env->setSound( "showMenuSound", hideMenuSound );
+
+			//Sound* newMenuSound = env->getSound("showMenuSound");
+			//ofmsg("Menu get() 'showMenuSound' bufferID: %1%", %newMenuSound->getBufferID() );
+
+			//hideMenuSound = env->createSound("hideMenuSound");
+			//hideMenuSound->loadFromFile("/Users/evldemo/sounds/menu_sounds/menu_closed.wav");
 
 			selectMenuSound = env->createSound("selectMenuSound");
 			selectMenuSound->loadFromFile("/Users/evldemo/sounds/menu_sounds/menu_select.wav");
@@ -81,21 +100,24 @@ public:
 			scrollMenuSound = env->createSound("scrollMenuSound");
 			scrollMenuSound->loadFromFile("/Users/evldemo/sounds/menu_sounds/menu_scroll.wav");
 			
-			soundLoop = env->createSound("soundLoop");
-			soundLoop->loadFromFile("/Users/evldemo/sounds/arthur/Enterprise_Bridge.wav");
-			
+			//soundLoop = env->createSound("soundLoop");
+			//soundLoop->loadFromFile("/Users/evldemo/sounds/arthur/Enterprise_Bridge.wav");
+
 			SoundInstance* soundInstance = new SoundInstance(showMenuSound);
 						soundInstance->play();
-		}
+
+		//}
 
 		
 		instanceCreated = false;
+		
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Checks the type of event. If a valid event, creates an event packet and returns true. Else return false.
 	virtual bool handleEvent(const Event& evt)
 	{
+		
 		float leftRightAnalog;
 		float upDownAnalog;
 		float zeroTolerence = 0.008f;
@@ -168,6 +190,7 @@ public:
 				//printf("ID: %d Pos: %f %f %f\n", evt.getSourceId(), evt.getPosition(0), evt.getPosition(1), evt.getPosition(2) );
 				break;
 		}
+		
 		return false;
 	}
 

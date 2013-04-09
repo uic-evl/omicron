@@ -56,6 +56,7 @@ public:
 	Sound* createSound(const String& name);
 	Sound* loadSoundFromFile(const String& soundName, const String& fileName);
 	Sound* getSound(const String& name);
+	void setSound(const String& name, Ref<Sound> sound);
 	SoundInstance* createInstance(Sound*);
 	SoundInstance* getSoundInstance(int);
 

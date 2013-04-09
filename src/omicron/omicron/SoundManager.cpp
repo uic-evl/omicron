@@ -58,6 +58,7 @@ SoundManager::SoundManager(const String& serverIP, int serverPort)
 void SoundManager::connectToServer(const String& serverIP, int serverPort)
 {
 	// Create socket and connect to OSC server
+	serverSocket.bindTo(8001); // Port to receive notify messages
 	serverSocket.connectTo(serverIP, serverPort);
 	if (!serverSocket.isOk()) {
 		ofmsg( "SoundManager: Error connection to port %1%: %2%", %serverPort %serverSocket.errorMessage() );
@@ -93,11 +94,39 @@ void SoundManager::stopSoundServer()
 bool SoundManager::isSoundServerRunning()
 {
 	printf( "%s: Not implemented yet\n", __FUNCTION__);
-
+	/*
 	// Message the server and inquire if the sound server is running
-	serverSocket.receiveNextPacket(1000); // Paramater is timeout in milliseconds. -1 (default) will wait indefinatly 
-
-	return true;
+	if( serverSocket.receiveNextPacket(1000) ){// Paramater is timeout in milliseconds. -1 (default) will wait indefinatly 
+		PacketReader pr(serverSocket.packetData(), serverSocket.packetSize());
+        Message *incoming_msg;
+		
+        while (pr.isOk() && (incoming_msg = pr.popMessage()) != 0) {
+          ofmsg( "Client: received %1%", %incoming_msg->addressPattern() );
+		  
+		   Message::ArgReader arg(incoming_msg->arg());
+			while (arg.nbArgRemaining()) {
+			  if (arg.isBlob()) {
+				std::vector<char> b; arg.popBlob(b); 
+				
+			  } else if (arg.isBool()) {
+				bool b; arg.popBool(b);
+				ofmsg( "  received %1%", %b );
+			  } else if (arg.isInt32()) {
+				int i; arg.popInt32(i); ofmsg( "  received %1%", %i );
+			  } else if (arg.isInt64()) {
+				int64_t h; arg.popInt64(h); ofmsg( "  received %1%", %h );
+			  } else if (arg.isFloat()) {
+				float f; arg.popFloat(f); ofmsg( "  received %1%", %f );
+			  } else if (arg.isDouble()) {
+				double d; arg.popDouble(d); ofmsg( "  received %1%", %d );
+			  } else if (arg.isStr()) {
+				std::string s; arg.popStr(s); 
+				ofmsg( "  received %1%", %s );
+			  }
+			}
+        }
+	}*/
+	return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -211,6 +240,25 @@ Sound* SoundEnvironment::getSound(const String& soundName)
 	if( newSound == NULL )
 		ofmsg("SoundEnvironment:getSound() - '%1%' does not exist", %soundName);
 	return newSound;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SoundEnvironment::setSound(const String& soundName, Ref<Sound> newSound)
+{
+	if( soundBufferIDList.count(soundName) > 0 )
+	{
+		Sound* oldSound = getSound(soundName);
+
+		ofmsg("SoundEnvironment:setSound() - Replacing bufferID %2% with bufferID %3% for sound '%1%' ", %soundName %oldSound->getBufferID() %newSound->getBufferID() );
+
+		soundList[newSound->getBufferID()] = newSound;
+		soundBufferIDList[soundName] = newSound->getBufferID();
+	}
+	else
+	{
+		ofmsg("SoundEnvironment:setSound() - '%1%' does not exist", %soundName);
+	}
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

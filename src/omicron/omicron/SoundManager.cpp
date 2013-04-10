@@ -81,6 +81,11 @@ void SoundManager::startSoundServer()
 
 	//Message msg4("/startup");
 	//sendOSCMessage(msg4);
+
+	if( serverSocket.receiveNextPacket(1000) ) // Paramater is timeout in milliseconds. -1 (default) will wait indefinatly
+	{
+		// Wait a second for server to startup before continuing to load sounds
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -1,11 +1,11 @@
 /**************************************************************************************************
 * THE OMICRON PROJECT
  *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2012		Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2013		Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto		anishimoto42@gmail.com
  *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2011, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2013, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted 
  * provided that the following conditions are met:
@@ -28,6 +28,7 @@
 #include <vector>
 
 #include <time.h>
+#include <iostream>
 using namespace omicron;
 
 #ifdef WIN32
@@ -35,48 +36,6 @@ using namespace omicron;
 #include <winsock2.h>
 #define itoa _itoa
 #endif
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Based on Winsock UDP Server Example:
-// http://msdn.microsoft.com/en-us/library/ms740148
-class NetClient
-{
-private:
-	WSADATA wsaData;
-	SOCKET SendSocket;
-	sockaddr_in RecvAddr;
-	int Port;
-	//char SendBuf[1024];
-	int BufLen;
-
-public:
-	NetClient::NetClient( const char* address, int port )
-	{
-		// Create a socket for sending data
-		SendSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-
-		// Set up the RecvAddr structure with the IP address of
-		// the receiver
-		RecvAddr.sin_family = AF_INET;
-		RecvAddr.sin_port = htons(port);
-		RecvAddr.sin_addr.s_addr = inet_addr(address);
-		printf("NetClient %s:%i created...\n", address, port);
-	}// CTOR
-
-	void NetClient::sendEvent(char* eventPacket, int length)
-	{
-		// Send a datagram to the receiver
-		sendto(SendSocket, 
-			eventPacket, 
-			length, 
-			0, 
-			(SOCKADDR*) &RecvAddr, 
-			sizeof(RecvAddr));
-	}// SendEvent
-};
-
-#define OI_WRITEBUF(type, buf, offset, val) *((type*)&buf[offset]) = val; offset += sizeof(type);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // GESTURE TYPES
@@ -122,7 +81,7 @@ bool sageConnected = false;
 class SAGETouchServer{
 public:
 	void connectToSage();
-	void handleEvent(const Event&);
+	void handleEvent(Event*);
 	void queueMessage(char*);
 	void sendToSage();
 }; //class
@@ -187,15 +146,20 @@ void SAGETouchServer::connectToSage(){
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void SAGETouchServer::handleEvent(const Event& evt){
+void SAGETouchServer::handleEvent(Event* evt){
 
-	if( evt.getServiceType() == Service::Pointer ){
+	if( evt->getServiceType() == Service::Pointer ){
 		char msgData[256];
-		int id = evt.getSourceId();
-		float xPos = evt.getPosition().x();
-		float yPos = 1.0 - evt.getPosition().y(); // Flip y position for SAGE
-		int eventType = evt.getType();
+		int id = evt->getSourceId();
+		float xPos = evt->getPosition().x();
+		float yPos = 1.0 - evt->getPosition().y(); // Flip y position for SAGE
+		int eventType = evt->getType();
 		bool validEvent = false;
+
+		int gestureType = GESTURE_SINGLE_TOUCH;
+
+		if( (evt->getFlags() & 1 << 17) == 1 << 17 )
+			gestureType = GESTURE_MULTI_TOUCH_HOLD;
 
 		// Single touch
 		if( eventType == Event::Down || eventType == Event::Move || eventType == Event::Up )
@@ -209,12 +173,12 @@ void SAGETouchServer::handleEvent(const Event& evt){
 			}
 
 			sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %d\n", 
-					myIP, id, GESTURE_SINGLE_TOUCH, xPos, yPos, eventType);
+					myIP, id, gestureType, xPos, yPos, eventType);
 			validEvent = true;
 		}
 
 		if( validEvent ){
-			//printf(msgData);
+			printf(msgData);
 			queueMessage(msgData);
 			sendToSage();
 		}
@@ -261,6 +225,7 @@ void main(int argc, char** argv)
 	Config* cfg = new Config(cfgName);
 
 	DataManager* dm = DataManager::getInstance();
+
 	// Add a default filesystem data source using current work dir.
 	dm->addSource(new FilesystemDataSource("./"));
 	dm->addSource(new FilesystemDataSource(OMICRON_DATA_PATH));
@@ -268,41 +233,47 @@ void main(int argc, char** argv)
 	ServiceManager* sm = new ServiceManager();
 	sm->setupAndStart(cfg);
 
+	Sleep(1000);
+
 	Setting& stRoot = cfg->getRootSetting()["config"];
-
-	strcpy( sageHost, cfg->getStringValue("sageHostIP", stRoot, "").c_str() );
-
-	app.connectToSage();
-	
-	float delay = -0.01f; // Seconds to delay sending events (<= 0 disables delay)
-	bool printOutput = false;
-
-	//omsg("OInputServer: Starting to listen for clients...");
-	while(true)
+	bool sageIPSet = false;
+	if( stRoot.exists("sageHostIP") )
 	{
-		// TODO: Use StopWatch
-		if( delay > 0.0 )
-			Sleep(1000.0*delay); // Delay sending of data out
+		strcpy( sageHost, cfg->getStringValue("sageHostIP", stRoot, "").c_str() );
+		sageIPSet = true;
+		app.connectToSage();
+	}
+	else
+	{
+		std::cout << "sageHostIP not in configuration file. Enter SAGE IP address: " << std::endl;
+		String sageIP;
+		std::cin >> sageIP;
+		std::cout << "IP address: " << sageIP << std::endl;
+		strcpy( sageHost, sageIP.c_str() );
+		sageIPSet = true;
+		app.connectToSage();
+	}
 
+	
+
+	bool printOutput = false;
+	bool runServer = true;
+
+	while(runServer)
+	{
 		sm->poll();
 
-		// Start listening for clients (non-blocking)
-		//app.startListening();
-
-		// Get events
-		int av = sm->getAvailableEvents();
-		if(av != 0)
+		sm->lockEvents();
+		int numEvts = sm->getAvailableEvents();
+		for(int i = 0; i < numEvts; i++)
 		{
-			// TODO: Instead of copying the event list, we can lock the main one.
-			Event evts[OMICRON_MAX_EVENTS];
-			sm->getEvents(evts, OMICRON_MAX_EVENTS);
-			for( int evtNum = 0; evtNum < av; evtNum++)
-			{
-				app.handleEvent(evts[evtNum]);
-			}
-			if( printOutput )
-				printf("------------------------------------------------------------------------------\n");
+			Event* evt = sm->getEvent(i);
+			
+			app.handleEvent(evt);
+			evt->setProcessed();
 		}
+		sm->clearEvents();
+		sm->unlockEvents();
 	}
 
 	sm->stop();

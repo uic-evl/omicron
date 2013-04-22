@@ -54,7 +54,9 @@ namespace omicron {
 	{
 		private:
 			//TouchGestureManager* parent;
+			Touch centerTouch;
 
+			int gestureFlag;
 			int ID;
 			float xPos;
 			float yPos;
@@ -65,7 +67,7 @@ namespace omicron {
 			float longRangeDiameter;
 			float diameter;
 
-			int lastUpdated;
+			int lastUpdated; // Milliseconds
 
 			map<int,Touch> touchList;
 			map<int,Touch> longRangeTouchList;
@@ -83,6 +85,9 @@ namespace omicron {
 			void addLongRangeTouch( Event::Type eventType, float x, float y, int ID );
 
 			void process();
+			int getTouchCount();
+			Touch getCenterTouch();
+			int getGestureFlag();
 	};
 
 	class TouchGestureManager
@@ -99,6 +104,7 @@ namespace omicron {
 	private:
 		Service* pqsInstance;
 		Lock* touchListLock;
+		Lock* touchGroupListLock;
 		map<int,Touch> touchList;
 		map<int,TouchGroup*> touchGroupList;
 		set<int> groupedIDs;
@@ -112,7 +118,7 @@ namespace omicron {
 
 		bool addTouchGroup( Event::Type eventType, float xPos, float yPos, int id );
 
-		void generatePQServiceEvent(Event::Type eventType, Touch touch);
+		void generatePQServiceEvent(Event::Type eventType, Touch touch, int advancedGesture);
 	};
 }
 

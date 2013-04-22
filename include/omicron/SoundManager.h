@@ -141,6 +141,7 @@ public:
 	bool sendOSCMessage(Message);
 	void showDebugInfo(bool);
 	bool isDebugEnabled();
+	void wait(float);
 private:
 	SoundEnvironment* environment;
 	static UdpSocket serverSocket;

@@ -158,24 +158,64 @@ void SAGETouchServer::handleEvent(Event* evt){
 
 		int gestureType = GESTURE_SINGLE_TOUCH;
 
+		// Get gesture type from event flag
+		if( (evt->getFlags() & Event::Click) == Event::Click )
+			gestureType = GESTURE_DOUBLE_CLICK;
+		if( (evt->getFlags() & 1 << 16) == 1 << 16 )
+			gestureType = GESTURE_BIG_TOUCH;
 		if( (evt->getFlags() & 1 << 17) == 1 << 17 )
 			gestureType = GESTURE_MULTI_TOUCH_HOLD;
+		if( (evt->getFlags() & 1 << 18) == 1 << 18 )
+			gestureType = GESTURE_MULTI_TOUCH_SWIPE;
 
-		// Single touch
-		if( eventType == Event::Down || eventType == Event::Move || eventType == Event::Up )
+		// Remap eventType to match SAGE Touch lifepoint
+		switch( eventType )
 		{
-			// Remap eventtype to match SAGE Touch lifepoint
-			switch( eventType )
-			{
-				case Event::Down: eventType = 1; break; // Begin
-				case Event::Move: eventType = 2; break; // Middle
-				case Event::Up: eventType = 3; break; // End
-			}
+			case Event::Down: eventType = 1; break; // Begin
+			case Event::Move: eventType = 2; break; // Middle
+			case Event::Up: eventType = 3; break; // End
+		}
 
+		// Single touch - Double touch - Big/Palm touch
+		if( gestureType == GESTURE_SINGLE_TOUCH || gestureType == GESTURE_DOUBLE_CLICK || gestureType == GESTURE_BIG_TOUCH )
+		{
 			sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %d\n", 
 					myIP, id, gestureType, xPos, yPos, eventType);
 			validEvent = true;
 		}
+
+		// Multi-touch hold (4+ finger)
+		else if( gestureType == GESTURE_MULTI_TOUCH_HOLD )
+		{
+			int pointsSize = 0; // Not sure what this is yet
+
+			sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %d %d\n", 
+					myIP, id, gestureType, xPos, yPos, pointsSize, eventType);
+			validEvent = true;
+		}
+
+		// Multi-touch swipe (4+ finger)
+		else if( gestureType == GESTURE_MULTI_TOUCH_SWIPE )
+		{
+			float dx = 0;
+			float dy = 0;
+			int pointsSize = 0; // Not sure what this is yet
+
+			sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %f %f %d %d\n", 
+					myIP, id, gestureType, xPos, yPos, dx, dy, pointsSize, eventType);
+			validEvent = true;
+		}
+
+		// Zoom touch
+		else if( gestureType == GESTURE_MULTI_TOUCH_HOLD || gestureType == GESTURE_MULTI_TOUCH_SWIPE )
+		{
+			float amount = 0; // Not sure what this is yet
+
+			sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %f %d\n", 
+					myIP, id, gestureType, xPos, yPos, amount, eventType);
+			validEvent = true;
+		}
+
 
 		if( validEvent ){
 			printf(msgData);

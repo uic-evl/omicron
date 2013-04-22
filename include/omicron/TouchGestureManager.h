@@ -1,11 +1,11 @@
 /**************************************************************************************************
  * THE OMICRON PROJECT
  *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2012		Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2013		Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto		anishimoto42@gmail.com
  *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2011, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2013, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted 
  * provided that the following conditions are met:
@@ -56,6 +56,7 @@ namespace omicron {
 			//TouchGestureManager* parent;
 			Touch centerTouch;
 
+			bool remove;
 			int gestureFlag;
 			int ID;
 			float xPos;
@@ -88,6 +89,8 @@ namespace omicron {
 			int getTouchCount();
 			Touch getCenterTouch();
 			int getGestureFlag();
+			bool isRemovable();
+			void setRemove();
 	};
 
 	class TouchGestureManager

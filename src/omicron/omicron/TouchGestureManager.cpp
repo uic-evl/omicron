@@ -1,27 +1,29 @@
-/********************************************************************************************************************** 
-* THE OMICRON PROJECT
-*---------------------------------------------------------------------------------------------------------------------
-* Copyright 2010								Electronic Visualization Laboratory, University of Illinois at Chicago
-* Authors:										
-*  Arthur Nishimoto							anishimoto42@gmail.com
-*---------------------------------------------------------------------------------------------------------------------
-* Copyright (c) 2010, Electronic Visualization Laboratory, University of Illinois at Chicago
-* All rights reserved.
-* Redistribution and use in source and binary forms, with or without modification, are permitted provided that the 
-* following conditions are met:
-* 
-* Redistributions of source code must retain the above copyright notice, this list of conditions and the following 
-* disclaimer. Redistributions in binary form must reproduce the above copyright notice, this list of conditions 
-* and the following disclaimer in the documentation and/or other materials provided with the distribution. 
-* 
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, 
-* INCLUDING, BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
-* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE  GOODS OR 
-* SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
-* WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE 
-* USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*********************************************************************************************************************/
+/**************************************************************************************************
+ * THE OMICRON PROJECT
+ *-------------------------------------------------------------------------------------------------
+ * Copyright 2010-2013		Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Authors:										
+ *  Arthur Nishimoto		anishimoto42@gmail.com
+ *-------------------------------------------------------------------------------------------------
+ * Copyright (c) 2010-2013, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * All rights reserved.
+ * Redistribution and use in source and binary forms, with or without modification, are permitted 
+ * provided that the following conditions are met:
+ * 
+ * Redistributions of source code must retain the above copyright notice, this list of conditions 
+ * and the following disclaimer. Redistributions in binary form must reproduce the above copyright 
+ * notice, this list of conditions and the following disclaimer in the documentation and/or other 
+ * materials provided with the distribution. 
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR 
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
+ * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR 
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE  GOODS OR SERVICES; LOSS OF 
+ * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *************************************************************************************************/
 
 #include "omicron/TouchGestureManager.h"
 
@@ -29,6 +31,7 @@ using namespace omicron;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int touchGroupTimeout = 250; // Time since last update until touch group is automatically removed
+int doubleClickDelay = 100; // Milliseconds between the first and second click to trigger DoubleClick event
 
 // User Flags: Advanced Touch Gestures Flags
 const int GESTURE_SINGLE_TOUCH = -1;
@@ -49,6 +52,11 @@ TouchGroup::TouchGroup(int ID){
 
 	centerTouch.ID = ID;
 	gestureFlag = GESTURE_SINGLE_TOUCH;
+	remove = false;
+
+	timeb tb;
+	ftime( &tb );
+	lastUpdated = tb.millitm + (tb.time & 0xfffff) * 1000;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -76,7 +84,7 @@ bool TouchGroup::isInsideGroup( Event::Type eventType, float x, float y, int tou
 void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID ){
 	timeb tb;
 	ftime( &tb );
-	lastUpdated = tb.millitm + (tb.time & 0xfffff) * 1000;
+	int curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
 
 	if( eventType == Event::Up ){ // If up cleanup touch
 
@@ -88,6 +96,13 @@ void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID 
 	} else {
 		if( touchList.count( touchID ) == 0 ) // Add new touch
 		{ 
+			// Check for double click
+			if( curTime - lastUpdated > doubleClickDelay && touchList.size() == 0 )
+			{	
+				//ofmsg("TouchGroup %1% double click", %ID );
+				gestureFlag = Event::Click;
+			}
+
 			Touch t;
 			t.xPos = x;
 			t.yPos = y;
@@ -129,6 +144,10 @@ void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID 
 
 		centerTouch.xPos = xPos;
 		centerTouch.yPos = yPos;
+
+		timeb tb;
+		ftime( &tb );
+		lastUpdated = tb.millitm + (tb.time & 0xfffff) * 1000;
 	}
 }
 
@@ -172,6 +191,7 @@ void TouchGroup::process(){
 		touchList.clear();
 		idleTouchList.clear();
 		movingTouchList.clear();
+		remove = true;
 	}
 	//ofmsg("TouchGroup %1% size %2%", %ID %getTouchCount() );
 
@@ -201,6 +221,18 @@ Touch TouchGroup::getCenterTouch(){
 // Returns the gesture flag
 int TouchGroup::getGestureFlag(){
 	return gestureFlag;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Returns the remove flag
+bool TouchGroup::isRemovable(){
+	return remove;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Sets the remove flag
+void TouchGroup::setRemove(){
+	remove = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -245,7 +277,7 @@ void TouchGestureManager::poll()
 		tg->process();
 
 		// Add non-empty groups to the list (ignoring empty groups)
-		if( tg->getTouchCount() != 0 )
+		if( !tg->isRemovable() )
 		{
 			newTouchGroupList[tg->getID()] = tg;
 			
@@ -352,6 +384,9 @@ bool TouchGestureManager::addTouchGroup( Event::Type eventType, float xPos, floa
 			}
 
 			generatePQServiceEvent( Event::Move, tg->getCenterTouch(), tg->getGestureFlag() );
+
+			if( tg->getGestureFlag() == Event::Click ) // If double click, remove the group
+				tg->setRemove();
 
 			touchGroupListLock->unlock();
 			return true;

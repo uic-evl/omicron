@@ -66,6 +66,7 @@ namespace omicron {
 
 	public:
 		TcpConnection(const ConnectionInfo& ci);
+		virtual ~TcpConnection() {}
 
 		//! Connection properties
 		//@{

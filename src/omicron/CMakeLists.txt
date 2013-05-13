@@ -32,6 +32,8 @@ add_definitions(-DOMICRON_EXPORTING)
 ###################################################################################################
 # Source files
 SET( srcs 
+		omicron/AssetCacheManager.cpp
+		omicron/AssetCacheService.cpp
 		omicron/ByteArray.cpp
         omicron/osystem.cpp
 		omicron/Color.cpp
@@ -79,6 +81,8 @@ SET( csrcs
 # Headers
 SET( headers 
 		${CMAKE_SOURCE_DIR}/include/omicron.h
+		${CMAKE_SOURCE_DIR}/include/omicron/AssetCacheManager.h
+		${CMAKE_SOURCE_DIR}/include/omicron/AssetCacheService.h
 		${CMAKE_SOURCE_DIR}/include/omicron/ByteArray.h
         ${CMAKE_SOURCE_DIR}/include/omicron/osystem.h
         ${CMAKE_SOURCE_DIR}/include/omicron/otypes.h

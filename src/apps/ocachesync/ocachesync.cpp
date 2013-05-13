@@ -29,78 +29,38 @@
 using namespace omicron;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-void logEvent(const Event& e)
-{
-	ofmsg("EVENT service ID (%1%) source ID (%2%)", %e.getServiceId() %e.getSourceId() );
-	ofmsg("      pos(%1%)", %e.getPosition());
-	ofmsg("      extraDataItems(%1%)", %e.getExtraDataItems());
-	ofmsg("      extraDataMask(%1%)", %e.getExtraDataMask());
-	Vector3f speechData;
-	if( e.getServiceType() == Service::Pointer )
-	{
-		if( !e.isExtraDataNull(0) && !e.isExtraDataNull(1) )
-			ofmsg("      Pointer width (%1% %2%)", %e.getExtraDataFloat(0) %e.getExtraDataFloat(1));
-	}
-	if( e.getServiceType() == Service::Mocap )
-	{
-		for( int i = 0; i < e.getExtraDataItems(); i++ )
-		{
-			if( !e.isExtraDataNull(i) )
-				ofmsg("      Mocap extra data %2% (%1%)", %e.getExtraDataVector3(i) %i);
-			else
-				ofmsg("      Mocap extra data %1% (NULL)", %i);
-		}
-	}
-	if( e.getServiceType() == Service::Speech )
-	{
-		String speechString = e.getExtraDataString();
-		float speechAccuracy = e.getPosition().x();
-		float speechAngle = e.getPosition().y();
-		float angleAccuracy = e.getPosition().z();
-
-		ofmsg("Kinect Speech '%1%' ", %speechString.c_str());
-		ofmsg("   (%1% %2% %3%)", %speechAccuracy %speechAngle %angleAccuracy);
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char** argv)
 {
+	if(argc < 3)
+	{
+		printf("usage: ocachesync host:port cacheName [file]+");
+		return 0;
+	}
+
+	Vector<String> hp = StringUtils::split(argv[1], ":");
+	String host = hp[0];
+	int port = boost::lexical_cast<int>(hp[1]);
+
+	String cacheName = argv[2];
+	
+	int numFiles = argc - 3;
+
 	// Add a default filesystem data sources (used to retrieve configuration files and other resources)
 	DataManager* dm = DataManager::getInstance();
 	dm->addSource(new FilesystemDataSource("./"));
 	dm->addSource(new FilesystemDataSource(OMICRON_DATA_PATH));
 
-	// Load a configuration file for this application and setup the system manager.
-	// Read config file name from command line or use default one.
-	const char* cfgName = "eventlogger.cfg";
-	if(argc == 2) cfgName = argv[1];
-	Config* cfg = new Config(cfgName);
+	AssetCacheManager* acm = new AssetCacheManager();
+	acm->addCacheHost(host);
+	acm->setCachePort(port);
+	acm->setCacheName(cacheName);
 
-	// Start running services and listening to events.
-	ServiceManager* sm = new ServiceManager();
-	sm->setupAndStart(cfg);
+	for(int i = 0; i < numFiles; i++) acm->addFileToCacheList(argv[i + 3]);
 
-	omsg("eventlogger start logging events...");
-	while(true)
-	{
-		// Poll services for new events.
-		sm->poll(); 
+	acm->setVerbose(true);
+	acm->sync();
 
-		// Get available events
-		Event evts[OMICRON_MAX_EVENTS];
-		int av;
-		if(0 != (av = sm->getEvents(evts, ServiceManager::MaxEvents)))
-		{
-			for( int evtNum = 0; evtNum < av; evtNum++)
-			{
-				logEvent(evts[evtNum]);
-			}
-		}// if
-
-	}// while
-	
-	delete cfg;
+	return 0;
 }
 
 

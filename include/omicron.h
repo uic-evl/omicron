@@ -29,6 +29,8 @@
 
 #include "omicronConfig.h"
 #include "omicron/libconfig/ArgumentHelper.h"
+#include "omicron/AssetCacheManager.h"
+#include "omicron/AssetCacheService.h"
 #include "omicron/ByteArray.h"
 #include "omicron/Color.h"
 #include "omicron/Config.h"

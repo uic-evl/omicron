@@ -21,9 +21,11 @@
  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE 
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *********************************************************************************************************************/
-
+ *---------------------------------------------------------------------------------------------------------------------
+ * Provides a sound API to interface with a SuperCollider sound server.
+*********************************************************************************************************************/
 #include "omicron/SoundManager.h"
+#include "omicron/AssetCacheManager.h"
 
 using namespace omicron;
 using namespace oscpkt;
@@ -33,9 +35,11 @@ UdpSocket SoundManager::serverSocket;
 bool SoundManager::showDebug = false;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-SoundManager::SoundManager()
+SoundManager::SoundManager():
+	myAssetCacheEnabled(true)
 {
 	environment = new SoundEnvironment(this);
+	myAssetCacheManager = new AssetCacheManager();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -229,6 +233,16 @@ SoundManager* SoundEnvironment::getSoundManager()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Sound* SoundEnvironment::createSound(const String& soundName)
 {
+	// If the asset cache is enabled, copy local sound assets to the sound server
+	if(soundManager->isAssetCacheEnabled())
+	{
+		AssetCacheManager* acm = soundManager->getAssetCacheManager();
+		acm->setCacheName(assetDirectory);
+		acm->clearCacheFileList();
+		acm->addFileToCacheList(soundName);
+		acm->sync();
+	}
+
 	Sound* newSound = new Sound(soundName);
 	newSound->setSoundEnvironment(this);
 

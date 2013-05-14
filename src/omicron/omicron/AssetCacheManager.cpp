@@ -23,6 +23,9 @@
  * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *-------------------------------------------------------------------------------------------------
+ * The asset cache manager connects to a remote cache service and synchronizes a list of files
+ * with it.
  *************************************************************************************************/
 #include "omicron/AssetCacheManager.h"
 #include "omicron/Tcp.h"
@@ -49,15 +52,28 @@ public:
 
 		sendMessage("CHCS", (void*)cacheName.c_str(), cacheName.size());
 
-		// Ask for files
-		foreach(String file, myAssetCacheManager->myFileList)
+		// If we are not in overwrite mode, ask for files
+		if(!myAssetCacheManager->isForceOverwriteEnabled())
 		{
-			sendMessage("CHCA", (void*)file.c_str(), file.size());
+			foreach(String file, myAssetCacheManager->myFileList)
+			{
+				sendMessage("CHCA", (void*)file.c_str(), file.size());
+			}
+			// Tell the server we are done requesting files. The server will either reply 
+			// with a done message too if no cache sync is needed, or it will send us file
+			// requests for each file it is missing.
+			sendMessage("CHCD", NULL, 0);
 		}
-		// Tell the server we are done requesting files. The server will either reply 
-		// with a done message too if no cache sync is needed, or it will send us file
-		// requests for each file it is missing.
-		sendMessage("CHCD", NULL, 0);
+		else
+		{
+			omsg("Force push");
+			// If we are, just push files.
+			foreach(String file, myAssetCacheManager->myFileList)
+			{
+				sendFile(file.c_str());
+			}
+			sendMessage("CHCD", NULL, 0);
+		}
 	}
 
 	virtual void handleData()
@@ -67,7 +83,7 @@ public:
 		read((byte*)myBuffer, 4);
 		memcpy(header, myBuffer, 4);
 
-		ofmsg("DATA: %1%%2%%3%%4%", %myBuffer[0] %myBuffer[1] %myBuffer[2] %myBuffer[3]);
+		//ofmsg("DATA: %1%%2%%3%%4%", %myBuffer[0] %myBuffer[1] %myBuffer[2] %myBuffer[3]);
 
 		// Read data length.
 		int dataSize;
@@ -92,46 +108,7 @@ public:
 			// Send file name
 			sendMessage("CHCP", (void*)myBuffer, strlen(myBuffer));
 
-			unsigned int datasize = 0;
-			
-			// Send file data.
-			String fullPath;
-			if(DataManager::findFile(myBuffer, fullPath))
-			{
-				// Get the file size.
-				FILE* f = fopen(fullPath.c_str(), "rb");
-				fseek(f, 0, SEEK_END);
-				unsigned int sz = ftell(f);
-				fclose(f);
-				
-				ofmsg("Sending file size: %1% bytes", %sz);
-				write(&sz, sizeof(unsigned int));
-
-				const unsigned int buff_size = 16384; //size of the send buffer
-
-				FILE* file = fopen(fullPath.c_str(), "rb");
-				//std::fstream file(fullPath); //we open this file
-
-				char* buff = new char[buff_size]; //creating the buffer
-				unsigned int count = 0; //counter
-				while( !feof(file) ) 
-				{ 
-					memset(buff,0,buff_size); //cleanup the buffer
-					size_t len = fread(buff, 1, buff_size, file);
-					write(buff,len);
-					count+=len; //increment counter
-				}
-
-				ofmsg("Sent bytes: %1%", %count);
-
-				fclose(file); //close file
-				delete(buff);  //delete buffer
-			}
-			else
-			{
-				ofwarn("File not found! %1%", %myBuffer);
-				write(&datasize, sizeof(unsigned int));
-			}
+			sendFile(myBuffer);
 		}
 	}
 
@@ -150,13 +127,45 @@ public:
 
 	void sendFile(const char* filename)
 	{
-		char fakeData[] = "Hello Data";
-		int filenamesize = strlen(filename) + 1;
-		int datasize = strlen(fakeData) + 1;
-		write((void*)"CHCP", 4);
-		write(&datasize, sizeof(int));
-		write(filename);
-		write(fakeData, datasize);
+		unsigned int datasize = 0;
+		// Send file data.
+		String fullPath;
+		if(DataManager::findFile(filename, fullPath))
+		{
+			// Get the file size.
+			FILE* f = fopen(fullPath.c_str(), "rb");
+			fseek(f, 0, SEEK_END);
+			unsigned int sz = ftell(f);
+			fclose(f);
+				
+			ofmsg("Sending file size: %1% bytes", %sz);
+			write(&sz, sizeof(unsigned int));
+
+			const unsigned int buff_size = 16384; //size of the send buffer
+
+			FILE* file = fopen(fullPath.c_str(), "rb");
+			//std::fstream file(fullPath); //we open this file
+
+			char* buff = new char[buff_size]; //creating the buffer
+			unsigned int count = 0; //counter
+			while( !feof(file) ) 
+			{ 
+				memset(buff,0,buff_size); //cleanup the buffer
+				size_t len = fread(buff, 1, buff_size, file);
+				write(buff,len);
+				count+=len; //increment counter
+			}
+
+			ofmsg("Sent bytes: %1%", %count);
+
+			fclose(file); //close file
+			delete(buff);  //delete buffer
+		}
+		else
+		{
+			ofwarn("File not found! %1%", %myBuffer);
+			write(&datasize, sizeof(unsigned int));
+		}
 	}
 
 	bool done;
@@ -196,7 +205,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 AssetCacheManager::AssetCacheManager():
-	myCachePort(8090), myCacheName("defaultCache"), mySynching(false), myVerbose(false)
+	myCachePort(8090), myCacheName("defaultCache"), mySynching(false), myVerbose(false), myForceOverwrite(false)
 {
 	myThread = new CacheSyncThread(this);
 }

@@ -23,6 +23,9 @@
  * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *-------------------------------------------------------------------------------------------------
+ * The asset cache manager connects to a remote cache service and synchronizes a list of files
+ * with it.
  *************************************************************************************************/
 #ifndef __ASSET_CACHE_MANAGER__
 #define __ASSET_CACHE_MANAGER__
@@ -35,6 +38,8 @@ namespace omicron {
 	class CacheConnection;
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////
+	//! The asset cache manager connects to a remote cache service and synchronizes a list of files
+	//! with it.
 	class OMICRON_API AssetCacheManager: public ReferenceType
 	{
 	public:
@@ -45,22 +50,41 @@ namespace omicron {
 		AssetCacheManager();
 		virtual ~AssetCacheManager();
 
+		//! Set the name of the cache handled by this manager.
+		//! Must be done before starting a sync.
 		void setCacheName(const String& value) { myCacheName = value; }
 		String cacheName() { return myCacheName; }
 
+		//! Sets the hostname of the machine running the cache service
+		//! Must be done before starting a sync.
 		void addCacheHost(const String&);
 		void clearCacheHosts();
 
+		//! Sets the listening port of the cache service.
+		//! Must be done before starting a sync.
 		void setCachePort(uint value) { myCachePort = value; }
 		uint getCachePort() { return myCachePort; } 
 
+		//! Add a file name to the list of files that need to be synchronized.
+		//! Must be done before starting a sync.
 		void addFileToCacheList(const String& file);
 		void clearCacheFileList();
-		
+
+		//! When set to true, forces overwriting of files in the cache. Useful for
+		//! replacing cache contents.
+		//! Must be done before starting a sync.
+		void setForceOverwrite(bool value) { myForceOverwrite = true; }
+		bool isForceOverwriteEnabled() { return myForceOverwrite; }
+
+		//! Start synching.
+		//! This is a blocking call. It will not return until synching is done.
 		void sync();
+		//! Start synching. This call is nonblocking and will return immediately.
+		//! Use isSynching to check for completion.
 		void startSync();
 		bool isSynching() { return mySynching; }
 
+		//! When set to true, output detailed messages about synching.
 		void setVerbose(bool value) { myVerbose = value; }
 		bool isVerbose() { return myVerbose; }
 
@@ -74,6 +98,7 @@ namespace omicron {
 
 		List<String> myFileList;
 		bool mySynching;
+		bool myForceOverwrite;
 		bool myVerbose;
 	};
 }; // namespace omicron

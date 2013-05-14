@@ -23,6 +23,9 @@
  * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *-------------------------------------------------------------------------------------------------
+ * The asset cache service manages a set of caches. A cache is a group of files that can be updated
+ * by a remote asset cache manager. 
  *************************************************************************************************/
 #ifndef __ASSSET_CACHE_SERVICE_H__
 #define __ASSSET_CACHE_SERVICE_H__
@@ -34,6 +37,8 @@ namespace omicron {
 	class AssetCacheService;
     
 	///////////////////////////////////////////////////////////////////////////////////////////////////
+	//! Represents a connection between the cache service and a remote cache manager. The connection
+	//! is used to check what files are in the cache, and to send updated / missing files to the cache.
 	class OMICRON_API AssetCacheConnection: public TcpConnection
 	{
 	public:
@@ -56,6 +61,10 @@ namespace omicron {
 	};
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////
+	//! The asset cache service manages a set of caches. 
+	//! A cache is a group of files that can be updated by a remote asset cache manager. 
+	//! The asset cache is used to synchronize files between machines: for instance, the head node on 
+	//! a cluster can use it to send sound assets to a sound server.
 	class OMICRON_API AssetCacheService: public TcpServer
 	{
 	public:
@@ -70,6 +79,8 @@ namespace omicron {
 		virtual TcpConnection* createConnection(const ConnectionInfo& ci);
 		void closeConnection(AssetCacheConnection* conn);
 
+		//! Sets the cache root. The cache root directory contains one subdirectory for each cache managed
+		//! by the service.
 		void setCacheRoot(const String& value) { myCacheRoot = value; }
 		String getCacheRoot() { return myCacheRoot; }
 

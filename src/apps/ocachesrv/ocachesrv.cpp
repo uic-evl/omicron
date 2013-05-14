@@ -23,6 +23,9 @@
  * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *-------------------------------------------------------------------------------------------------
+ * ocachesrv - a standalone cache server. Can be used to synchronize remote files through 
+ * ocachesync or by using the AssetCacheManager API.
  *************************************************************************************************/
 #include <omicron.h>
 
@@ -40,6 +43,12 @@ int main(int argc, char** argv)
 	ServiceManager* sm = new ServiceManager();
 
 	AssetCacheService* cacheService = new AssetCacheService();
+
+	if(argc > 1)
+	{
+		cacheService->setCacheRoot(argv[1]);
+	}
+
 
 	sm->addService(cacheService);
 	sm->initialize();

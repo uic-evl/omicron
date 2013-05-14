@@ -23,6 +23,9 @@
  * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *-------------------------------------------------------------------------------------------------
+ * The asset cache service manages a set of caches. A cache is a group of files that can be updated
+ * by a remote asset cache manager. 
  *************************************************************************************************/
 #include "omicron/AssetCacheService.h"
 #include "omicron/StringUtils.h"
@@ -56,13 +59,9 @@ void AssetCacheConnection::handleData()
     read((byte*)myBuffer, 4);
 	memcpy(&dataSize, myBuffer, 4);
 
- //   // Read data.
- //   read((byte*)myBuffer, dataSize);
-	//myBuffer[dataSize] = '\0';
-
+	// CHCS - set the name of the cache we are managing
 	if(!strncmp(header, "CHCS", 4)) 
 	{
-		//script command message
 		String command(myBuffer);
 
 		read((byte*)myBuffer, dataSize);
@@ -71,11 +70,12 @@ void AssetCacheConnection::handleData()
 		myCacheName = myBuffer;
 		ofmsg("AssetCacheConnection: cache name set to %1%", %myCacheName);
 	}
+	// CHCA: check if a file exists in the local cache. If not, the connection
+	// will request it from the remote cache manager.
 	if(!strncmp(header, "CHCA", 4)) 
 	{
-		//script command message
+		// Get the file name.
 		String command(myBuffer);
-
 		read((byte*)myBuffer, dataSize);
 		myBuffer[dataSize] = '\0';
 
@@ -93,9 +93,9 @@ void AssetCacheConnection::handleData()
 			myQueuedFiles.push_back(myBuffer);
 		}
 	}
+	// CHCD: The client is done adding files. If we have no files in our request queue, tell the client we are done.
 	if(!strncmp(header, "CHCD", 4)) 
 	{
-		// The client is done adding files. If we have no files in our request queue, tell the client we are done.
 		if(myQueuedFiles.size() == 0)
 		{
 			sendMessage("CHCD", NULL, 0);
@@ -106,27 +106,30 @@ void AssetCacheConnection::handleData()
 			omsg("Waiting to finish file transfer...");
 		}
 	}
+	// CHCP: we are receiving a stream with file data.
 	if(!strncmp(header, "CHCP", 4)) 
 	{
-		// File data received.
-		//script command message
+		// Get the file name
 		String command(myBuffer);
-
 		read((byte*)myBuffer, dataSize);
 		myBuffer[dataSize] = '\0';
-		ofmsg("Receiving file %1%", %myBuffer);
 
-		unsigned int fileSize = 0; 
-		read((omicron::byte*)&fileSize, sizeof(unsigned int));
+		ofmsg("Receiving file %1%", %myBuffer);
 
 		String fileName = myServer->getCacheRoot() + myCacheName + "/" + myBuffer;
 
-		const unsigned int buff_size = 65536; //the size of the read buffer
+		// Get the file size
+		unsigned int fileSize = 0; 
+		read((omicron::byte*)&fileSize, sizeof(unsigned int));
+
+		// The size of the read buffer
+		const unsigned int buff_size = 65536; 
 		char* buff = new char[buff_size];
 
 		FILE* f = fopen(fileName.c_str(), "wb");
 
-		unsigned int count = 0; //a counter
+		// Read the file in blocks.
+		unsigned int count = 0; 
 		while(count < fileSize)
 		{ 
 			unsigned int nextBlock = buff_size;
@@ -142,9 +145,10 @@ void AssetCacheConnection::handleData()
 			fwrite(buff, 1, len, f);
 		}
 
+		// Done! Close the file and remove it from the request queue.
 		fclose(f);
-
 		myQueuedFiles.remove(myBuffer);
+
 		// The client is done adding files. If we have no files in our request queue, tell the client we are done.
 		if(myQueuedFiles.size() == 0)
 		{
@@ -158,7 +162,6 @@ void AssetCacheConnection::handleData()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void AssetCacheConnection::handleClosed()
 {
-    //ofmsg("Mission control connection closed (id=%1%)", %getConnectionInfo().id);
 	myServer->closeConnection(this);
 }
         
@@ -166,8 +169,6 @@ void AssetCacheConnection::handleClosed()
 void AssetCacheConnection::handleConnected()
 {
 	TcpConnection::handleConnected();
-
-    //ofmsg("Mission control connection open (id=%1%)", %getConnectionInfo().id);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

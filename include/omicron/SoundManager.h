@@ -21,6 +21,8 @@
  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE 
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *---------------------------------------------------------------------------------------------------------------------
+ * Provides a sound API to interface with a SuperCollider sound server.
  *********************************************************************************************************************/
 #ifndef __SOUND__MANAGER_H__
 #define __SOUND__MANAGER_H__
@@ -40,6 +42,7 @@ namespace omicron
 class SoundManager;
 class Sound;
 class SoundInstance;
+class AssetCacheManager;
 
 class OMICRON_API SoundEnvironment: public ReferenceType
 {
@@ -142,8 +145,19 @@ public:
 	void showDebugInfo(bool);
 	bool isDebugEnabled();
 	void wait(float);
+
+	//! Asset cache management
+	//@{
+	void setAssetCacheEnabled(bool value) { myAssetCacheEnabled = value; }
+	bool isAssetCacheEnabled() { return myAssetCacheEnabled; }
+	AssetCacheManager* getAssetCacheManager() { return myAssetCacheManager; }
+	//@}
+
 private:
 	SoundEnvironment* environment;
+	bool myAssetCacheEnabled;
+	AssetCacheManager* myAssetCacheManager;
+
 	static UdpSocket serverSocket;
 	static bool showDebug;
 };// SoundManager

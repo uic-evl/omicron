@@ -36,7 +36,7 @@ bool SoundManager::showDebug = false;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 SoundManager::SoundManager():
-	myAssetCacheEnabled(true)
+	myAssetCacheEnabled(false)
 {
 	environment = new SoundEnvironment(this);
 	myAssetCacheManager = new AssetCacheManager();
@@ -234,14 +234,14 @@ SoundManager* SoundEnvironment::getSoundManager()
 Sound* SoundEnvironment::createSound(const String& soundName)
 {
 	// If the asset cache is enabled, copy local sound assets to the sound server
-	if(soundManager->isAssetCacheEnabled())
-	{
-		AssetCacheManager* acm = soundManager->getAssetCacheManager();
-		acm->setCacheName(assetDirectory);
-		acm->clearCacheFileList();
-		acm->addFileToCacheList(soundName);
-		acm->sync();
-	}
+	// if(soundManager->isAssetCacheEnabled())
+	// {
+		// AssetCacheManager* acm = soundManager->getAssetCacheManager();
+		// acm->setCacheName(assetDirectory);
+		// acm->clearCacheFileList();
+		// acm->addFileToCacheList(soundName);
+		// acm->sync();
+	// }
 
 	Sound* newSound = new Sound(soundName);
 	newSound->setSoundEnvironment(this);

@@ -52,9 +52,11 @@ SoundManager::~SoundManager()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-SoundManager::SoundManager(const String& serverIP, int serverPort)
+SoundManager::SoundManager(const String& serverIP, int serverPort):
+	myAssetCacheEnabled(false)
 {
 	environment = new SoundEnvironment(this);
+	myAssetCacheManager = new AssetCacheManager();
 	connectToServer(serverIP, serverPort);
 }
 

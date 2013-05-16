@@ -118,9 +118,9 @@ namespace omicron {
 		//! Writes a buffer to the connection stream.
 		void write(void* data, size_t size);
 		//! Synchronously read byte data until the specified delimiter is found or the buffer fills up.
-		size_t readUntil(char* buffer, size_t size, char delimiter = '\0');
+		size_t readUntil(void* buffer, size_t size, char delimiter = '\0');
 		//! Synchronously read thre specified number of bytes from the stream.
-		size_t read(byte* buffer, size_t size);
+		size_t read(void* buffer, size_t size);
 		//! Returns the number of bytes available to be read.
 		size_t availableBytes() { return mySocket.available(); }
 		//@}

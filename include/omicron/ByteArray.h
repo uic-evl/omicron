@@ -37,15 +37,15 @@ namespace omicron {
 		ByteArray(size_t size);
 		virtual ~ByteArray();
 
-		void copyFrom(byte* src, size_t size);
-		void copyTo(byte* dst, size_t size);
+		void copyFrom(void* src, size_t size);
+		void copyTo(void* dst, size_t size);
 
-		byte* getData() { return myData; }
+		void* getData() { return myData; }
 
 		size_t getSize() { return mySize; }
 
 	private:
-		byte* myData;
+		void* myData;
 		size_t mySize;
 	};
 };

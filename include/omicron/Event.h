@@ -160,7 +160,7 @@ namespace omicron
 		ExtraDataType myExtraDataType;
 		int myExtraDataItems;
 		int myExtraDataValidMask;
-		byte myExtraData[ExtraDataSize];
+		char myExtraData[ExtraDataSize];
 	};
 
 	///////////////////////////////////////////////////////////////////////////////////////////////

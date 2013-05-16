@@ -80,18 +80,18 @@ public:
 	{
 		// Read message header.
 		char header[4];
-		read((byte*)myBuffer, 4);
+		read(myBuffer, 4);
 		memcpy(header, myBuffer, 4);
 
 		//ofmsg("DATA: %1%%2%%3%%4%", %myBuffer[0] %myBuffer[1] %myBuffer[2] %myBuffer[3]);
 
 		// Read data length.
 		int dataSize;
-		read((byte*)myBuffer, 4);
+		read(myBuffer, 4);
 		memcpy(&dataSize, myBuffer, 4);
 
 		// Read data.
-		read((byte*)myBuffer, dataSize);
+		read(myBuffer, dataSize);
 		myBuffer[dataSize] = '\0';
 
 		if(!strncmp(header, "CHCD", 4)) 

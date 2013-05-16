@@ -51,12 +51,12 @@ void AssetCacheConnection::handleData()
 {
     // Read message header.
 	char header[4];
-    read((byte*)myBuffer, 4);
+    read(myBuffer, 4);
 	memcpy(header, myBuffer, 4);
 
     // Read data length.
 	int dataSize;
-    read((byte*)myBuffer, 4);
+    read(myBuffer, 4);
 	memcpy(&dataSize, myBuffer, 4);
 
 	// CHCS - set the name of the cache we are managing
@@ -64,7 +64,7 @@ void AssetCacheConnection::handleData()
 	{
 		String command(myBuffer);
 
-		read((byte*)myBuffer, dataSize);
+		read(myBuffer, dataSize);
 		myBuffer[dataSize] = '\0';
 
 		myCacheName = myBuffer;
@@ -76,7 +76,7 @@ void AssetCacheConnection::handleData()
 	{
 		// Get the file name.
 		String command(myBuffer);
-		read((byte*)myBuffer, dataSize);
+		read(myBuffer, dataSize);
 		myBuffer[dataSize] = '\0';
 
 		String fileName = myServer->getCacheRoot() + myCacheName + "/" + myBuffer;
@@ -111,7 +111,7 @@ void AssetCacheConnection::handleData()
 	{
 		// Get the file name
 		String command(myBuffer);
-		read((byte*)myBuffer, dataSize);
+		read(myBuffer, dataSize);
 		myBuffer[dataSize] = '\0';
 
 		ofmsg("Receiving file %1%", %myBuffer);
@@ -120,7 +120,7 @@ void AssetCacheConnection::handleData()
 
 		// Get the file size
 		unsigned int fileSize = 0; 
-		read((omicron::byte*)&fileSize, sizeof(unsigned int));
+		read(&fileSize, sizeof(unsigned int));
 
 		// The size of the read buffer
 		const unsigned int buff_size = 65536; 
@@ -134,7 +134,7 @@ void AssetCacheConnection::handleData()
 		{ 
 			unsigned int nextBlock = buff_size;
 			if(count + nextBlock > fileSize) nextBlock = fileSize - count;
-			size_t len = read((omicron::byte*)buff, nextBlock);
+			size_t len = read(buff, nextBlock);
 			if(len == 0)
 			{
 				ofwarn("Error reading file %1%, skipping.", %fileName);

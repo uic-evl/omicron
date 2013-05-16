@@ -32,7 +32,7 @@ using namespace omicron;
 ByteArray::ByteArray(size_t size):
 	mySize(size)
 {
-	myData = (byte*)malloc(size);
+	myData = malloc(size);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -43,14 +43,14 @@ ByteArray::~ByteArray()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-void ByteArray::copyFrom(byte* src, size_t size)
+void ByteArray::copyFrom(void* src, size_t size)
 {
 	size_t actualSize = size < mySize ? size : mySize;
 	memcpy(myData, src, actualSize);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-void ByteArray::copyTo(byte* dst, size_t size)
+void ByteArray::copyTo(void* dst, size_t size)
 {
 	memcpy(dst, myData, size);
 }

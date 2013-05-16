@@ -234,7 +234,7 @@ void TcpConnection::write(void* data, size_t size)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-size_t TcpConnection::readUntil(char* buffer, size_t size, char delimiter)
+size_t TcpConnection::readUntil(void* buffer, size_t size, char delimiter)
 {
 	if(mySocket.is_open())
 	{
@@ -244,7 +244,7 @@ size_t TcpConnection::readUntil(char* buffer, size_t size, char delimiter)
 		{
 			if(bufsize > size - 1) bufsize = size;
 			myInputBuffer.sgetn((char*)buffer, bufsize);
-			buffer[bufsize] = '\0';
+			((char*)buffer)[bufsize] = '\0';
 			return bufsize;
 		}
 		else
@@ -257,7 +257,7 @@ size_t TcpConnection::readUntil(char* buffer, size_t size, char delimiter)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-size_t TcpConnection::read(byte* buffer, size_t size)
+size_t TcpConnection::read(void* buffer, size_t size)
 {
 	if(mySocket.is_open())
 	{

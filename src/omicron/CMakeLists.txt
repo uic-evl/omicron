@@ -36,7 +36,6 @@ SET( srcs
 		omicron/AssetCacheService.cpp
 		omicron/ByteArray.cpp
         omicron/osystem.cpp
-		omicron/Color.cpp
 		omicron/Config.cpp
 		omicron/Lock.cpp
 		omicron/Math.cpp
@@ -86,7 +85,6 @@ SET( headers
 		${CMAKE_SOURCE_DIR}/include/omicron/ByteArray.h
         ${CMAKE_SOURCE_DIR}/include/omicron/osystem.h
         ${CMAKE_SOURCE_DIR}/include/omicron/otypes.h
-        ${CMAKE_SOURCE_DIR}/include/omicron/Color.h
         ${CMAKE_SOURCE_DIR}/include/omicron/Config.h
         ${CMAKE_SOURCE_DIR}/include/omicron/Event.h
         ${CMAKE_SOURCE_DIR}/include/omicron/HttpRequest.h

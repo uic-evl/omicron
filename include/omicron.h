@@ -32,7 +32,6 @@
 #include "omicron/AssetCacheManager.h"
 #include "omicron/AssetCacheService.h"
 #include "omicron/ByteArray.h"
-#include "omicron/Color.h"
 #include "omicron/Config.h"
 #include "omicron/DataManager.h"
 #include "omicron/Event.h"

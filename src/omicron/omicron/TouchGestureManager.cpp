@@ -26,6 +26,7 @@
  *************************************************************************************************/
 
 #include "omicron/TouchGestureManager.h"
+#include "omicron/StringUtils.h"
 
 using namespace omicron;
 

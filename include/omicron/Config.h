@@ -28,7 +28,6 @@
 #define __CONFIG_H__
 
 #include "osystem.h"
-#include "omicron/Color.h"
 
 namespace omicron
 {
@@ -47,7 +46,6 @@ public:
 	static Vector2f getVector2fValue(const String& name, const Setting& s, const Vector2f& defaultValue = Vector2f::Zero());
 	static Vector2i getVector2iValue(const String& name, const Setting& s, const Vector2i& defaultValue = Vector2i::Zero());
 	static String getStringValue(const String& name, const Setting& s, const String& defaultValue = "");
-	static Color getColorValue(const String& name, const Setting& s, const Color& defaultValue = Color(1, 1, 1, 1));
 
 public:
 	Config(const String& filename);

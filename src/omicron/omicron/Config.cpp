@@ -283,16 +283,3 @@ Vector2i Config::getVector2iValue(const String& name, const Setting& s, const Ve
 	value[1] = getIntValue(1, sv, defaultValue[1]);
 	return value;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-Color Config::getColorValue(const String& name, const Setting& s, const Color& defaultValue)
-{
-	if(!s.exists(name)) return defaultValue;
-	Setting& sv = s[name];
-	Color value;
-	value[0] = getFloatValue(0, sv, defaultValue[0]);
-	value[1] = getFloatValue(1, sv, defaultValue[1]);
-	value[2] = getFloatValue(2, sv, defaultValue[2]);
-	value[3] = getFloatValue(3, sv, defaultValue[3]);
-	return value;
-}

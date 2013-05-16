@@ -24,6 +24,7 @@
  *********************************************************************************************************************/
 
 #include "omicron/ThinkGearService.h"
+#include "omicron/StringUtils.h"
 
 using namespace omicron;
 

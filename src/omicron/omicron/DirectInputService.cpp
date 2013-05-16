@@ -23,6 +23,7 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************************************************************/
 #include "omicron/DirectInputService.h"
+#include "omicron/StringUtils.h"
 
 using namespace omicron;
 

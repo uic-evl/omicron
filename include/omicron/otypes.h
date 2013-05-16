@@ -79,7 +79,7 @@ namespace boost { template<class Ch, class Tr, class Alloc> class basic_format; 
 namespace omicron
 {
 	// Basic typedefs
-	//typedef unsigned char byte;
+	typedef unsigned char byte;
 	#ifndef OMICRON_OS_LINUX 
 	typedef unsigned int uint;
 	#endif

@@ -52,9 +52,11 @@ int main(int argc, char** argv)
 	{
 		// If we have no cache root argument, look for a config file containing it.
 		String cfgPath;
+		omsg("Opening ocachesrv.cfg");
 		if(DataManager::findFile("ocachesrv.cfg", cfgPath))
 		{
 			Ref<Config> cfg = new Config(cfgPath);
+			cfg->load();
 			if(cfg->isLoaded())
 			{
 				if(cfg->exists("config/cacheRoot"))
@@ -63,7 +65,15 @@ int main(int argc, char** argv)
 					cacheService->setCacheRoot(cacheRoot);
 					ofmsg("Cache root set to: %1%", %cacheRoot);
 				}
+				else
+				{
+					owarn("ocachesrv.cfg: could not find 'config/cacheRoot'");
+				}
 			}
+		}
+		else
+		{
+			owarn("Could not open ocachesrv");
 		}
 	}
 

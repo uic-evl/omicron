@@ -48,6 +48,24 @@ int main(int argc, char** argv)
 	{
 		cacheService->setCacheRoot(argv[1]);
 	}
+	else
+	{
+		// If we have no cache root argument, look for a config file containing it.
+		String cfgPath;
+		if(DataManager::findFile("ocachesrv.cfg", cfgPath))
+		{
+			Config cfg = Config(cfgPath);
+			if(cfg.isLoaded())
+			{
+				if(cfg.exists("config/cacheRoot"))
+				{
+					String cacheRoot = cfg.lookup("config/cacheRoot");
+					cacheService->setCacheRoot(cacheRoot);
+					ofmsg("Cache root set to: %1%", %cacheRoot);
+				}
+			}
+		}
+	}
 
 
 	sm->addService(cacheService);

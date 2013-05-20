@@ -28,7 +28,7 @@
 #include "omicron/DataManager.h"
 #include "omicron/FilesystemDataSource.h"
 #include "omicron/StringUtils.h"
-#include "omicron/Lock.h"
+#include "omicron/Thread.h"
 
 #ifdef WIN32
 #include <windows.h> // needed for Sleep 

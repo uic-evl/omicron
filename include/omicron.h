@@ -39,7 +39,7 @@
 #include "omicron/FilesystemDataSource.h"
 #include "omicron/IEventListener.h"
 #include "omicron/PointSetId.h"
-#include "omicron/Lock.h"
+#include "omicron/Thread.h"
 #include "omicron/Service.h"
 #include "omicron/ServiceManager.h"
 #include "omicron/StringUtils.h"

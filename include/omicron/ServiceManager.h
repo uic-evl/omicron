@@ -30,7 +30,7 @@
 #include "Event.h"
 #include "Config.h"
 #include "Event.h"
-#include "Lock.h"
+#include "Thread.h"
 
 // Preprocessor macro, bleah.. Forced to use this instead of static constant as a quick workaround 
 // to a gcc 4.2 build error. Think of a better solution in the future.

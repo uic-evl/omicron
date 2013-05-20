@@ -31,7 +31,7 @@
 #define __ASSET_CACHE_MANAGER__
 
 #include "omicron/osystem.h"
-#include "omicron/Lock.h"
+#include "omicron/Thread.h"
 
 namespace omicron {
 	class CacheSyncThread;

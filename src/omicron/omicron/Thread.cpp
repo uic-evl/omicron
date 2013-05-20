@@ -23,8 +23,11 @@
  * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *-------------------------------------------------------------------------------------------------
+ * Exposes a few small wrapper classes around tinythreads, that implement basic multithreading 
+ * support.
  *************************************************************************************************/
-#include "omicron/Lock.h"
+#include "omicron/Thread.h"
 
 #include "tinythread/tinythread.h"
 
@@ -79,6 +82,10 @@ void Thread::start()
 	{
 		myThreadImpl = new tthread::thread(threadProcWrapper, this);
 	}
+	else
+	{
+		omsg("Thread::start: thread already running");
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -87,5 +94,7 @@ void Thread::stop()
 	if(myThreadImpl != NULL)
 	{
 		myThreadImpl->join();
+		delete myThreadImpl;
+		myThreadImpl = NULL;
 	}
 }

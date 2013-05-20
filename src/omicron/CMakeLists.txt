@@ -37,7 +37,6 @@ SET( srcs
 		omicron/ByteArray.cpp
         omicron/osystem.cpp
 		omicron/Config.cpp
-		omicron/Lock.cpp
 		omicron/Math.cpp
 		omicron/ServiceManager.cpp
 		omicron/Service.cpp
@@ -47,6 +46,7 @@ SET( srcs
 		omicron/FileDataStream.cpp
 		omicron/FilesystemDataSource.cpp
 		omicron/Tcp.cpp
+		omicron/Thread.cpp
 		omicron/WandService.cpp
 		omicron/SagePointerService.cpp
 		omicron/Timer.cpp
@@ -89,7 +89,6 @@ SET( headers
         ${CMAKE_SOURCE_DIR}/include/omicron/Event.h
         ${CMAKE_SOURCE_DIR}/include/omicron/HttpRequest.h
         ${CMAKE_SOURCE_DIR}/include/omicron/IEventListener.h
-        ${CMAKE_SOURCE_DIR}/include/omicron/Lock.h
         ${CMAKE_SOURCE_DIR}/include/omicron/ServiceManager.h
         ${CMAKE_SOURCE_DIR}/include/omicron/Service.h
         ${CMAKE_SOURCE_DIR}/include/omicron/HeartbeatService.h
@@ -98,6 +97,7 @@ SET( headers
         ${CMAKE_SOURCE_DIR}/include/omicron/FilesystemDataSource.h
         ${CMAKE_SOURCE_DIR}/include/omicron/FileDataStream.h
 		${CMAKE_SOURCE_DIR}/include/omicron/Tcp.h
+        ${CMAKE_SOURCE_DIR}/include/omicron/Thread.h
         ${CMAKE_SOURCE_DIR}/include/omicron/WandService.h
         ${CMAKE_SOURCE_DIR}/include/omicron/SagePointerService.h
         ${CMAKE_SOURCE_DIR}/include/omicron/Timer.h

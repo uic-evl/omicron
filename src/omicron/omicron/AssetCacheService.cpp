@@ -69,6 +69,9 @@ void AssetCacheConnection::handleData()
 
 		myCacheName = myBuffer;
 		ofmsg("AssetCacheConnection: cache name set to %1%", %myCacheName);
+
+		// Make sure the cache path exists.
+		DataManager::createPath(myServer->getCacheRoot() + myCacheName);
 	}
 	// CHCA: check if a file exists in the local cache. If not, the connection
 	// will request it from the remote cache manager.

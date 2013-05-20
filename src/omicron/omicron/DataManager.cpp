@@ -23,11 +23,20 @@
  * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *-------------------------------------------------------------------------------------------------
+ * Utility classes to deal with data loading, files and directories
  *************************************************************************************************/
 #include "omicron/DataManager.h"
 #include "omicron/FilesystemDataSource.h"
+#include "omicron/StringUtils.h"
 
 #include <fstream>
+
+#ifdef WIN32
+#include "direct.h"
+#else
+#include "sys/stat.h"
+#endif
 
 using namespace omicron;
 
@@ -53,6 +62,25 @@ bool DataManager::findFile(const String& name, String& outPath)
 		return true;
 	}
 	return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+bool DataManager::createPath(const String& path)
+{
+	Vector<String> args = StringUtils::split(path, "/");
+	String curPath = "";
+	// Keep initial slash for absolute paths.
+	if(path[0] == '/') curPath = "/";
+	foreach(String dir, args)
+	{
+		curPath += dir + "/";
+#ifdef WIN32
+		_mkdir(curPath.c_str());
+#else
+		mkdir(curPath.c_str(), S_IRUSR | S_IWUSR | S_I_ROTH);
+#endif
+	}
+	return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

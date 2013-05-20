@@ -23,6 +23,8 @@
  * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *-------------------------------------------------------------------------------------------------
+ * Utility classes to deal with data loading, files and directories
  *************************************************************************************************/
 #ifndef __DATA_MANAGER_H__
 #define __DATA_MANAGER_H__
@@ -119,6 +121,13 @@ namespace omicron
 
 		//! Utility method for reading a text file
 		static String readTextFile(const String& name);
+
+		//! Utility method for creating a path.
+		//! This method makes sure every directory name in the specified path exists. Every entry in the
+		//! path is considered a directory name, so if the path points to a file name, remove the file name
+		//! before calling this method.
+		//! @return true if the path has been created successfully.
+		static bool createPath(const String& path);
 
 	public:
 		//! Data sources

@@ -54,12 +54,12 @@ int main(int argc, char** argv)
 		String cfgPath;
 		if(DataManager::findFile("ocachesrv.cfg", cfgPath))
 		{
-			Config cfg = Config(cfgPath);
-			if(cfg.isLoaded())
+			Ref<Config> cfg = new Config(cfgPath);
+			if(cfg->isLoaded())
 			{
-				if(cfg.exists("config/cacheRoot"))
+				if(cfg->exists("config/cacheRoot"))
 				{
-					String cacheRoot = cfg.lookup("config/cacheRoot");
+					String cacheRoot = cfg->lookup("config/cacheRoot");
 					cacheService->setCacheRoot(cacheRoot);
 					ofmsg("Cache root set to: %1%", %cacheRoot);
 				}

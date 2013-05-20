@@ -59,6 +59,7 @@ int main(int argc, char** argv)
 	while(true)
 	{
 		sm->poll(); 
+		osleep(10);
 	}
 	sm->stop();
 }

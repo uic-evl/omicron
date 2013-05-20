@@ -78,13 +78,12 @@ Thread::~Thread()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void Thread::start()
 {
+	// Make sure the thread is not running already.
+	stop();
+
 	if(myThreadImpl == NULL)
 	{
 		myThreadImpl = new tthread::thread(threadProcWrapper, this);
-	}
-	else
-	{
-		omsg("Thread::start: thread already running");
 	}
 }
 

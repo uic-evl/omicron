@@ -48,7 +48,6 @@ SoundManager::~SoundManager()
 	//stopSoundServer(); // Do not use - penalty by catapult
 	//stopAllSounds(); // SoundEnvironment handles cleanup
 	//cleanupAllSounds();
-	delete environment;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

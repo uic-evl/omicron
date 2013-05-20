@@ -154,9 +154,9 @@ public:
 	//@}
 
 private:
-	SoundEnvironment* environment;
+	Ref<SoundEnvironment> environment;
 	bool myAssetCacheEnabled;
-	AssetCacheManager* myAssetCacheManager;
+	Ref<AssetCacheManager> myAssetCacheManager;
 
 	static UdpSocket serverSocket;
 	static bool showDebug;

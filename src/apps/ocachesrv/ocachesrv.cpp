@@ -36,6 +36,7 @@ int main(int argc, char** argv)
 {
 	// Add a default filesystem data sources (used to retrieve configuration files and other resources)
 	DataManager* dm = DataManager::getInstance();
+	dm->addSource(new FilesystemDataSource(""));
 	dm->addSource(new FilesystemDataSource("./"));
 	dm->addSource(new FilesystemDataSource(OMICRON_DATA_PATH));
 

@@ -24,6 +24,7 @@
  *********************************************************************************************************************/
 
 #include "omicron/Sound.h"
+#include "omicron/AssetCacheManager.h"
 
 using namespace omicron;
 
@@ -83,6 +84,16 @@ void Sound::setDefaultParameters(float volume, float width, float roomSize, floa
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool Sound::loadFromFile(const String& filePath)
 {
+	// If the asset cache is enabled, copy local sound assets to the sound server
+	SoundManager* smng = environment->getSoundManager();
+	if(smng->isAssetCacheEnabled())
+	{
+		AssetCacheManager* acm = smng->getAssetCacheManager();
+		acm->setCacheName(environment->getAssetDirectory());
+		acm->clearCacheFileList();
+		acm->addFileToCacheList(filePath);
+		acm->sync();
+	}
 	this->filePath = filePath;
 
 	Message msg("/loadBuffer");

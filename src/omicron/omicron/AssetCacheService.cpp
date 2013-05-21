@@ -119,8 +119,15 @@ void AssetCacheConnection::handleData()
 
 		ofmsg("Receiving file %1%", %myBuffer);
 
-		String fileName = myServer->getCacheRoot() + myCacheName + "/" + myBuffer;
+		// NOTE: the file name already includes the cache name here.
+		String fileName = myServer->getCacheRoot() + myBuffer;
 
+		// Make sure the cache path exists.
+		String basePath;
+		String baseName;
+		StringUtils::splitFilename(fileName, baseName, basePath);
+		DataManager::createPath(basePath);
+		
 		// Get the file size
 		unsigned int fileSize = 0; 
 		read(&fileSize, sizeof(unsigned int));
@@ -131,25 +138,32 @@ void AssetCacheConnection::handleData()
 
 		FILE* f = fopen(fileName.c_str(), "wb");
 
-		// Read the file in blocks.
-		unsigned int count = 0; 
-		while(count < fileSize)
-		{ 
-			unsigned int nextBlock = buff_size;
-			if(count + nextBlock > fileSize) nextBlock = fileSize - count;
-			size_t len = read(buff, nextBlock);
-			if(len == 0)
-			{
-				ofwarn("Error reading file %1%, skipping.", %fileName);
-				break;
+		if(f != NULL)
+		{
+			// Read the file in blocks.
+			unsigned int count = 0; 
+			while(count < fileSize)
+			{ 
+				unsigned int nextBlock = buff_size;
+				if(count + nextBlock > fileSize) nextBlock = fileSize - count;
+				size_t len = read(buff, nextBlock);
+				if(len == 0)
+				{
+					ofwarn("Error reading file %1%, skipping.", %fileName);
+					break;
+				}
+				count += len;
+				ofmsg("Read a total of %1% bytes ", %count);
+				fwrite(buff, 1, len, f);
 			}
-			count += len;
-			ofmsg("Read a total of %1% bytes ", %count);
-			fwrite(buff, 1, len, f);
-		}
 
-		// Done! Close the file and remove it from the request queue.
-		fclose(f);
+			// Done! Close the file and remove it from the request queue.
+			fclose(f);
+		}
+		else
+		{
+			ofwarn("AssetCacheService: could not open file %1% for writing", %fileName);
+		}
 		myQueuedFiles.remove(myBuffer);
 
 		// The client is done adding files. If we have no files in our request queue, tell the client we are done.

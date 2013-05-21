@@ -77,7 +77,7 @@ bool DataManager::createPath(const String& path)
 #ifdef WIN32
 		_mkdir(curPath.c_str());
 #else
-		mkdir(curPath.c_str(), S_IRUSR | S_IWUSR | S_IROTH);
+		mkdir(curPath.c_str(), S_IRWXU | S_IRWXO);
 #endif
 	}
 	return true;

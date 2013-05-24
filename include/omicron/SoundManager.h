@@ -50,79 +50,51 @@ public:
 	SoundEnvironment(SoundManager*);
 	~SoundEnvironment();
 
-	void stopAllSounds();
-	void cleanupAllSounds();
 	void showDebugInfo(bool);
 
 	SoundManager* getSoundManager();
 
 	Sound* createSound(const String& name);
+	Sound* loadSoundFromFile(const String& fileName);
 	Sound* loadSoundFromFile(const String& soundName, const String& fileName);
 	Sound* getSound(const String& name);
 	void setSound(const String& name, Ref<Sound> sound);
 	SoundInstance* createInstance(Sound*);
 	SoundInstance* getSoundInstance(int);
 
-	// Listener in the world/virtual space
+	// Handles to SoundManager -----------------------
 	Vector3f getListenerPosition();
 	Quaternion getListenerOrientation();
 
 	void setListenerPosition(Vector3f);
 	void setListenerOrientation(Quaternion);
 	void setListener(Vector3f, Quaternion);
-
-	// 'User' listener position relative to the
-	// sound system in user tracked applications
+	
 	Vector3f getUserPosition();
 	Quaternion getUserOrientation();
 
 	void setUserPosition(Vector3f);
 	void setUserOrientation(Quaternion);
 
-	// Environment settings
 	void setAssetDirectory(const String&);
 	String& getAssetDirectory();
 
+	//void addInstanceID(int);
+	//void addBufferID(int);
+	//void addInstance( Ref<SoundInstance> );
+
+	// Environment settings --------------------------
 	void setVolumeScale(float);
 	float getVolumeScale();
 	void setRoomSize(float);
 	float getRoomSize();
 	void setWetness(float);
 	float getWetness();
-
-	void addInstanceID(int);
-	void addBufferID(int);
-	void addInstance( Ref<SoundInstance> );
-
-	Vector3f worldToLocalPosition(Vector3f position);
-	Vector3f localToWorldPosition(Vector3f position);
-private:
-	void updateInstancePositions();
 private:
 	SoundManager* soundManager;
 	float environmentVolumeScale;
 	float environmentRoomSize;
 	float environmentWetness;
-
-	// This is assumed to be the navigative position
-	// of the listener in world coordinates
-	Vector3f listenerPosition;
-	Quaternion listenerOrientation;
-
-	// This is the user/listener position reletive to the speakers
-	// Used for user tracked applications
-	Vector3f userPosition;
-	Quaternion userOrientation;
-
-	String assetDirectory;
-	bool assetDirectorySet;
-
-	map<int, Ref<Sound> > soundList;
-	map<int, Ref<SoundInstance> > instanceList;
-	map<String, int> soundBufferIDList;
-
-	Vector<int> instanceNodeIDList;
-	Vector<int> bufferIDList;
 };// SoundEnvironment
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -146,6 +118,8 @@ public:
 	bool isDebugEnabled();
 	void wait(float);
 
+	void poll();
+
 	//! Asset cache management
 	//@{
 	void setAssetCacheEnabled(bool value) { myAssetCacheEnabled = value; }
@@ -153,13 +127,86 @@ public:
 	AssetCacheManager* getAssetCacheManager() { return myAssetCacheManager; }
 	//@}
 
+	// Getters/Setters for SoundEnvironments
+	void setAssetDirectory(const String&);
+	String& getAssetDirectory();
+	bool isAssetDirectorySet();
+
+	void addBuffer( Ref<Sound> );
+	void addInstance( Ref<SoundInstance> );
+
+	Vector3f getListenerPosition();
+	Quaternion getListenerOrientation();
+
+	void setListenerPosition(Vector3f);
+	void setListenerOrientation(Quaternion);
+	void setListener(Vector3f, Quaternion);
+
+	// 'User' listener position relative to the
+	// sound system in user tracked applications
+	Vector3f getUserPosition();
+	Quaternion getUserOrientation();
+	void setUserPosition(Vector3f);
+	void setUserOrientation(Quaternion);
+
+	Sound* getSound(const String& name);
+	void setSound(const String& name, Ref<Sound> sound);
+
+	Vector<int> getInstanceIDList();
+
+	Vector3f worldToLocalPosition(Vector3f position);
+	Vector3f localToWorldPosition(Vector3f position);
+
+	void stopAllSounds();
+	void cleanupAllSounds();
+
+private:
+	void updateInstancePositions();
+	void removeInstanceNode(int);
 private:
 	Ref<SoundEnvironment> environment;
 	bool myAssetCacheEnabled;
 	Ref<AssetCacheManager> myAssetCacheManager;
 
-	static UdpSocket serverSocket;
+	static UdpSocket soundServerSocket; // Socket sounds information is sent on
+	static UdpSocket soundMsgSocket; // Used for /notify messages
 	static bool showDebug;
+	static bool soundServerRunning;
+
+	// This is assumed to be the navigative position
+	// of the listener in world coordinates
+	Vector3f listenerPosition;
+	Quaternion listenerOrientation;
+
+	// This is the user/listener position reletive to the speakers
+	// Used for user tracked applications
+	Vector3f userPosition;
+	Quaternion userOrientation;
+
+	String assetDirectory;
+	bool assetDirectorySet;
+	
+	// List of sound/instance objects by ID
+	map< int, Ref<Sound> > soundList;
+	map< int, Ref<SoundInstance> > soundInstanceList;
+
+	// List of all active IDs
+	Vector<int> instanceNodeIDList;
+	Vector<int> bufferIDList;
+
+	// Mapping of sound names to their ID
+	map< string, int > soundNameList;
+
+	// Sound server status
+	static int nUnitGenerators;
+	static int nSynths;
+	static int nGroups;
+	static int nLoadedSynths;
+	static float avgCPU;
+	static float peakCPU;
+	static double nominalSampleRate;
+	static double actualSampleRate;
+
 };// SoundManager
 
 }; // namespace omicron

@@ -40,6 +40,7 @@ class SoundInstance;
 class OMICRON_API Sound: public ReferenceType
 {
 public:
+	Sound();
 	Sound(const String& name);
 	Sound(const String& name, float, float, float, float, bool, bool);
 	
@@ -53,6 +54,7 @@ public:
 	
 	int getBufferID();
 	String& getFilePath();
+	String& getName();
 
 	float getDefaultVolume();
 
@@ -111,7 +113,8 @@ public:
 	void pause();
 	void stop();
 	bool isPlaying();
-	
+	bool isDone();
+
 	void setPosition(Vector3f);
 	const Vector3f& getPosition();
 	void setLocalPosition(Vector3f);
@@ -149,7 +152,7 @@ private:
 	Ref<Sound> sound;
 	int instanceID;
 
-	enum State {playing, paused, stopped};
+	enum State {notPlayed, playing, paused, stopped};
 	State playState;
 
 	bool loop;

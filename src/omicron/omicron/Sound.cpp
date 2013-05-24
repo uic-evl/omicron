@@ -24,12 +24,30 @@
  *********************************************************************************************************************/
 
 #include "omicron/Sound.h"
-#include "omicron/AssetCacheManager.h"
 
 using namespace omicron;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int nextBufferID = 10; // Buffers 0 - 9 are considered reserved by the sound system
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Sound::Sound()
+{
+	this->soundName = "Sound_"+nextBufferID;
+	bufferID = nextBufferID;
+	nextBufferID++;
+	
+	volumeScale = 1.0f;
+	volume = 0.5f;
+	width = 2.0f;
+	wetness = 0.0f;
+	roomSize = 0.0f;
+	loop = false;
+	useEnvironmentParameters = true;
+
+	minRolloffDistance = 1.0f;
+	maxDistance = 500.0f;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Sound::Sound(const String& soundName)
@@ -84,16 +102,6 @@ void Sound::setDefaultParameters(float volume, float width, float roomSize, floa
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool Sound::loadFromFile(const String& filePath)
 {
-	// If the asset cache is enabled, copy local sound assets to the sound server
-	SoundManager* smng = environment->getSoundManager();
-	if(smng->isAssetCacheEnabled())
-	{
-		AssetCacheManager* acm = smng->getAssetCacheManager();
-		acm->setCacheName(environment->getAssetDirectory());
-		acm->clearCacheFileList();
-		acm->addFileToCacheList(filePath);
-		acm->sync();
-	}
 	this->filePath = filePath;
 
 	Message msg("/loadBuffer");
@@ -101,6 +109,7 @@ bool Sound::loadFromFile(const String& filePath)
 	msg.pushStr(this->getFilePath());
 	environment->getSoundManager()->sendOSCMessage(msg);
 	ofmsg("Loaded buffer ID %1% with path %2%", %this->getBufferID() %this->getFilePath());
+
 	return false;
 }
 
@@ -182,7 +191,6 @@ bool Sound::isUsingEnvironmentParameters()
 void Sound::setSoundEnvironment(SoundEnvironment* env)
 {
 	this->environment = env;
-	environment->addBufferID( bufferID );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -201,6 +209,12 @@ int Sound::getBufferID()
 String& Sound::getFilePath()
 {
 	return filePath;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+String& Sound::getName()
+{
+	return soundName;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -224,9 +238,10 @@ SoundInstance::SoundInstance(Sound* sound)
 	localPosition = Vector3f(0,0,0);
 
 	environment = sound->getSoundEnvironment();
-	environment->addInstanceID(instanceID);
-	environment->addInstance(this);
+	environment->getSoundManager()->addInstance(this);
 	useEnvironmentParameters = sound->isUsingEnvironmentParameters();
+
+	playState = notPlayed;
 
 	if( environment->getSoundManager()->isDebugEnabled() )
 		ofmsg("Created SoundInstance %1% with node ID %2%", %sound->getFilePath() %instanceID);
@@ -247,6 +262,9 @@ void SoundInstance::setLoop(bool value)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::play()
 {
+	if( isPlaying() )
+		stop();
+
 	if( environment->getSoundManager()->isDebugEnabled() )
 		ofmsg("%1%: Playing buffer %2% with instanceID: %3%", %__FUNCTION__ %sound->getBufferID() %instanceID);
 
@@ -312,6 +330,9 @@ void SoundInstance::play()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::playStereo()
 {
+	if( isPlaying() )
+		stop();
+
 	if( environment->getSoundManager()->isDebugEnabled() )
 		ofmsg("%1%: Playing buffer %2% with instanceID: %3%", %__FUNCTION__ %sound->getBufferID() %instanceID);
 
@@ -350,6 +371,9 @@ bool SoundInstance::getLoop()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::play( Vector3f position, float volume, float width, float mix, float reverb, bool loop )
 {
+	if( isPlaying() )
+		stop();
+
 	if( environment->getSoundManager()->isDebugEnabled() )
 		ofmsg("%1%: Playing buffer %2% with instanceID: %3%", %__FUNCTION__ %sound->getBufferID() %instanceID);
 
@@ -369,7 +393,7 @@ void SoundInstance::play( Vector3f position, float volume, float width, float mi
 	msg.pushFloat( scaledVolume );
 	
 	// Position in Audio System (local) coordinates
-	localPosition = environment->worldToLocalPosition( position );
+	localPosition = environment->getSoundManager()->worldToLocalPosition( position );
 
 	msg.pushFloat( localPosition[0] );
 	msg.pushFloat( localPosition[1] );
@@ -403,6 +427,9 @@ void SoundInstance::play( Vector3f position, float volume, float width, float mi
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::playStereo( float volume, bool loop )
 {
+	if( isPlaying() )
+		stop();
+
 	if( environment->getSoundManager()->isDebugEnabled() )
 		ofmsg("%1%: Playing buffer %2% with instanceID: %3%", %__FUNCTION__ %sound->getBufferID() %instanceID);
 
@@ -454,23 +481,38 @@ bool SoundInstance::isPlaying()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool SoundInstance::isDone()
+{
+	if( playState == stopped )
+		return true;
+	else
+		return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::setPosition(Vector3f pos)
 {
+	if( isDone() )
+		return;
+
 	if( environment->getSoundManager()->isDebugEnabled() )
 		ofmsg("%1%: for instanceID: %2%", %__FUNCTION__ %instanceID);
 
 	position = pos;
 
-	Message msg("/setObjectLoc");
-	msg.pushInt32(instanceID);
+	if( isPlaying() )
+	{
+		Message msg("/setObjectLoc");
+		msg.pushInt32(instanceID);
 
-	localPosition = environment->worldToLocalPosition( position );
+		localPosition = environment->getSoundManager()->worldToLocalPosition( position );
 
-	msg.pushFloat( localPosition[0] );
-	msg.pushFloat( localPosition[1] );
-	msg.pushFloat( localPosition[2] );
+		msg.pushFloat( localPosition[0] );
+		msg.pushFloat( localPosition[1] );
+		msg.pushFloat( localPosition[2] );
 
-	environment->getSoundManager()->sendOSCMessage(msg);
+		environment->getSoundManager()->sendOSCMessage(msg);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -485,16 +527,19 @@ void SoundInstance::setLocalPosition(Vector3f pos)
 		ofmsg("%1%: for instanceID: %2%", %__FUNCTION__ %instanceID);
 
 	localPosition = pos;
-	position = environment->localToWorldPosition( localPosition );
+	position = environment->getSoundManager()->localToWorldPosition( localPosition );
 
-	Message msg("/setObjectLoc");
-	msg.pushInt32(instanceID);
+	if( isPlaying() )
+	{
+		Message msg("/setObjectLoc");
+		msg.pushInt32(instanceID);
 
-	msg.pushFloat( position[0] );
-	msg.pushFloat( position[1] );
-	msg.pushFloat( position[2] );
+		msg.pushFloat( position[0] );
+		msg.pushFloat( position[1] );
+		msg.pushFloat( position[2] );
 
-	environment->getSoundManager()->sendOSCMessage(msg);
+		environment->getSoundManager()->sendOSCMessage(msg);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -518,20 +563,26 @@ void SoundInstance::setEnvironmentSound(bool value)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::setVolume(float value)
 {
-	if( value * sound->getVolumeScale() > 1 )
+	if( isDone() )
+		return;
+
+	if( sound != NULL && value * sound->getVolumeScale() > 1 )
 		this->volume = 1.0;
-	else
+	else if( sound != NULL)
 		this->volume =  value * sound->getVolumeScale();
 
 	if( environment->getSoundManager()->isDebugEnabled() )
 		ofmsg("%1%: for instanceID: %2%", %__FUNCTION__ %instanceID);
 
-	Message msg("/setVol");
-	msg.pushInt32(instanceID);
-	msg.pushFloat(this->volume);
+	if( isPlaying() )
+	{
+		Message msg("/setVol");
+		msg.pushInt32(instanceID);
+		msg.pushFloat(this->volume);
 
 
-	environment->getSoundManager()->sendOSCMessage(msg);
+		environment->getSoundManager()->sendOSCMessage(msg);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -544,6 +595,9 @@ float SoundInstance::getVolume()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::fade(float targetAmp, float envelopeDuration)
 {
+	if( isDone() )
+		return;
+
 	if( environment->getSoundManager()->isDebugEnabled() )
 		ofmsg("%1%: for instanceID: %2%", %__FUNCTION__ %instanceID);
 
@@ -572,6 +626,9 @@ float SoundInstance::getWidth()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::setRoomSize(float value)
 {
+	if( isDone() )
+		return;
+
 	if( environment->getSoundManager()->isDebugEnabled() )
 		ofmsg("%1%: for instanceID: %2%", %__FUNCTION__ %instanceID);
 
@@ -595,18 +652,24 @@ float SoundInstance::getRoomSize()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::setWetness(float value)
 {
+	if( isDone() )
+		return;
+
 	if( environment->getSoundManager()->isDebugEnabled() )
 		ofmsg("%1%: for instanceID: %2%", %__FUNCTION__ %instanceID);
 
 	this->wetness = value;
 	useEnvironmentParameters = false;
 	
-	Message msg("/setReverb");
-	msg.pushInt32(instanceID);
-	msg.pushFloat(wetness);
-	msg.pushFloat(roomSize);
+	if( isPlaying() )
+	{
+		Message msg("/setReverb");
+		msg.pushInt32(instanceID);
+		msg.pushFloat(wetness);
+		msg.pushFloat(roomSize);
 
-	environment->getSoundManager()->sendOSCMessage(msg);
+		environment->getSoundManager()->sendOSCMessage(msg);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -618,6 +681,9 @@ float SoundInstance::getWetness()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::setReverb(float wetness, float roomSize)
 {
+	if( isDone() )
+		return;
+
 	if( environment->getSoundManager()->isDebugEnabled() )
 		ofmsg("%1%: for instanceID: %2%", %__FUNCTION__ %instanceID);
 
@@ -625,12 +691,15 @@ void SoundInstance::setReverb(float wetness, float roomSize)
 	this->roomSize = roomSize;
 	useEnvironmentParameters = false;
 	
-	Message msg("/setReverb");
-	msg.pushInt32(instanceID);
-	msg.pushFloat(wetness);
-	msg.pushFloat(roomSize);
+	if( isPlaying() )
+	{
+		Message msg("/setReverb");
+		msg.pushInt32(instanceID);
+		msg.pushFloat(wetness);
+		msg.pushFloat(roomSize);
 
-	environment->getSoundManager()->sendOSCMessage(msg);
+		environment->getSoundManager()->sendOSCMessage(msg);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

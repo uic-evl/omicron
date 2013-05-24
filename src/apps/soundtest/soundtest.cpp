@@ -1,11 +1,11 @@
 /**************************************************************************************************
 * THE OMICRON PROJECT
  *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2012		Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2013		Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto		anishimoto42@gmail.com
  *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2012, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2013, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted 
  * provided that the following conditions are met:
@@ -46,9 +46,9 @@ private:
 	Sound* selectMenuSound;
 	Sound* scrollMenuSound;
 	Sound* soundLoop;
-	SoundInstance* soundLoopInstance;
-	
-	bool instanceCreated;
+	Ref<SoundInstance> soundLoopInstance;
+	Ref<SoundInstance> rewindingSoundInstance;
+
 public:
 
 
@@ -59,58 +59,35 @@ public:
 		//soundManager->connectToServer("localhost",57120);
 		
 		// More concise method of above two lines
-		//soundManager = new SoundManager("localhost",57120);
-		soundManager->startSoundServer();
+		soundManager = new SoundManager("localhost",57120);
 
-		//Message msg("/notify");
-		//msg.pushInt32(1);
-
-		//soundManager->sendOSCMessage(msg);
-		
-		soundManager->showDebugInfo(false);
+		soundManager->showDebugInfo(true);
 
 		// Get default sound environment
 		env = soundManager->getSoundEnvironment();
 
+		
+		while( !soundManager->isSoundServerRunning() )
+		{
+			soundManager->startSoundServer();
+		}
+
 		// Load sound assets
-		//if( soundManager->isSoundServerRunning() ){
-			showMenuSound = env->createSound("showMenuSound");
-			showMenuSound->loadFromFile("/Users/evldemo/sounds/menu_sounds/menu_load.wav");
-			ofmsg("Menu 'showMenuSound' bufferID: %1%", %showMenuSound->getBufferID() );
+		//env->setAssetDirectory("menu_sounds");
 
-			hideMenuSound = env->createSound("hideMenuSound");
-			hideMenuSound->loadFromFile("/Users/evldemo/sounds/menu_sounds/menu_closed.wav");
+		showMenuSound = env->loadSoundFromFile("showMenuSound","menu_sounds/menu_load.wav");
+		hideMenuSound = env->loadSoundFromFile("hideMenuSound","menu_sounds/menu_closed.wav");
+		scrollMenuSound = env->loadSoundFromFile("scrollMenuSound","menu_sounds/menu_scroll.wav");
+		selectMenuSound = env->loadSoundFromFile("selectMenuSound","menu_sounds/menu_select.wav");
+		soundLoop = env->loadSoundFromFile("Omega4Relay.wav");
 
-			Sound* menuSound = env->getSound("showMenuSound");
-			ofmsg("Menu get() 'showMenuSound' bufferID: %1%", %menuSound->getBufferID() );
+		SoundInstance* soundInstance = new SoundInstance(showMenuSound);
+		soundInstance->setReverb( 1.0, 1.0 );
+		soundInstance->setVolume(1.0);
+		soundInstance->setPosition( Vector3f(0,1,0) );
+		soundInstance->play();
 
-			ofmsg("Menu get() 'hideMenuSound' bufferID: %1%", %hideMenuSound->getBufferID() );
-
-			//env->setSound( "showMenuSound", hideMenuSound );
-
-			//Sound* newMenuSound = env->getSound("showMenuSound");
-			//ofmsg("Menu get() 'showMenuSound' bufferID: %1%", %newMenuSound->getBufferID() );
-
-			//hideMenuSound = env->createSound("hideMenuSound");
-			//hideMenuSound->loadFromFile("/Users/evldemo/sounds/menu_sounds/menu_closed.wav");
-
-			selectMenuSound = env->createSound("selectMenuSound");
-			selectMenuSound->loadFromFile("/Users/evldemo/sounds/menu_sounds/menu_select.wav");
-
-			scrollMenuSound = env->createSound("scrollMenuSound");
-			scrollMenuSound->loadFromFile("/Users/evldemo/sounds/menu_sounds/menu_scroll.wav");
-			
-			//soundLoop = env->createSound("soundLoop");
-			//soundLoop->loadFromFile("/Users/evldemo/sounds/arthur/Enterprise_Bridge.wav");
-
-			SoundInstance* soundInstance = new SoundInstance(showMenuSound);
-						soundInstance->play();
-
-		//}
-
-		
-		instanceCreated = false;
-		
+		rewindingSoundInstance = new SoundInstance(showMenuSound);
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -128,44 +105,55 @@ public:
 		switch(evt.getServiceType())
 		{
 			case Service::Wand:
-				leftRightAnalog = evt.getExtraDataFloat(0) / 1000.0f;
-				upDownAnalog = evt.getExtraDataFloat(1) / 1000.0f;
+				leftRightAnalog = evt.getExtraDataFloat(0);
+				upDownAnalog = evt.getExtraDataFloat(1);
 
-				volume = (1000 + evt.getExtraDataFloat(4)) / 2000.0f;
+				volume = evt.getExtraDataFloat(4);
 				
+				if( soundLoopInstance != NULL )
+				{
+					soundLoopInstance->setVolume(volume);
+				}
+
 				if( evt.getType() == Event::Down ){
 
 					if( evt.getFlags() == Event::Button3){ // Cross
-						soundLoopInstance = new SoundInstance(soundLoop);
+						
 						soundLoopInstance->setEnvironmentSound( true );
 						soundLoopInstance->setLoop( true );
+						
+						soundLoopInstance->playStereo();
 					}
 					if( evt.getFlags() == Event::Button2){ // Circle
 						soundLoopInstance->stop();
 					}
 					
 					if( evt.getFlags() == Event::Button5){ // L1
-		
+						soundLoopInstance = new SoundInstance(soundLoop);
 					}
 
 					if( evt.getFlags() == Event::ButtonRight){
-						SoundInstance* soundInstance = new SoundInstance(showMenuSound);
-						soundInstance->setPosition( evt.getPosition() );
-						soundInstance->play();
+						
+						rewindingSoundInstance->setPosition( Vector3f(leftRightAnalog,1,0) );
+						rewindingSoundInstance->setReverb( upDownAnalog, upDownAnalog );
+						rewindingSoundInstance->play();
 					}
 					if( evt.getFlags() == Event::ButtonLeft){
 						SoundInstance* soundInstance = new SoundInstance(hideMenuSound);
-						soundInstance->setPosition( evt.getPosition() );
+						soundInstance->setPosition( Vector3f(leftRightAnalog,1,0) );
+						soundInstance->setReverb( upDownAnalog, upDownAnalog );
 						soundInstance->play();
 					}
 					if( evt.getFlags() == Event::ButtonUp){
 						SoundInstance* soundInstance = new SoundInstance(selectMenuSound);
-						soundInstance->setPosition( evt.getPosition() );
+						soundInstance->setPosition( Vector3f(leftRightAnalog,1,0) );
+						soundInstance->setReverb( upDownAnalog, upDownAnalog );
 						soundInstance->play();
 					}
 					if( evt.getFlags() == Event::ButtonDown){
 						SoundInstance* soundInstance = new SoundInstance(scrollMenuSound);
-						soundInstance->setPosition( evt.getPosition() );
+						soundInstance->setPosition( Vector3f(leftRightAnalog,1,0) );
+						soundInstance->setReverb( upDownAnalog, upDownAnalog );
 						soundInstance->play();
 					}
 					//printf("%d \n", evt.getFlags() );
@@ -176,15 +164,17 @@ public:
 					){
 					position[0] = leftRightAnalog;
 					position[1] = upDownAnalog;
-					printf("Pos: %f %f\n", position[0], position[1]);
+					printf("Analog Stick: %f %f\n", position[0], position[1]);
 				}
+				if( volume > 0 )
+					printf("Analog Trigger (L2): %f\n", volume);
 				return true;
 				break;
 
 			case Service::Mocap:
 				//if( evt.getSourceId() == 0 )
 				//	soundManager->setListenerPosition( evt.getPosition() );
-				env->setListenerPosition( Vector3f(0,0,0) );
+				//env->setListenerPosition( Vector3f(0,0,0) );
 				//else if( instanceCreated && evt.getSourceId() == 1 )
 				//	soundInstance->setPosition( evt.getPosition() );
 				//printf("ID: %d Pos: %f %f %f\n", evt.getSourceId(), evt.getPosition(0), evt.getPosition(1), evt.getPosition(2) );
@@ -196,6 +186,8 @@ public:
 
 	void update()
 	{
+		soundManager->poll();
+
 		env->setListenerPosition( Vector3f(0,0,0) );
 	}
 private:

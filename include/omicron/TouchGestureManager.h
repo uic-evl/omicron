@@ -57,7 +57,8 @@ namespace omicron {
 			Touch centerTouch;
 
 			bool remove;
-			int gestureFlag;
+			Event::Type eventType; // Down, Move, Up
+			int gestureFlag; // Single touch, double, multi, etc.
 			int ID;
 			float xPos;
 			float yPos;
@@ -91,6 +92,8 @@ namespace omicron {
 			int getGestureFlag();
 			bool isRemovable();
 			void setRemove();
+
+			Event::Type getEventType();
 	};
 
 	class TouchGestureManager

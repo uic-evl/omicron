@@ -35,6 +35,7 @@ int touchGroupTimeout = 250; // Time since last update until touch group is auto
 int doubleClickDelay = 100; // Milliseconds between the first and second click to trigger DoubleClick event
 
 // User Flags: Advanced Touch Gestures Flags
+const int GESTURE_UNPROCESSED = -2; // Not yet identified (allows the first single touch to generate a down event)
 const int GESTURE_SINGLE_TOUCH = -1;
 const int GESTURE_BIG_TOUCH = 1 << 16;
 const int GESTURE_MULTI_TOUCH_HOLD = 1 << 17;
@@ -52,7 +53,8 @@ TouchGroup::TouchGroup(int ID){
 	this->ID = ID;
 
 	centerTouch.ID = ID;
-	gestureFlag = GESTURE_SINGLE_TOUCH;
+	eventType = Event::Null;
+	gestureFlag = GESTURE_UNPROCESSED;
 	remove = false;
 
 	timeb tb;
@@ -198,10 +200,22 @@ void TouchGroup::process(){
 
 	if( getTouchCount() >= 4 )
 	{
+		if( gestureFlag != GESTURE_MULTI_TOUCH_HOLD )
+			eventType = Event::Down;
+		else
+			eventType = Event::Move;
+
 		gestureFlag = GESTURE_MULTI_TOUCH_HOLD;
+
+		
 	}
 	else
 	{
+		if( gestureFlag == GESTURE_UNPROCESSED )
+			eventType = Event::Down;
+		else
+			eventType = Event::Move;
+
 		gestureFlag = GESTURE_SINGLE_TOUCH;
 	}
 }
@@ -234,6 +248,12 @@ bool TouchGroup::isRemovable(){
 // Sets the remove flag
 void TouchGroup::setRemove(){
 	remove = true;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Gets the event type
+Event::Type TouchGroup::getEventType(){
+	return eventType;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -384,7 +404,7 @@ bool TouchGestureManager::addTouchGroup( Event::Type eventType, float xPos, floa
 				groupedIDs.insert(ID);
 			}
 
-			generatePQServiceEvent( Event::Move, tg->getCenterTouch(), tg->getGestureFlag() );
+			generatePQServiceEvent( tg->getEventType(), tg->getCenterTouch(), tg->getGestureFlag() );
 
 			if( tg->getGestureFlag() == Event::Click ) // If double click, remove the group
 				tg->setRemove();

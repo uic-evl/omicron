@@ -187,7 +187,7 @@ void SAGETouchServer::handleEvent(Event* evt){
 		// Multi-touch hold (4+ finger)
 		else if( gestureType == GESTURE_MULTI_TOUCH_HOLD )
 		{
-			int pointsSize = 0; // Not sure what this is yet
+			int pointsSize = 5;
 
 			sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %d %d\n", 
 					myIP, id, gestureType, xPos, yPos, pointsSize, eventType);
@@ -199,7 +199,7 @@ void SAGETouchServer::handleEvent(Event* evt){
 		{
 			float dx = 0;
 			float dy = 0;
-			int pointsSize = 0; // Not sure what this is yet
+			int pointsSize = 5;
 
 			sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %f %f %d %d\n", 
 					myIP, id, gestureType, xPos, yPos, dx, dy, pointsSize, eventType);
@@ -207,7 +207,7 @@ void SAGETouchServer::handleEvent(Event* evt){
 		}
 
 		// Zoom touch
-		else if( gestureType == GESTURE_MULTI_TOUCH_HOLD || gestureType == GESTURE_MULTI_TOUCH_SWIPE )
+		else if( gestureType == GESTURE_ZOOM )
 		{
 			float amount = 0; // Not sure what this is yet
 

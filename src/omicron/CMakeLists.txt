@@ -158,7 +158,9 @@ if(OMICRON_TOOL_VS10)
 			)
 		set( headers ${headers} ${CMAKE_SOURCE_DIR}/include/omicron/MSKinectService.h
 			)
-		include_directories($ENV{KINECTSDK10_DIR}/inc)
+		set(KINECT_SDK_INCLUDE_DIR $ENV{KINECTSDK10_DIR}inc CACHE STRING "Kinect for Windows SDK include directory")
+	
+		include_directories(${KINECT_SDK_INCLUDE_DIR})
 		
 		set(OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO false CACHE BOOL "Enable/disable Kinect for Windows Audio/Speech recognition support (Microsoft Speech Platform SDK Version 11 must be installed)")
 	endif()
@@ -168,7 +170,9 @@ if(OMICRON_TOOL_VS10)
 		set( headers ${headers} ${CMAKE_SOURCE_DIR}/external/include/mskinect/KinectAudioStream.h
 								${CMAKE_SOURCE_DIR}/external/include/mskinect/stdafx.h
 			)
-		include_directories($ENV{PROGRAMFILES}/Microsoft\ SDKs/Speech/v11.0/Include)
+		set(MS_SPEECH_SDK_INCLUDE_DIR $ENV{PROGRAMFILES}/Microsoft\ SDKs/Speech/v11.0/Include CACHE STRING "Microsoft Speech SDK include directory")
+	
+		include_directories(${MS_SPEECH_SDK_INCLUDE_DIR})
 	endif()
 endif()
 endif()

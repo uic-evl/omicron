@@ -79,7 +79,7 @@ public:
 		hideMenuSound = env->loadSoundFromFile("hideMenuSound","menu_sounds/menu_closed.wav");
 		scrollMenuSound = env->loadSoundFromFile("scrollMenuSound","menu_sounds/menu_scroll.wav");
 		selectMenuSound = env->loadSoundFromFile("selectMenuSound","menu_sounds/menu_select.wav");
-		soundLoop = env->loadSoundFromFile("Omega4Relay.wav");
+		soundLoop = env->loadSoundFromFile("mus","Omega4Relay.wav");
 
 		SoundInstance* soundInstance = new SoundInstance(showMenuSound);
 		soundInstance->setReverb( 1.0, 1.0 );

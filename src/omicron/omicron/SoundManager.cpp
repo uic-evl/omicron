@@ -569,7 +569,7 @@ void SoundEnvironment::setSound(const String& soundName, Ref<Sound> newSound)
 	soundManager->setSound( soundName, newSound );
 
 }
-
+/*
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Sound* SoundEnvironment::loadSoundFromFile(const String& fileName)
 {
@@ -584,7 +584,7 @@ Sound* SoundEnvironment::loadSoundFromFile(const String& fileName)
 	}
 	return sound;
 }
-
+*/
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Sound* SoundEnvironment::loadSoundFromFile(const String& soundName, const String& filePath)
 {

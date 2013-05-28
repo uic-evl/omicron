@@ -1,12 +1,12 @@
 /**************************************************************************************************
 * THE OMICRON PROJECT
  *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2012		Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2013		Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Alessandro Febretti		febret@gmail.com
  *  Arthur Nishimoto		anishimoto42@gmail.com
  *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2011, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2013, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted 
  * provided that the following conditions are met:
@@ -92,13 +92,16 @@ class NetClient
 {
 private:
 	SOCKET sendSocket;
+	SOCKET msgSocket;
 	sockaddr_in recvAddr;
 	bool legacyMode;
+	bool connected;
 
 public:
-	NetClient( const char* address, int port )
+	NetClient( const char* address, int port, SOCKET clientSocket )
 	{
 		legacyMode = false;
+		connected = true;
 
 		// Create a UDP socket for sending data
 		sendSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -109,11 +112,14 @@ public:
 		recvAddr.sin_port = htons(port);
 		recvAddr.sin_addr.s_addr = inet_addr(address);
 		printf("NetClient %s:%i created...\n", address, port);
+
+		msgSocket = clientSocket;
 	}// CTOR
 
-	NetClient( const char* address, int port, int legacy )
+	NetClient( const char* address, int port, int legacy, SOCKET clientSocket )
 	{
 		legacyMode = legacy;
+		connected = true;
 
 		// Create a UDP socket for sending data
 		sendSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -123,6 +129,8 @@ public:
 		recvAddr.sin_family = AF_INET;
 		recvAddr.sin_port = htons(port);
 		recvAddr.sin_addr.s_addr = inet_addr(address);
+
+		msgSocket = clientSocket;
 
 		if( legacyMode )
 		{
@@ -145,6 +153,22 @@ public:
 			sizeof(recvAddr));
 	}// SendEvent
 
+	void sendMsg(char* eventPacket, int length)
+	{
+		// Ping the client to see if still active
+		int result = sendto(msgSocket, 
+			eventPacket, 
+			length, 
+			0,
+            (const struct sockaddr*)&recvAddr,
+			sizeof(recvAddr));
+
+		if( result == SOCKET_ERROR )
+		{
+			connected = false;
+		}
+	}// SendMsg
+
 	void setLegacy(bool value)
 	{
 		legacyMode = value;
@@ -154,6 +178,11 @@ public:
 	{
 		return legacyMode;
 	}// isLegacy
+
+	bool isConnected()
+	{
+		return connected;
+	}// isConnected
 };
 
 #define OI_WRITEBUF(type, buf, offset, val) *((type*)&buf[offset]) = val; offset += sizeof(type);
@@ -201,6 +230,8 @@ public:
 		
 		handleLegacyEvent(evt);
 		
+		std::map<char*,NetClient*> activeClients;
+
 		std::map<char*,NetClient*>::iterator itr = netClients.begin();
 		while( itr != netClients.end() )
 		{
@@ -212,10 +243,24 @@ public:
 			}
 			else
 			{
+				client->sendMsg("",1);
 				client->sendEvent(eventPacket, offset);
+			}
+
+			// If client is still connected add to active list
+			if( client->isConnected() )
+			{
+				activeClients[itr->first] = client;
+			}
+			else // Client disconnected, remove from list
+			{
+				ofmsg("OInputServer: Client '%1%' Disconnected.", %itr->first);
+				delete client;
 			}
 			itr++;
 		}
+
+		netClients = activeClients;
 	}
 	
 	virtual bool handleLegacyEvent(const Event& evt)
@@ -429,7 +474,7 @@ public:
 	void loop();
 private:
 	enum dataMode { omicron, omicron_legacy };
-	void createClient(const char*,int,bool);
+	void createClient(const char*,int,bool, SOCKET);
 
 	const char* serverPort;
 	SOCKET listenSocket;    
@@ -633,21 +678,21 @@ SOCKET OInputServer::startListening()
 				dataPort = atoi(portCStr);
 				printf("OInputServer: '%s' requests omicron legacy data to be sent on port '%d'\n", clientAddress, dataPort);
 				printf("OInputServer: WARNING - This server does not support legacy data!\n");
-				createClient( clientAddress, dataPort, true );
+				createClient( clientAddress, dataPort, true, clientSocket );
 			}
 			else if( strcmp(inMessage, omicronHandshake) == 1 )
 			{
 				// Get data port number
 				dataPort = atoi(portCStr);
 				printf("OInputServer: '%s' requests omicron data to be sent on port '%d'\n", clientAddress, dataPort);
-				createClient( clientAddress, dataPort, false );
+				createClient( clientAddress, dataPort, false, clientSocket );
 			}
 			else if( strcmp(inMessage, handshake) == 1 )
 			{
 				// Get data port number
 				dataPort = atoi(portCStr);
 				printf("OInputServer: '%s' requests data (old handshake) to be sent on port '%d'\n", clientAddress, dataPort);
-				createClient( clientAddress, dataPort, false );
+				createClient( clientAddress, dataPort, false, clientSocket );
 			}
 			else
 			{
@@ -655,7 +700,7 @@ SOCKET OInputServer::startListening()
 				dataPort = atoi(portCStr);
 				printf("OInputServer: '%s' requests data to be sent on port '%d'\n", clientAddress, dataPort);
 				printf("OInputServer: '%s' using unknown handshake '%s'\n", clientAddress, inMessage);
-				createClient( clientAddress, dataPort, false );
+				createClient( clientAddress, dataPort, false, clientSocket );
 			}
 
 			gotData = true;
@@ -691,7 +736,7 @@ void OInputServer::loop()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void OInputServer::createClient(const char* clientAddress, int dataPort, bool legacy)
+void OInputServer::createClient(const char* clientAddress, int dataPort, bool legacy, SOCKET clientSocket)
 {
 	// Generate a unique name for client "address:port"
 	char* addr = new char[128];
@@ -732,7 +777,7 @@ void OInputServer::createClient(const char* clientAddress, int dataPort, bool le
 		}
 	}
 
-	netClients[addr] = new NetClient( clientAddress, dataPort, legacy );
+	netClients[addr] = new NetClient( clientAddress, dataPort, legacy, clientSocket );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

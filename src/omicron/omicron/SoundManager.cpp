@@ -312,7 +312,7 @@ void SoundManager::poll()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::setAssetDirectory(const String& directory)
 {
-	assetDirectory = directory;
+	assetDirectory = "/"+directory;
 	assetDirectorySet = true;
 }
 
@@ -539,16 +539,6 @@ SoundManager* SoundEnvironment::getSoundManager()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Sound* SoundEnvironment::createSound(const String& soundName)
 {
-	// If the asset cache is enabled, copy local sound assets to the sound server
-	 if(soundManager->isAssetCacheEnabled())
-	 {
-		 AssetCacheManager* acm = soundManager->getAssetCacheManager();
-		 acm->setCacheName(soundManager->getAssetDirectory());
-		 acm->clearCacheFileList();
-		 acm->addFileToCacheList(soundName);
-		 acm->sync();
-	 }
-
 	Sound* newSound = new Sound(soundName);
 	newSound->setSoundEnvironment(this);
 
@@ -591,6 +581,16 @@ Sound* SoundEnvironment::loadSoundFromFile(const String& soundName, const String
 	String soundFullPath = soundManager->getAssetDirectory() + "/" + filePath;
 	if( !soundManager->isAssetDirectorySet() )
 		soundFullPath = filePath;
+
+	// If the asset cache is enabled, copy local sound assets to the sound server
+	 if(soundManager->isAssetCacheEnabled())
+	 {
+		AssetCacheManager* acm = soundManager->getAssetCacheManager();
+		acm->setCacheName(soundManager->getAssetDirectory());
+		acm->clearCacheFileList();
+		acm->addFileToCacheList(filePath);
+		acm->sync();
+	}
 
 	Sound* sound = createSound(soundName);
 	if(sound != NULL)

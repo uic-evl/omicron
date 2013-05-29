@@ -84,7 +84,7 @@ void AssetCacheConnection::handleData()
 
 		String fileName = "";
 		if(myCacheName != "") fileName = myServer->getCacheRoot() + myCacheName + "/" + myBuffer;
-		else fileName = myServer->getCacheRoot() + myBuffer;
+		else fileName = myServer->getCacheRoot() + "/" + myBuffer;
 		String fullFilePath;
 
 		ofmsg("AssetCacheConnection: looking for file %1%", %fileName);

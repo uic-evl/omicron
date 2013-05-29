@@ -117,40 +117,40 @@ public:
 
 				if( evt.getType() == Event::Down ){
 
-					if( evt.getFlags() == Event::Button3){ // Cross
+					if( evt.getFlags() & Event::Button3){ // Cross
 						
 						soundLoopInstance->setEnvironmentSound( true );
 						soundLoopInstance->setLoop( true );
 						
 						soundLoopInstance->playStereo();
 					}
-					if( evt.getFlags() == Event::Button2){ // Circle
+					if( evt.getFlags() & Event::Button2){ // Circle
 						soundLoopInstance->stop();
 					}
 					
-					if( evt.getFlags() == Event::Button5){ // L1
+					if( evt.getFlags() & Event::Button5){ // L1
 						soundLoopInstance = new SoundInstance(soundLoop);
 					}
 
-					if( evt.getFlags() == Event::ButtonRight){
+					if( evt.getFlags() & Event::ButtonRight){
 						
 						rewindingSoundInstance->setPosition( Vector3f(leftRightAnalog,1,0) );
 						rewindingSoundInstance->setReverb( upDownAnalog, upDownAnalog );
 						rewindingSoundInstance->play();
 					}
-					if( evt.getFlags() == Event::ButtonLeft){
+					if( evt.getFlags() & Event::ButtonLeft){
 						SoundInstance* soundInstance = new SoundInstance(hideMenuSound);
 						soundInstance->setPosition( Vector3f(leftRightAnalog,1,0) );
 						soundInstance->setReverb( upDownAnalog, upDownAnalog );
 						soundInstance->play();
 					}
-					if( evt.getFlags() == Event::ButtonUp){
+					if( evt.getFlags() & Event::ButtonUp){
 						SoundInstance* soundInstance = new SoundInstance(selectMenuSound);
 						soundInstance->setPosition( Vector3f(leftRightAnalog,1,0) );
 						soundInstance->setReverb( upDownAnalog, upDownAnalog );
 						soundInstance->play();
 					}
-					if( evt.getFlags() == Event::ButtonDown){
+					if( evt.getFlags() & Event::ButtonDown){
 						SoundInstance* soundInstance = new SoundInstance(scrollMenuSound);
 						soundInstance->setPosition( Vector3f(leftRightAnalog,1,0) );
 						soundInstance->setReverb( upDownAnalog, upDownAnalog );

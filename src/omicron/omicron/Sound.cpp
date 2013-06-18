@@ -37,7 +37,7 @@ Sound::Sound()
 	bufferID = nextBufferID;
 	nextBufferID++;
 	
-	volumeScale = 1.0f;
+	volumeScale = 0.5f;
 	volume = 0.5f;
 	width = 2.0f;
 	wetness = 0.0f;
@@ -56,7 +56,7 @@ Sound::Sound(const String& soundName)
 	bufferID = nextBufferID;
 	nextBufferID++;
 	
-	volumeScale = 1.0f;
+	volumeScale = 0.5f;
 	volume = 0.5f;
 	width = 2.0f;
 	wetness = 0.0f;

@@ -171,6 +171,7 @@ private:
 	static UdpSocket soundServerSocket; // Socket sounds information is sent on
 	static UdpSocket soundMsgSocket; // Used for /notify messages
 	static bool showDebug;
+	static bool startingSoundServer;
 	static bool soundServerRunning;
 
 	// This is assumed to be the navigative position

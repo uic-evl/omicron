@@ -34,6 +34,7 @@ using namespace oscpkt;
 UdpSocket SoundManager::soundServerSocket;
 UdpSocket SoundManager::soundMsgSocket;
 bool SoundManager::showDebug = false;
+bool SoundManager::startingSoundServer = false;
 bool SoundManager::soundServerRunning = false;
 
 int SoundManager::nUnitGenerators = -1;
@@ -112,6 +113,7 @@ void SoundManager::connectToServer(const String& serverIP, int serverPort)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::startSoundServer()
 {
+	startingSoundServer = true;
 	Message msg("/startServer");
 	sendOSCMessage(msg);
 
@@ -125,6 +127,7 @@ void SoundManager::startSoundServer()
 	sendOSCMessage(msg4);
 
 	wait(1000); // Give the server a second to startup
+	startingSoundServer = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -232,9 +235,12 @@ void SoundManager::setEnvironment(SoundEnvironment* newEnv)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool SoundManager::sendOSCMessage(Message msg)
 {
-	PacketWriter pw;
-	pw.startBundle().addMessage(msg).endBundle();
-	return soundServerSocket.sendPacket(pw.packetData(), pw.packetSize());
+	if(soundServerRunning || startingSoundServer)
+	{
+		PacketWriter pw;
+		pw.startBundle().addMessage(msg).endBundle();
+		return soundServerSocket.sendPacket(pw.packetData(), pw.packetSize());
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

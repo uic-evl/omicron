@@ -37,11 +37,12 @@ Sound::Sound()
 	bufferID = nextBufferID;
 	nextBufferID++;
 	
-	volumeScale = 0.5f;
+	volumeScale = 1.0f;
 	volume = 0.5f;
 	width = 2.0f;
 	wetness = 0.0f;
 	roomSize = 0.0f;
+	pitch = 1.0f;
 	loop = false;
 	useEnvironmentParameters = true;
 
@@ -56,11 +57,12 @@ Sound::Sound(const String& soundName)
 	bufferID = nextBufferID;
 	nextBufferID++;
 	
-	volumeScale = 0.5f;
+	volumeScale = 1.0f;
 	volume = 0.5f;
 	width = 2.0f;
 	wetness = 0.0f;
 	roomSize = 0.0f;
+	pitch = 1.0f;
 	loop = false;
 	useEnvironmentParameters = true;
 
@@ -164,6 +166,12 @@ float Sound::getDefaultWidth()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+float Sound::getDefaultPitch()
+{
+	return width;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool Sound::isDefaultLooping()
 {
 	return loop;
@@ -233,6 +241,8 @@ SoundInstance::SoundInstance(Sound* sound)
 	wetness = sound->getDefaultWetness();
 	loop = sound->isDefaultLooping();
 	environmentSound = sound->isEnvironmentSound();
+	pitch = sound->getDefaultPitch();
+	stereoSound = false;
 
 	position = Vector3f(0,0,0);
 	localPosition = Vector3f(0,0,0);
@@ -250,7 +260,7 @@ SoundInstance::SoundInstance(Sound* sound)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 SoundInstance::~SoundInstance()
 {
-	//stop();
+	stop();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -268,6 +278,7 @@ void SoundInstance::play()
 	if( environment->getSoundManager()->isDebugEnabled() )
 		ofmsg("%1%: Playing buffer %2% with instanceID: %3%", %__FUNCTION__ %sound->getBufferID() %instanceID);
 
+	stereoSound = false;
 	Message msg("/play");
 	msg.pushInt32(instanceID);
 	msg.pushInt32(sound->getBufferID());
@@ -322,6 +333,18 @@ void SoundInstance::play()
 	else
 		msg.pushFloat( 0.0 );
 
+	// Sample rate (1.0 normal, 2.0 one octave up, 0.5 one octave down, -1 backwards
+	msg.pushFloat( pitch );
+
+	// Trigger for playToPosition ( 0 = off, 1 = on )
+	msg.pushInt32( 0 );
+
+	// Trigger for playToPosition ( 0 = off, 1 = on )
+	msg.pushInt32( 0 );
+
+	// Frame at which you'd like to jump to for playback.  0 is the beginning of the file.
+	msg.pushInt32( 0 );
+
 	environment->getSoundManager()->sendOSCMessage(msg);
 
 	playState = playing;
@@ -336,6 +359,7 @@ void SoundInstance::playStereo()
 	if( environment->getSoundManager()->isDebugEnabled() )
 		ofmsg("%1%: Playing buffer %2% with instanceID: %3%", %__FUNCTION__ %sound->getBufferID() %instanceID);
 
+	stereoSound = true;
 	Message msg("/playStereo");
 	msg.pushInt32(instanceID);
 	msg.pushInt32(sound->getBufferID());
@@ -357,6 +381,15 @@ void SoundInstance::playStereo()
 	else
 		msg.pushFloat( 0.0 );
 
+	// Sample rate (1.0 normal, 2.0 one octave up, 0.5 one octave down, -1 backwards
+	msg.pushFloat( pitch );
+
+	// Trigger for playToPosition ( 0 = off, 1 = on )
+	msg.pushInt32( 0 );
+
+	// Frame at which you'd like to jump to for playback.  0 is the beginning of the file.
+	msg.pushInt32( 0 );
+
 	environment->getSoundManager()->sendOSCMessage(msg);
 
 	playState = playing;
@@ -377,6 +410,7 @@ void SoundInstance::play( Vector3f position, float volume, float width, float mi
 	if( environment->getSoundManager()->isDebugEnabled() )
 		ofmsg("%1%: Playing buffer %2% with instanceID: %3%", %__FUNCTION__ %sound->getBufferID() %instanceID);
 
+	stereoSound = false;
 	Message msg("/play");
 	msg.pushInt32(instanceID);
 	msg.pushInt32(sound->getBufferID());
@@ -419,6 +453,15 @@ void SoundInstance::play( Vector3f position, float volume, float width, float mi
 	else
 		msg.pushFloat( 0.0 );
 
+	// Sample rate (1.0 normal, 2.0 one octave up, 0.5 one octave down, -1 backwards
+	msg.pushFloat( pitch );
+
+	// Trigger for playToPosition ( 0 = off, 1 = on )
+	msg.pushInt32( 0 );
+
+	// Frame at which you'd like to jump to for playback.  0 is the beginning of the file.
+	msg.pushInt32( 0 );
+
 	environment->getSoundManager()->sendOSCMessage(msg);
 
 	playState = playing;
@@ -433,6 +476,7 @@ void SoundInstance::playStereo( float volume, bool loop )
 	if( environment->getSoundManager()->isDebugEnabled() )
 		ofmsg("%1%: Playing buffer %2% with instanceID: %3%", %__FUNCTION__ %sound->getBufferID() %instanceID);
 
+	stereoSound = true;
 	Message msg("/playStereo");
 	msg.pushInt32(instanceID);
 	msg.pushInt32(sound->getBufferID());
@@ -447,6 +491,138 @@ void SoundInstance::playStereo( float volume, bool loop )
 		msg.pushFloat( 1.0 );
 	else
 		msg.pushFloat( 0.0 );
+
+	// Sample rate (1.0 normal, 2.0 one octave up, 0.5 one octave down, -1 backwards
+	msg.pushFloat( pitch );
+
+	// Trigger for playToPosition ( 0 = off, 1 = on )
+	msg.pushInt32( 0 );
+
+	// Frame at which you'd like to jump to for playback.  0 is the beginning of the file.
+	msg.pushInt32( 0 );
+
+	environment->getSoundManager()->sendOSCMessage(msg);
+
+	playState = playing;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SoundInstance::playAtFrame( int frameNo )
+{
+	if( isPlaying() )
+		stop();
+
+	if( environment->getSoundManager()->isDebugEnabled() )
+		ofmsg("%1%: Playing buffer %2% with instanceID: %3%", %__FUNCTION__ %sound->getBufferID() %instanceID);
+
+	stereoSound = false;
+	Message msg("/play");
+	msg.pushInt32(instanceID);
+	msg.pushInt32(sound->getBufferID());
+
+	float scaledVolume = volume;
+	if( volume * sound->getVolumeScale() > 1 )
+	{
+		scaledVolume = 1.0;
+	}
+	else
+	{
+		scaledVolume =  volume * sound->getVolumeScale();
+	}
+
+	msg.pushFloat( scaledVolume );
+
+	// We're assuming the position was set using setPosition() which has already handled the local coordinates
+	msg.pushFloat( position[0] );
+	msg.pushFloat( position[1] );
+	msg.pushFloat( position[2] );
+	
+	// User's position relative to the audio system
+	Vector3f audioListener = environment->getUserPosition();
+	msg.pushFloat( audioListener[0] );
+	msg.pushFloat( audioListener[1] );
+	msg.pushFloat( audioListener[2] );
+
+	// Width - nSpeakers 1-20
+	if( environmentSound )
+		msg.pushFloat( 20 );
+	else
+		msg.pushFloat( width );
+
+	float wetness = this->wetness;
+	float roomSize = this->roomSize;
+
+	if( useEnvironmentParameters )
+	{
+		wetness = environment->getWetness();
+		roomSize = environment->getRoomSize();
+	}
+
+	// Mix - wetness of sound 0.0 - 1.0
+	msg.pushFloat( wetness );
+
+	// Room size - reverb amount 0.0 - 1.0
+	msg.pushFloat( roomSize );
+
+	// Loop sound - 0.0 not looping - 1.0 looping
+	if( loop )
+		msg.pushFloat( 1.0 );
+	else
+		msg.pushFloat( 0.0 );
+
+	// Sample rate (1.0 normal, 2.0 one octave up, 0.5 one octave down, -1 backwards
+	msg.pushFloat( pitch );
+
+	// Trigger for playToPosition ( 0 = off, 1 = on )
+	msg.pushInt32( 1 );
+
+	// Frame at which you'd like to jump to for playback.  0 is the beginning of the file.
+	msg.pushInt32( frameNo );
+
+	environment->getSoundManager()->sendOSCMessage(msg);
+
+	playState = playing;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SoundInstance::playStereoAtFrame( int frameNo )
+{
+	if( isPlaying() )
+		stop();
+
+	if( environment->getSoundManager()->isDebugEnabled() )
+		ofmsg("%1%: Playing buffer %2% with instanceID: %3%", %__FUNCTION__ %sound->getBufferID() %instanceID);
+
+	stereoSound = true;
+	Message msg("/playStereo");
+	msg.pushInt32(instanceID);
+	msg.pushInt32(sound->getBufferID());
+
+	float scaledVolume = volume;
+	if( volume * sound->getVolumeScale() > 1 )
+	{
+		scaledVolume = 1.0;
+	}
+	else
+	{
+		scaledVolume =  volume * sound->getVolumeScale();
+	}
+	msg.pushFloat( scaledVolume );
+
+	// Loop sound - 0.0 not looping - 1.0 looping
+	if( loop )
+		msg.pushFloat( 1.0 );
+	else
+		msg.pushFloat( 0.0 );
+
+	// Sample rate (1.0 normal, 2.0 one octave up, 0.5 one octave down, -1 backwards
+	msg.pushFloat( pitch );
+
+	// Trigger for playToPosition ( 0 = off, 1 = on )
+	msg.pushInt32( 1 );
+
+	// Frame at which you'd like to jump to for playback.  0 is the beginning of the file.
+	msg.pushInt32( frameNo );
 
 	environment->getSoundManager()->sendOSCMessage(msg);
 
@@ -601,13 +777,29 @@ void SoundInstance::fade(float targetAmp, float envelopeDuration)
 	if( environment->getSoundManager()->isDebugEnabled() )
 		ofmsg("%1%: for instanceID: %2%", %__FUNCTION__ %instanceID);
 
-	Message msg("/setVolEnv");
-	msg.pushInt32(instanceID);
+	if( isPlaying() )
+	{
+		if( stereoSound )
+		{
+			Message msg("/setSterVolEnv");
+			msg.pushInt32(instanceID);
 
-	msg.pushFloat(targetAmp); // Target amplitude
-	msg.pushFloat(envelopeDuration); // Duration in seconds to reach new amplitude
+			msg.pushFloat(targetAmp); // Target amplitude
+			msg.pushFloat(envelopeDuration); // Duration in seconds to reach new amplitude
 
-	environment->getSoundManager()->sendOSCMessage(msg);
+			environment->getSoundManager()->sendOSCMessage(msg);
+		}
+		else
+		{
+			Message msg("/setVolEnv");
+			msg.pushInt32(instanceID);
+
+			msg.pushFloat(targetAmp); // Target amplitude
+			msg.pushFloat(envelopeDuration); // Duration in seconds to reach new amplitude
+
+			environment->getSoundManager()->sendOSCMessage(msg);
+		}
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -635,12 +827,15 @@ void SoundInstance::setRoomSize(float value)
 	this->roomSize = value;
 	useEnvironmentParameters = false;
 	
-	Message msg("/setReverb");
-	msg.pushInt32(instanceID);
-	msg.pushFloat(wetness);
-	msg.pushFloat(roomSize);
+	if( isPlaying() )
+	{
+		Message msg("/setReverb");
+		msg.pushInt32(instanceID);
+		msg.pushFloat(wetness);
+		msg.pushFloat(roomSize);
 
-	environment->getSoundManager()->sendOSCMessage(msg);
+		environment->getSoundManager()->sendOSCMessage(msg);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -703,6 +898,57 @@ void SoundInstance::setReverb(float wetness, float roomSize)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SoundInstance::setPitch(float value)
+{
+	this->pitch = value;
+	if( isPlaying() )
+	{
+		if( stereoSound )
+		{
+			Message msg("/setStereoRate");
+			msg.pushInt32(instanceID);
+			msg.pushFloat(value);
+			environment->getSoundManager()->sendOSCMessage(msg);
+		}
+		else
+		{
+			Message msg("/setMonoRate");
+			msg.pushInt32(instanceID);
+			msg.pushFloat(value);
+			environment->getSoundManager()->sendOSCMessage(msg);
+		}
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+float SoundInstance::getPitch()
+{
+	return pitch;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SoundInstance::setCurrentFrame(int value)
+{
+	if( isPlaying() )
+	{
+		if( stereoSound )
+		{
+			Message msg("/setStereoFrame");
+			msg.pushInt32(instanceID);
+			msg.pushInt32(value);
+			environment->getSoundManager()->sendOSCMessage(msg);
+		}
+		else
+		{
+			Message msg("/setMonoFrame");
+			msg.pushInt32(instanceID);
+			msg.pushInt32(value);
+			environment->getSoundManager()->sendOSCMessage(msg);
+		}
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::setMaxDistance(float value)
 {
 	this->maxDistance = value;
@@ -746,4 +992,10 @@ void SoundInstance::setSoundEnvironment(SoundEnvironment* environment)
 int SoundInstance::getID()
 {
 	return instanceID;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+int SoundInstance::getBufferID()
+{
+	return sound->getBufferID();
 }

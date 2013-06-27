@@ -160,6 +160,7 @@ public:
 	void stopAllSounds();
 	void cleanupAllSounds();
 
+	void setServerVolume(int); // typically -30 to 8
 private:
 	void updateInstancePositions();
 	void removeInstanceNode(int);
@@ -208,6 +209,8 @@ private:
 	static double nominalSampleRate;
 	static double actualSampleRate;
 
+	// Sound server control
+	static int soundServerVolume;
 };// SoundManager
 
 }; // namespace omicron

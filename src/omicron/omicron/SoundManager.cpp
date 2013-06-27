@@ -45,6 +45,7 @@ float SoundManager::avgCPU = -1;
 float SoundManager::peakCPU = -1;
 double SoundManager::nominalSampleRate = -1;
 double SoundManager::actualSampleRate = -1;
+int SoundManager::soundServerVolume = -16;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 SoundManager::SoundManager():
@@ -526,6 +527,21 @@ void SoundManager::cleanupAllSounds()
 		msg.pushInt32(bufferIDList[i]);
 		sendOSCMessage(msg);
 	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SoundManager::setServerVolume(int value)
+{
+	if( value > 8 )
+		soundServerVolume = 8;
+	else if( value < -30 )
+		soundServerVolume = -30;
+	else
+		soundServerVolume = value;
+
+	Message msg("/serverVol");
+	msg.pushInt32(soundServerVolume);
+	sendOSCMessage(msg);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

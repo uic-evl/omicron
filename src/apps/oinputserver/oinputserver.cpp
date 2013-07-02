@@ -784,7 +784,7 @@ void OInputServer::createClient(const char* clientAddress, int dataPort, bool le
 int  main(int argc, char** argv)
 {
 	OInputServer app;
-
+	
 	// Read config file name from command line or use default one.
 	const char* cfgName = "oinputserver.cfg";
 	if(argc == 2) cfgName = argv[1];

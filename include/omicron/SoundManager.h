@@ -79,6 +79,9 @@ public:
 	void setAssetDirectory(const String&);
 	String& getAssetDirectory();
 
+	void setServerVolume(int);
+	int getServerVolume();
+
 	//void addInstanceID(int);
 	//void addBufferID(int);
 	//void addInstance( Ref<SoundInstance> );
@@ -161,6 +164,7 @@ public:
 	void cleanupAllSounds();
 
 	void setServerVolume(int); // typically -30 to 8
+	int getServerVolume();
 private:
 	void updateInstancePositions();
 	void removeInstanceNode(int);

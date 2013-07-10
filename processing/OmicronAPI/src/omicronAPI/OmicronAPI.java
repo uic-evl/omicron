@@ -29,7 +29,9 @@ import hypermedia.net.UDP;
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************************************/
 
+import java.net.ConnectException;
 import java.net.InetAddress;
+import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -47,6 +49,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PrintStream;
 
 public class OmicronAPI
@@ -627,6 +630,7 @@ public class OmicronAPI
 
 	private UDP socketForData;
 	private Client clientForServer;
+	private Socket clientSocket;
 
 	private boolean server = false;
 	private boolean connected = false;
@@ -671,7 +675,7 @@ public class OmicronAPI
 	 * @param trackerIP
 	 *            the IP address of the Omicron server
 	 */
-	public void connectToTracker(int clientPort, int serverPort, String trackerIP)
+	public boolean connectToTracker(int clientPort, int serverPort, String trackerIP)
 	{
 		this.owner = applet;
 
@@ -685,14 +689,6 @@ public class OmicronAPI
 		}
 		catch (NoClassDefFoundError e)
 		{
-		}
-
-		// Open UDP Socket
-		if (clientPort != 0)
-		{
-			this.port_udp = clientPort;
-			socketForData = new UDP(this, clientPort);
-			socketForData.setReceiveHandler(modHandler);
 		}
 
 		// Open connection to server
@@ -717,13 +713,28 @@ public class OmicronAPI
 				this.serverName = ipAddress;
 				this.port_tcp = serverPort;
 				this.server = true;
+				
+				// We create our own socket to handle exceptions ourselves
+				clientSocket = new Socket(serverName, port_tcp);
+
+				
 				// Initialize connection with server
-				clientForServer = new Client((PApplet) owner, serverName, port_tcp);
+				clientForServer = new Client((PApplet) owner, clientSocket);
 				this.connected = true;
 			}
-			catch (UnknownHostException e)
+			catch( ConnectException ioe )
+			{
+				System.err.println("OmicronAPI::connectToTracker() - Failed to connect to '" + serverName + "' on port " + port_tcp);
+				return false;
+			}
+			catch( IOException ioe )
+			{
+				return false;
+			}
+			catch ( Exception e )
 			{
 				e.printStackTrace();
+				return false;
 			}
 		}
 		else if (serverPort != 0 && trackerIP != null)
@@ -731,17 +742,43 @@ public class OmicronAPI
 			this.serverName = trackerIP;
 			this.port_tcp = serverPort;
 			this.server = true;
-			// Initialize connection with server
-			clientForServer = new Client((PApplet) owner, serverName, port_tcp);
-			this.connected = true;
-			trackerOn = true;
+			
+			// We create our own socket to handle exceptions ourselves
+			try
+			{
+				clientSocket = new Socket(serverName, port_tcp);
+				
+				// Initialize connection with server
+				clientForServer = new Client((PApplet) owner, clientSocket);
+				this.connected = true;
+				trackerOn = true;
+			}
+			catch( ConnectException ioe )
+			{
+				System.err.println("OmicronAPI::connectToTracker() - Failed to connect to '" + serverName + "' on port " + port_tcp);
+				return false;
+			}
+			catch ( Exception e )
+			{
+				e.printStackTrace();
+				return false;
+			}
+
 		}
 		else
 		{
 			this.server = false;
 			this.connected = false;
 		}
-
+		
+		// Open UDP Socket
+		if (clientPort != 0)
+		{
+			this.port_udp = clientPort;
+			socketForData = new UDP(this, clientPort);
+			socketForData.setReceiveHandler(modHandler);
+		}
+				
 		// Initiate data transfer
 		this.dataOn = false;
 		initHandShake();
@@ -750,6 +787,7 @@ public class OmicronAPI
 		udpListen(true);
 
 		startTime = (float) (System.currentTimeMillis() / 1000.0);
+		return true;
 	}// CTOR
 	
 	/**
@@ -771,6 +809,27 @@ public class OmicronAPI
 		connectToTracker( clientPort, serverPort, trackerIP );
 	}// CTOR
 	
+	/**
+	 * Pings the server to make sure the connection is still active
+	 * 
+	 * @return Result of the server check 
+	 */
+	public boolean isConnectedToServer()
+	{
+		try
+		{
+			OutputStream output = clientSocket.getOutputStream();
+			output.flush();
+			output.write(' ');
+		}
+		catch (Exception e)
+		{
+			//e.printStackTrace();
+			connected = false;
+		}
+		
+		return connected;
+	}// isConnectedToServer
 	
 	/**
 	 * Tells the server to start sending msgs to the UDP socket
@@ -1262,8 +1321,11 @@ public class OmicronAPI
 			String ip = serverAddy();
 
 			// close the connection
-			clientForServer.stop();
-			clientForServer = null;
+			if( clientForServer != null )
+			{
+				clientForServer.stop();
+				clientForServer = null;
+			}
 			// log("close socket < port:" + port + ", address:" + ip + " >\n");
 		}
 		else
@@ -1277,7 +1339,8 @@ public class OmicronAPI
 	 */
 	private void udpClose()
 	{
-		socketForData.close();
+		if( socketForData != null )
+			socketForData.close();
 	}
 
 	/**

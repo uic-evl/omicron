@@ -1,0 +1,9 @@
+/processing/OmicronAPI/bin/omicronAPI/*.class
+
+/processing/OmicronAPI/bin/hypermedia/net/*.class
+/processing/OmicronAPI/bin/omicronTester/*.class
+/processing/OmicronAPI/bin/omicronTester/*.class
+/processing/OmicronAPI/bin/omicronTester/*.class
+/processing/OmicronAPI/bin/omicronUI/*.class
+
+Thumbs.db

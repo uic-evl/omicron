@@ -818,9 +818,13 @@ public class OmicronAPI
 	{
 		try
 		{
+			String MsgTCPInit = MSG_TCP_SEND_DATA;
+			
+			if( legacyMode )
+				MsgTCPInit = MSG_TCP_SEND_LEGACY_DATA;
+			
 			OutputStream output = clientSocket.getOutputStream();
-			output.flush();
-			output.write(' ');
+			output.write((MsgTCPInit + port_udp).getBytes());
 		}
 		catch (Exception e)
 		{

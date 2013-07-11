@@ -569,24 +569,17 @@ public class OmicronAPI
 		targetWidth = newWidth;
 		targetHeight = newHeight;
 
-		if (!scaleScreen)
+		if ( (float)applet.width / (float)applet.height >= targetWidth / targetHeight)
 		{
-			screenScale = 1.0f;
-			screenOffsetX = 0.0f;
-			screenOffsetY = 0.0f;
-			return;
-		}
-		if (applet.width / applet.height >= targetWidth / targetHeight)
-		{
-			screenScale = applet.height / targetHeight;
-			screenOffsetX = (applet.width - targetWidth * screenScale) * 0.5f;
+			screenScale = (float)applet.height / targetHeight;
+			screenOffsetX = ( (float)applet.width - targetWidth * screenScale) * 0.5f;
 			screenOffsetY = 0;
 		}
 		else
 		{
-			screenScale = applet.width / targetWidth;
+			screenScale = (float)applet.width / targetWidth;
 			screenOffsetX = 0;
-			screenOffsetY = (applet.height - targetHeight * screenScale) * 0.5f;
+			screenOffsetY = ((float)applet.height - targetHeight * screenScale) * 0.5f;
 		}
 
 		// Cluster support later

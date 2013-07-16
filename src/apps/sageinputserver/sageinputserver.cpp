@@ -78,16 +78,20 @@ bool sageConnected = false;
 #define SOCKET_ERROR    -1
 #endif
 
-class SAGETouchServer{
+class SAGEInputServer{
 public:
 	void connectToSage();
 	void handleEvent(Event*);
+
+	void pointerToSAGEEvent(Event*);
+	void wandToSAGEEvent(Event*);
+
 	void queueMessage(char*);
 	void sendToSage();
 }; //class
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void SAGETouchServer::connectToSage(){
+void SAGEInputServer::connectToSage(){
 	if (!USE_SAGE) 
 		return;
 	
@@ -146,86 +150,94 @@ void SAGETouchServer::connectToSage(){
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void SAGETouchServer::handleEvent(Event* evt){
+void SAGEInputServer::handleEvent(Event* evt){
 
 	if( evt->getServiceType() == Service::Pointer ){
-		char msgData[256];
-		int id = evt->getSourceId();
-		float xPos = evt->getPosition().x();
-		float yPos = 1.0 - evt->getPosition().y(); // Flip y position for SAGE
-		int eventType = evt->getType();
-		bool validEvent = false;
-
-		int gestureType = GESTURE_SINGLE_TOUCH;
-
-		// Get gesture type from event flag
-		if( (evt->getFlags() & Event::Click) == Event::Click )
-			gestureType = GESTURE_DOUBLE_CLICK;
-		if( (evt->getFlags() & 1 << 16) == 1 << 16 )
-			gestureType = GESTURE_BIG_TOUCH;
-		if( (evt->getFlags() & 1 << 17) == 1 << 17 )
-			gestureType = GESTURE_MULTI_TOUCH_HOLD;
-		if( (evt->getFlags() & 1 << 18) == 1 << 18 )
-			gestureType = GESTURE_MULTI_TOUCH_SWIPE;
-
-		// Remap eventType to match SAGE Touch lifepoint
-		switch( eventType )
-		{
-			case Event::Down: eventType = 1; break; // Begin
-			case Event::Move: eventType = 2; break; // Middle
-			case Event::Up: eventType = 3; break; // End
-		}
-
-		// Single touch - Double touch - Big/Palm touch
-		if( gestureType == GESTURE_SINGLE_TOUCH || gestureType == GESTURE_DOUBLE_CLICK || gestureType == GESTURE_BIG_TOUCH )
-		{
-			sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %d\n", 
-					myIP, id, gestureType, xPos, yPos, eventType);
-			validEvent = true;
-		}
-
-		// Multi-touch hold (4+ finger)
-		else if( gestureType == GESTURE_MULTI_TOUCH_HOLD )
-		{
-			int pointsSize = 5;
-
-			sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %d %d\n", 
-					myIP, id, gestureType, xPos, yPos, pointsSize, eventType);
-			validEvent = true;
-		}
-
-		// Multi-touch swipe (4+ finger)
-		else if( gestureType == GESTURE_MULTI_TOUCH_SWIPE )
-		{
-			float dx = 0;
-			float dy = 0;
-			int pointsSize = 5;
-
-			sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %f %f %d %d\n", 
-					myIP, id, gestureType, xPos, yPos, dx, dy, pointsSize, eventType);
-			validEvent = true;
-		}
-
-		// Zoom touch
-		else if( gestureType == GESTURE_ZOOM )
-		{
-			float amount = 0; // Not sure what this is yet
-
-			sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %f %d\n", 
-					myIP, id, gestureType, xPos, yPos, amount, eventType);
-			validEvent = true;
-		}
-
-
-		if( validEvent ){
-			printf(msgData);
-			queueMessage(msgData);
-			sendToSage();
-		}
+		pointerToSAGEEvent( evt );
+		
 	}
 }
 
-void SAGETouchServer::queueMessage(char *newMsg) 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SAGEInputServer::pointerToSAGEEvent(Event* evt)
+{
+	char msgData[256];
+	int id = evt->getSourceId();
+	float xPos = evt->getPosition().x();
+	float yPos = 1.0 - evt->getPosition().y(); // Flip y position for SAGE
+	int eventType = evt->getType();
+	bool validEvent = false;
+
+	int gestureType = GESTURE_SINGLE_TOUCH;
+
+	// Get gesture type from event flag
+	if( (evt->getFlags() & Event::Click) == Event::Click )
+		gestureType = GESTURE_DOUBLE_CLICK;
+	if( (evt->getFlags() & 1 << 16) == 1 << 16 )
+		gestureType = GESTURE_BIG_TOUCH;
+	if( (evt->getFlags() & 1 << 17) == 1 << 17 )
+		gestureType = GESTURE_MULTI_TOUCH_HOLD;
+	if( (evt->getFlags() & 1 << 18) == 1 << 18 )
+		gestureType = GESTURE_MULTI_TOUCH_SWIPE;
+
+	// Remap eventType to match SAGE Touch lifepoint
+	switch( eventType )
+	{
+		case Event::Down: eventType = 1; break; // Begin
+		case Event::Move: eventType = 2; break; // Middle
+		case Event::Up: eventType = 3; break; // End
+		case Event::Zoom:  gestureType = GESTURE_ZOOM; break; // End
+	}
+	
+	// Single touch - Double touch - Big/Palm touch
+	if( gestureType == GESTURE_SINGLE_TOUCH || gestureType == GESTURE_DOUBLE_CLICK || gestureType == GESTURE_BIG_TOUCH )
+	{
+		sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %d\n", 
+				myIP, id, gestureType, xPos, yPos, eventType);
+		validEvent = true;
+	}
+
+	// Multi-touch hold (4+ finger)
+	else if( gestureType == GESTURE_MULTI_TOUCH_HOLD )
+	{
+		int pointsSize = 5;
+
+		sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %d %d\n", 
+			myIP, id, gestureType, xPos, yPos, pointsSize, eventType);
+		validEvent = true;
+	}
+
+	// Multi-touch swipe (4+ finger)
+	else if( gestureType == GESTURE_MULTI_TOUCH_SWIPE )
+	{
+		float dx = 0;
+		float dy = 0;
+		int pointsSize = 5;
+
+		sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %f %f %d %d\n", 
+				myIP, id, gestureType, xPos, yPos, dx, dy, pointsSize, eventType);
+		validEvent = true;
+	}
+
+	// Zoom touch
+	else if( gestureType == GESTURE_ZOOM )
+	{
+		float amount = evt->getExtraDataFloat(2); // Not sure what this is yet
+		omsg("SAGE zoom");
+		sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %f %d\n", 
+				myIP, id, gestureType, xPos, yPos, amount, eventType);
+		validEvent = true;
+	}
+
+
+	if( validEvent ){
+		//printf(msgData);
+		queueMessage(msgData);
+		sendToSage();
+	}
+}
+
+void SAGEInputServer::queueMessage(char *newMsg) 
 {
     if (!USE_SAGE) return;
 
@@ -237,7 +249,7 @@ void SAGETouchServer::queueMessage(char *newMsg)
     }
 }
 
-void SAGETouchServer::sendToSage()
+void SAGEInputServer::sendToSage()
 {
     if (!USE_SAGE || strlen(msg) == 0) return;
     
@@ -256,7 +268,7 @@ void SAGETouchServer::sendToSage()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void main(int argc, char** argv)
 {
-	SAGETouchServer app;
+	SAGEInputServer app;
 
 	// Read config file name from command line or use default one.
 	const char* cfgName = "sageTouch.cfg";

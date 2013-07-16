@@ -34,6 +34,9 @@
 using namespace std;
 
 struct Touch{
+	enum TouchState { INACTIVE, ACTIVE, IDLE };
+	int state;
+
 	int ID;
 	float xPos;
 	float yPos;
@@ -71,6 +74,9 @@ namespace omicron {
 
 			int lastUpdated; // Milliseconds
 
+			float initialZoomDistance;
+			float zoomDelta;
+
 			map<int,Touch> touchList;
 			map<int,Touch> longRangeTouchList;
 
@@ -92,6 +98,8 @@ namespace omicron {
 			int getGestureFlag();
 			bool isRemovable();
 			void setRemove();
+
+			float getZoomDelta();
 
 			Event::Type getEventType();
 	};
@@ -125,6 +133,7 @@ namespace omicron {
 		bool addTouchGroup( Event::Type eventType, float xPos, float yPos, int id );
 
 		void generatePQServiceEvent(Event::Type eventType, Touch touch, int advancedGesture);
+		void generateZoomEvent(Touch touch, float deltaDistance);
 	};
 }
 

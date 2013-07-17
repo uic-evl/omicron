@@ -50,13 +50,14 @@ struct Touch{
 
 namespace omicron {
 	
+	class TouchGestureManager;
 
 	// Holds the initial and current center of mass of touches
 	// as well as all touches in the group
 	class TouchGroup
 	{
 		private:
-			//TouchGestureManager* parent;
+			TouchGestureManager* gestureManager;
 			Touch centerTouch;
 
 			bool remove;
@@ -75,7 +76,8 @@ namespace omicron {
 			int lastUpdated; // Milliseconds
 
 			float initialZoomDistance;
-			float zoomDelta;
+			float zoomDistance;
+			float zoomLastDistance;
 
 			map<int,Touch> touchList;
 			map<int,Touch> longRangeTouchList;
@@ -83,8 +85,12 @@ namespace omicron {
 			// Maybe replace these with a function call to generate on demand?
 			map<int,Touch> idleTouchList;
 			map<int,Touch> movingTouchList;
+
+			Lock* touchListLock;
 		public:
-			TouchGroup(int);
+			TouchGroup(TouchGestureManager*, int);
+			~TouchGroup();
+
 			int getID();
 
 			bool isInsideGroup( Event::Type eventType, float x, float y, int id );
@@ -115,6 +121,9 @@ namespace omicron {
 		
 		bool addTouch(Event::Type eventType, Touch touch);
 		void setNextID( int ID );
+
+		void generatePQServiceEvent(Event::Type eventType, Touch touch, int advancedGesture);
+		void generateZoomEvent(Event::Type eventType, Touch touch, float deltaDistance);
 	private:
 		Service* pqsInstance;
 		Lock* touchListLock;
@@ -128,12 +137,9 @@ namespace omicron {
 		static int maxTouches; // Should be same number as touchID array init
 		static int nextID;
 		
-		static int deadTouchDelay; 
+		static int touchTimeout; 
 
 		bool addTouchGroup( Event::Type eventType, float xPos, float yPos, int id );
-
-		void generatePQServiceEvent(Event::Type eventType, Touch touch, int advancedGesture);
-		void generateZoomEvent(Touch touch, float deltaDistance);
 	};
 }
 

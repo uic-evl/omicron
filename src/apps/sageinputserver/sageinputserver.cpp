@@ -148,13 +148,61 @@ void SAGEInputServer::connectToSage(){
     printf("\nConnected to sage on: %s\n", sageHost);
     sageConnected = true;
 }
-
+int triggerFlag = 0;
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SAGEInputServer::handleEvent(Event* evt){
 
 	if( evt->getServiceType() == Service::Pointer ){
 		pointerToSAGEEvent( evt );
-		
+	}
+	if( evt->getServiceType() == Service::Controller ){
+		//pointerToSAGEEvent( evt );
+		float analogLR = evt->getExtraDataFloat(0);
+		float analogTrigger = evt->getExtraDataFloat(4);
+
+		char msgData[256];
+		float xPos = 0.5f;
+		float yPos = 0.5f;
+		int eventType = evt->getType();
+		int id = 4;
+		float amount = analogLR / 100.0f;
+		int gestureType = GESTURE_SINGLE_TOUCH;
+
+		if( analogTrigger > 0 && triggerFlag == 0 )
+		{
+			gestureType = GESTURE_ZOOM;
+			triggerFlag = 1;
+			eventType = 1; // Begin
+			sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %f %d\n", 
+				myIP, id, gestureType, xPos, yPos, amount, eventType);
+			printf(msgData);
+		queueMessage(msgData);
+		sendToSage();
+		}
+		if( analogTrigger == 0 && triggerFlag != 0 )
+		{
+			gestureType = GESTURE_ZOOM;
+			triggerFlag = 0;
+			eventType = 3; // End
+			sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %f %d\n", 
+				myIP, id, gestureType, xPos, yPos, amount, eventType);
+			printf(msgData);
+		queueMessage(msgData);
+		sendToSage();
+		}
+
+		if( analogLR != 0 )
+		{
+
+		gestureType = GESTURE_ZOOM;
+		eventType = 2;
+		sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %f %d\n", 
+				myIP, id, gestureType, xPos, yPos, amount, eventType);
+
+		printf(msgData);
+		queueMessage(msgData);
+		sendToSage();
+		}
 	}
 }
 
@@ -222,8 +270,9 @@ void SAGEInputServer::pointerToSAGEEvent(Event* evt)
 	// Zoom touch
 	else if( gestureType == GESTURE_ZOOM )
 	{
+		eventType = evt->getExtraDataFloat(3);
+
 		float amount = evt->getExtraDataFloat(2); // Not sure what this is yet
-		omsg("SAGE zoom");
 		sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %f %d\n", 
 				myIP, id, gestureType, xPos, yPos, amount, eventType);
 		validEvent = true;
@@ -231,7 +280,7 @@ void SAGEInputServer::pointerToSAGEEvent(Event* evt)
 
 
 	if( validEvent ){
-		//printf(msgData);
+		printf(msgData);
 		queueMessage(msgData);
 		sendToSage();
 	}

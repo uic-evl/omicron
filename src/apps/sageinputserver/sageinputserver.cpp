@@ -258,6 +258,7 @@ void SAGEInputServer::pointerToSAGEEvent(Event* evt)
 	// Multi-touch swipe (4+ finger)
 	else if( gestureType == GESTURE_MULTI_TOUCH_SWIPE )
 	{
+		// Values have no effect?
 		float dx = 0;
 		float dy = 0;
 		int pointsSize = 5;
@@ -280,7 +281,7 @@ void SAGEInputServer::pointerToSAGEEvent(Event* evt)
 
 
 	if( validEvent ){
-		printf(msgData);
+		//printf(msgData);
 		queueMessage(msgData);
 		sendToSage();
 	}

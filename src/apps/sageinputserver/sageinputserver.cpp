@@ -234,7 +234,6 @@ void SAGEInputServer::pointerToSAGEEvent(Event* evt)
 		case Event::Down: eventType = 1; break; // Begin
 		case Event::Move: eventType = 2; break; // Middle
 		case Event::Up: eventType = 3; break; // End
-		case Event::Zoom:  gestureType = GESTURE_ZOOM; break; // End
 	}
 	
 	// Single touch - Double touch - Big/Palm touch

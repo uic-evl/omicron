@@ -41,7 +41,7 @@ float minimumZoomDistance = 0.1; // Minimum distance between two touches to be c
 float holdToSwipeThreshold = 0.02; // Minimum distance before a multi-touch hold gesture is considered a swipe
 
 // User Flags: Advanced Touch Gestures Flags
-const int GESTURE_UNPROCESSED = -2; // Not yet identified (allows the first single touch to generate a down event)
+const int GESTURE_UNPROCESSED = 1 << 19; // Not yet identified (allows the first single touch to generate a down event)
 const int GESTURE_SINGLE_TOUCH = -1;
 const int GESTURE_BIG_TOUCH = 1 << 16;
 const int GESTURE_MULTI_TOUCH_HOLD = 1 << 17;

@@ -40,6 +40,8 @@ int touchTimeout = 500; // Time after last update before Touch is ignored by tou
 float minimumZoomDistance = 0.1; // Minimum distance between two touches to be considered for zoom gesture (differentiates between clicks and zooms)
 float holdToSwipeThreshold = 0.02; // Minimum distance before a multi-touch hold gesture is considered a swipe
 
+float zoomGestureMultiplier = 10;
+
 // User Flags: Advanced Touch Gestures Flags
 const int GESTURE_UNPROCESSED = 1 << 19; // Not yet identified (allows the first single touch to generate a down event)
 const int GESTURE_SINGLE_TOUCH = -1;
@@ -54,7 +56,7 @@ TouchGroup::TouchGroup(TouchGestureManager* gm, int ID){
 	gestureManager = gm;
 	//printf("TouchGroup %d created\n", ID);
 
-	initialDiameter = 0.5; // Currently in pixels -> TODO: Change to screen ratio
+	initialDiameter = 0.4;
 	longRangeDiameter = 0.6;
 	diameter = initialDiameter;
 	this->ID = ID;
@@ -248,19 +250,64 @@ void TouchGroup::process(){
 	}
 
 	//ofmsg("TouchGroup %1% size %2%", %ID %getTouchCount() );
-
+	// Zoom gesture
 	if( gestureFlag != Event::Zoom && getTouchCount() == 2 )
 	{
-		ofmsg("TouchGroup %1% begin zoom", %ID );
+		//ofmsg("TouchGroup %1% begin zoom", %ID );
 		gestureFlag = Event::Zoom;
+		
+		int farthestTouchID = -1;
+
+		map<int,Touch>::iterator it;
+		int validTouchSize = 0;
+		for ( it = touchList.begin() ; it != touchList.end(); it++ ){
+			Touch touch = (*it).second;
+
+			float curDistance = sqrt( pow(abs( xPos - touch.xPos ), 2) + pow(abs( yPos - touch.yPos ), 2) );
+			if( curDistance > zoomDistance ){
+				zoomDistance = curDistance;
+				farthestTouchID = touch.ID;
+			}
+		}
+
+		gestureManager->generateZoomEvent( Event::Down, centerTouch, 0 );
+	}
+	else if( gestureFlag == Event::Zoom && getTouchCount() == 2 )
+	{
+		zoomLastDistance = zoomDistance;
+
+		zoomDistance = 0;
+		int farthestTouchID = -1;
+
+		map<int,Touch>::iterator it;
+		int validTouchSize = 0;
+		for ( it = touchList.begin() ; it != touchList.end(); it++ ){
+			Touch touch = (*it).second;
+
+			float curDistance = sqrt( pow(abs( xPos - touch.xPos ), 2) + pow(abs( yPos - touch.yPos ), 2) );
+			if( curDistance > zoomDistance ){
+				zoomDistance = curDistance;
+				farthestTouchID = touch.ID;
+			}
+		}
+
+		float zoomDelta = zoomDistance-zoomLastDistance;
+
+		if( zoomDelta != 0 )
+		{
+			//ofmsg("TouchGroup %1% zooming %2%", %ID %zoomDelta );
+			gestureFlag = Event::Zoom;
+			gestureManager->generateZoomEvent( Event::Move, centerTouch, zoomDelta * zoomGestureMultiplier );
+		}
 
 	}
 	else if( gestureFlag == Event::Zoom && getTouchCount() != 2 )
 	{
-		ofmsg("TouchGroup %1% end zoom", %ID );
-
+		//ofmsg("TouchGroup %1% end zoom", %ID );
+		gestureManager->generateZoomEvent( Event::Up, centerTouch, 0 );
 		gestureFlag = GESTURE_UNPROCESSED;
 	}
+	// Single touch gestures
 	else if( gestureFlag == GESTURE_UNPROCESSED && getTouchCount() == 1 )
 	{
 		gestureFlag = GESTURE_SINGLE_TOUCH;
@@ -271,6 +318,7 @@ void TouchGroup::process(){
 		gestureFlag = GESTURE_SINGLE_TOUCH;
 		gestureManager->generatePQServiceEvent( Event::Move, getCenterTouch(), gestureFlag );
 	}
+	// Multi-touch hold
 	else if( (gestureFlag != GESTURE_MULTI_TOUCH_HOLD && gestureFlag != GESTURE_MULTI_TOUCH_SWIPE) && getTouchCount() == 5 )
 	{
 		init_xPos = xPos;
@@ -278,7 +326,7 @@ void TouchGroup::process(){
 		
 		gestureFlag = GESTURE_MULTI_TOUCH_HOLD;
 		gestureManager->generatePQServiceEvent( Event::Down, getCenterTouch(), gestureFlag );
-		//ofmsg("TouchGroup %1% start hold", %ID);
+		ofmsg("TouchGroup %1% start hold", %ID);
 	}
 	else if( gestureFlag == GESTURE_MULTI_TOUCH_HOLD && getTouchCount() == 5 )
 	{
@@ -287,8 +335,8 @@ void TouchGroup::process(){
 		if( curDistance > holdToSwipeThreshold )
 		{
 			gestureManager->generatePQServiceEvent( Event::Up, getCenterTouch(), gestureFlag );
-			//ofmsg("TouchGroup %1% end hold", %ID);
-			//ofmsg("TouchGroup %1% start swipe", %ID);
+			ofmsg("TouchGroup %1% end hold", %ID);
+			ofmsg("TouchGroup %1% start swipe", %ID);
 			gestureFlag = GESTURE_MULTI_TOUCH_SWIPE;
 			gestureManager->generatePQServiceEvent( Event::Down, getCenterTouch(), gestureFlag );
 
@@ -299,85 +347,13 @@ void TouchGroup::process(){
 			gestureManager->generatePQServiceEvent( Event::Move, getCenterTouch(), gestureFlag );
 		}
 	}
+	// Multi-touch swipe
 	else if( gestureFlag == GESTURE_MULTI_TOUCH_SWIPE && getTouchCount() == 5 )
 	{
 		gestureFlag = GESTURE_MULTI_TOUCH_SWIPE;
 		gestureManager->generatePQServiceEvent( Event::Move, getCenterTouch(), gestureFlag );
 	}
 
-	/*
-	if( getTouchCount() == 2 )
-	{
-		float farthestTouchDistance = 0;
-		int farthestTouchID = -1;
-
-		map<int,Touch>::iterator it;
-		int validTouchSize = 0;
-		for ( it = touchList.begin() ; it != touchList.end(); it++ ){
-			Touch touch = (*it).second;
-
-			float curDistance = sqrt( pow(abs( xPos - touch.xPos ), 2) + pow(abs( yPos - touch.yPos ), 2) );
-			if( curDistance > farthestTouchDistance ){
-				farthestTouchDistance = curDistance;
-				farthestTouchID = touch.ID;
-			}
-		}
-		//ofmsg("Touch ID %1% is farthest point (%2%) in touchgroup %3%", %farthestTouchID %farthestTouchDistance %ID);
-
-		if( gestureFlag != Event::Zoom )
-		{
-			ofmsg("TouchGroup %1% zoom - triggered", %ID );
-
-			gestureFlag = Event::Zoom;
-			initialZoomDistance = farthestTouchDistance * 2;
-			
-			zoomLastDistance = initialZoomDistance;
-			zoomDistance = zoomLastDistance;
-			eventType = Event::Down;
-		}
-		
-		else if( gestureFlag == Event::Zoom )
-		{
-			zoomLastDistance = zoomDistance;
-			zoomDistance = farthestTouchDistance * 2;
-			eventType = Event::Move;
-		}
-
-		
-	}
-	// Touch group was a zoom event but no longer is, thus send a zoom End event
-	else if( getTouchCount() != 2 && gestureFlag == Event::Zoom )
-	{
-		ofmsg("TouchGroup %1% zoom - ended", %ID );
-
-		gestureFlag = Event::Zoom;
-		zoomLastDistance = 0;
-		zoomDistance = 0;
-		eventType = Event::Up;
-	}
-	
-	else if( getTouchCount() >= 4 )
-	{
-		if( gestureFlag != GESTURE_MULTI_TOUCH_HOLD )
-			eventType = Event::Down;
-		else
-			eventType = Event::Move;
-
-		gestureFlag = GESTURE_MULTI_TOUCH_HOLD;
-
-		ofmsg("TouchGroup %1% multi-touch hold", %ID );
-	}
-	else if( getTouchCount() == 1 )
-	{
-		if( gestureFlag == GESTURE_UNPROCESSED )
-			eventType = Event::Down;
-		else
-			eventType = Event::Move;
-
-		gestureFlag = GESTURE_SINGLE_TOUCH;
-		//omsg("Gesture: single touch down/drag");
-	}
-	*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -475,7 +451,7 @@ void TouchGestureManager::poll()
 		}
 		else
 		{
-			//ofmsg("TouchGestureManager: TouchGroup %1% empty. Removed.", %tg->getID());
+			ofmsg("TouchGestureManager: TouchGroup %1% empty. Removed.", %tg->getID());
 			generatePQServiceEvent( Event::Up, tg->getCenterTouch(), tg->getGestureFlag() );
 		}
 	}

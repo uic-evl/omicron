@@ -227,6 +227,11 @@ void SAGEInputServer::pointerToSAGEEvent(Event* evt)
 		gestureType = GESTURE_MULTI_TOUCH_HOLD;
 	if( (evt->getFlags() & 1 << 18) == 1 << 18 )
 		gestureType = GESTURE_MULTI_TOUCH_SWIPE;
+	if( eventType == Event::Zoom )
+	{
+		gestureType = GESTURE_ZOOM;
+		eventType = evt->getExtraDataFloat(3);
+	}
 
 	// Remap eventType to match SAGE Touch lifepoint
 	switch( eventType )
@@ -272,7 +277,7 @@ void SAGEInputServer::pointerToSAGEEvent(Event* evt)
 	{
 		eventType = evt->getExtraDataFloat(3);
 
-		float amount = evt->getExtraDataFloat(2); // Not sure what this is yet
+		float amount = evt->getExtraDataFloat(2); // Zoom delta
 		sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %f %d\n", 
 				myIP, id, gestureType, xPos, yPos, amount, eventType);
 		validEvent = true;
@@ -280,7 +285,7 @@ void SAGEInputServer::pointerToSAGEEvent(Event* evt)
 
 
 	if( validEvent ){
-		//printf(msgData);
+		printf(msgData);
 		queueMessage(msgData);
 		sendToSage();
 	}

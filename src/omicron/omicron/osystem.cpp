@@ -205,7 +205,18 @@ namespace omicron
 #ifdef WIN32
 		Sleep(msecs);
 #else
-		usleep((msecs)*1000);
+		timespec tm;
+		timespec rm;
+		tm.tv_sec = msecs / 1000;
+		tm.tv_nsec = (msecs % 1000) * 1000000;
+		// Keep running nanosleep until all specified tile has elapsed.
+		// nanosleep may be interupted by signals. The time left is saved
+		// in rm.
+		while(nanosleep(&tm, &rm) == -1)
+		{
+			if(errno != EINTR) break;
+			rm = tm;
+		}
 #endif
 	}
 }

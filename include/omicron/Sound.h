@@ -63,6 +63,7 @@ public:
 	float getDefaultWetness();
 
 	float getDefaultWidth();
+	float getDefaultPitch();
 
 	bool isDefaultLooping();
 	bool isEnvironmentSound();
@@ -87,6 +88,7 @@ private:
 	float width;	// Speaker width / nSpeakers (1-20)
 	float wetness;		// Wetness of sound (0.0 - 1.0)
 	float roomSize;	// Room size / reverb amount (0.0 - 1.0)
+	float pitch;	// Sample rate (1.0 normal, 2.0 one octave up, 0.5 one octave down, -1 backwards
 	bool loop;
 	bool environmentSound; // Plays on all 20 speakers
 	float maxDistance;
@@ -110,6 +112,8 @@ public:
 	void playStereo();
 	void play( Vector3f, float, float, float, float, bool );
 	void playStereo( float, bool );
+	void playAtFrame( int );
+	void playStereoAtFrame( int );
 	void pause();
 	void stop();
 	bool isPlaying();
@@ -129,7 +133,7 @@ public:
 
 	void setWidth(float);
 	float getWidth();
-
+	
 	// Reverb
 	void setRoomSize(float);
 	float getRoomSize();
@@ -137,6 +141,11 @@ public:
 	float getWetness();
 	void setReverb(float,float);
 	
+	void setPitch(float);
+	float getPitch();
+
+	void setCurrentFrame(int);
+
 	void setMaxDistance(float);
 	float getMaxDistance();
 	void setMinRolloffDistance(float);
@@ -144,6 +153,7 @@ public:
 	void setDistanceRange(float, float);
 
 	int getID();
+	int getBufferID();
 	void setSoundEnvironment(SoundEnvironment*);
 private:
 
@@ -157,11 +167,13 @@ private:
 
 	bool loop;
 	bool environmentSound;
+	bool stereoSound;
 	float volume;	// Amplitude (0.0 - 1.0)
 	float width;	// Speaker width / nSpeakers (1-20)
 	float wetness;		// Wetness of sound (0.0 - 1.0)
 	float roomSize;	// Room size / reverb amount (0.0 - 1.0)
-	float pitch;
+	float pitch;	// Sample rate (1.0 normal, 2.0 one octave up, 0.5 one octave down, -1 backwards
+
 	Vector3f position;
 	Vector3f localPosition;
 

@@ -79,6 +79,9 @@ public:
 	void setAssetDirectory(const String&);
 	String& getAssetDirectory();
 
+	void setServerVolume(int);
+	int getServerVolume();
+
 	//void addInstanceID(int);
 	//void addBufferID(int);
 	//void addInstance( Ref<SoundInstance> );
@@ -160,6 +163,8 @@ public:
 	void stopAllSounds();
 	void cleanupAllSounds();
 
+	void setServerVolume(int); // typically -30 to 8
+	int getServerVolume();
 private:
 	void updateInstancePositions();
 	void removeInstanceNode(int);
@@ -171,6 +176,7 @@ private:
 	static UdpSocket soundServerSocket; // Socket sounds information is sent on
 	static UdpSocket soundMsgSocket; // Used for /notify messages
 	static bool showDebug;
+	static bool startingSoundServer;
 	static bool soundServerRunning;
 
 	// This is assumed to be the navigative position
@@ -207,6 +213,8 @@ private:
 	static double nominalSampleRate;
 	static double actualSampleRate;
 
+	// Sound server control
+	static int soundServerVolume;
 };// SoundManager
 
 }; // namespace omicron

@@ -98,7 +98,7 @@ void MSKinectService::initialize()
 
 	INuiSensor* sensor;
 
-	ofmsg("MSKinectService: %1% Kinect(s) detected.", %iSensorCount );
+	//omsg("MSKinectService: %1% Kinect(s) detected.", %iSensorCount );
 
 	// Look at each Kinect sensor
     for (int i = 0; i < iSensorCount; ++i)

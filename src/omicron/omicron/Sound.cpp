@@ -110,7 +110,13 @@ bool Sound::loadFromFile(const String& filePath)
 	msg.pushInt32(this->getBufferID());
 	msg.pushStr(this->getFilePath());
 	environment->getSoundManager()->sendOSCMessage(msg);
-	ofmsg("Loaded buffer ID %1% with path %2%", %this->getBufferID() %this->getFilePath());
+
+	if( environment->getSoundManager()->isSoundServerRunning() )
+		ofmsg("Loaded buffer ID %1% with path %2%", %this->getBufferID() %this->getFilePath());
+	else
+	{
+		ofmsg("Attemped to loaded buffer ID %1%, but not connected to a sound server!", %this->getBufferID());
+	}
 
 	return false;
 }

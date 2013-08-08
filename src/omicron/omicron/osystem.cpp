@@ -45,6 +45,10 @@ namespace omicron
 	List<ILogListener*> sLogListeners;
 	bool sAppendNewline = true;
 	bool sLogEnabled = true;
+	bool sDebugAlloc = false;
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+	void odebugalloc(bool value) { sDebugAlloc = value; }
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 	void ologenable() { sLogEnabled = true; }
@@ -163,6 +167,42 @@ namespace omicron
 	
 	Lock sRefLock;
 
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+	void ReferenceType::ref()
+	{
+		//oassert(s->ref_count >= 0);
+		//oassert(s != 0);
+		++myRefCount;
+		if(myRefCount == 1)
+		{
+			if(sDebugAlloc)
+			{
+				const char* typeName = typeid(*this).name();
+				ofmsg("::REF %1%", %typeName);
+			}
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+	void ReferenceType::unref()
+	{
+		//oassert(s->ref_count > 0);
+		//oassert(s != 0);
+		if (--myRefCount == 0)
+		{
+			if(sDebugAlloc)
+			{
+				const char* typeName = typeid(*this).name();
+				ofmsg("::~REF %1%", %typeName);
+				delete this;
+			}
+			else
+			{
+				delete this;
+			}
+		}
+	}
+		
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 	ReferenceType::ReferenceType(): myRefCount(0) 
 	{

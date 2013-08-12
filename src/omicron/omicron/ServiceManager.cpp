@@ -223,7 +223,7 @@ void ServiceManager::initialize()
 
 	foreach(Service* it, myServices)
 	{
-		it->doInitialize(myServiceIdCounter);
+		it->doInitialize(this, myServiceIdCounter);
 		myServiceIdCounter++;
 	}
 
@@ -279,7 +279,7 @@ void ServiceManager::addService(Service* service)
 	myServices.push_back(service);
 	if(!service->isInitialized())
 	{
-		service->doInitialize(myServiceIdCounter++);
+		service->doInitialize(this, myServiceIdCounter++);
 	}
 }
 

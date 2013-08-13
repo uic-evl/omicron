@@ -157,7 +157,7 @@ real Math::asin (real fValue)
     if ( -1.0 < fValue )
     {
         if ( fValue < 1.0 )
-            return asin(fValue);
+            return ::asin(fValue);
         else
             return HalfPi;
     }
@@ -1219,13 +1219,13 @@ void Math::swapMinMax(real& min, real& max)
 Vector3f Math::quaternionToEuler(const Quaternion& q)
 {
 	Vector3f res;
-	float q0 = q.x();
-	float q1 = q.y();
-	float q2 = q.z();
-	float q3 = q.w();
-	res[0] = asin(2 * (q0 * q2 - q3 * q1));
-	res[1] = atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2 * q2 + q3 * q3));
-	res[2] = atan2(2 * (q0 * q1 + q2 * q3), 1 - 2 * (q1 * q1 + q2 * q2));
+	float qx = q.x();
+	float qy = q.y();
+	float qz = q.z();
+	float qw = q.w();
+	res[2] = asin(2 * (qx * qy + qz * qw));
+	res[1] = atan2(2 * (qy * qw - qx * qz), 1 - 2 * (qy * qy - qz * qz));
+	res[0] = atan2(2 * (qx * qw - qy * qz), 1 - 2 * (qx * qx - qz * qz));
 	return res;
 }
 

@@ -67,7 +67,7 @@ SoundManager::SoundManager():
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 SoundManager::~SoundManager()
 {
-	stopSoundServer();
+	//stopSoundServer(); // Do not call this under penalty of flogging
 	stopAllSounds();
 }
 

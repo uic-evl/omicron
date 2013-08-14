@@ -162,6 +162,11 @@ void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID 
 		yPos = y;
 		centerTouch.xPos = xPos;
 		centerTouch.yPos = yPos;
+		
+		// Performance hack? Allows a smoother touch drag by processing event as it comes in
+		if( getTouchCount() == 1 && gestureFlag == GESTURE_SINGLE_TOUCH )
+			gestureManager->generatePQServiceEvent( Event::Move, getCenterTouch(), gestureFlag );
+			
 	}
 	lastUpdated = tb.millitm + (tb.time & 0xfffff) * 1000;
 }
@@ -236,6 +241,7 @@ void TouchGroup::process(){
 			ofmsg("TouchGroup %1% removed inactive touch ID %2% new size: %3%", %ID %touch.ID %getTouchCount() );
 		}
 	}
+	
 	// Update touch list
 	touchList = activeTouchList;
 	touchListLock->unlock();
@@ -248,7 +254,7 @@ void TouchGroup::process(){
 		centerTouch.xPos = xPos;
 		centerTouch.yPos = yPos;
 	}
-
+	
 	//ofmsg("TouchGroup %1% size %2%", %ID %getTouchCount() );
 	// Zoom gesture
 	if( gestureFlag != Event::Zoom && getTouchCount() == 2 )
@@ -313,11 +319,16 @@ void TouchGroup::process(){
 		gestureFlag = GESTURE_SINGLE_TOUCH;
 		gestureManager->generatePQServiceEvent( Event::Down, getCenterTouch(), gestureFlag );
 	}
+	/*
 	else if( gestureFlag == GESTURE_SINGLE_TOUCH && getTouchCount() == 1 )
 	{
 		gestureFlag = GESTURE_SINGLE_TOUCH;
-		gestureManager->generatePQServiceEvent( Event::Move, getCenterTouch(), gestureFlag );
-	}
+		if( nextMoveTime < curTime )
+		{
+			gestureManager->generatePQServiceEvent( Event::Move, getCenterTouch(), gestureFlag );
+			nextMoveTime = curTime + 2;
+		}
+	}*/
 	// Multi-touch hold
 	else if( (gestureFlag != GESTURE_MULTI_TOUCH_HOLD && gestureFlag != GESTURE_MULTI_TOUCH_SWIPE) && getTouchCount() == 5 )
 	{

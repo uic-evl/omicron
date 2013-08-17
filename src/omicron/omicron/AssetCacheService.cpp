@@ -83,7 +83,7 @@ void AssetCacheConnection::handleData()
 		myBuffer[dataSize] = '\0';
 
 		String fileName = "";
-		if(myCacheName != "") fileName = myServer->getCacheRoot() + myCacheName + "/" + myBuffer;
+		if(myCacheName != "") fileName = myServer->getCacheRoot() + "/" + myCacheName + "/" + myBuffer;
 		else fileName = myServer->getCacheRoot() + "/" + myBuffer;
 		String fullFilePath;
 
@@ -122,7 +122,7 @@ void AssetCacheConnection::handleData()
 		ofmsg("Receiving file %1%", %myBuffer);
 
 		// NOTE: the file name already includes the cache name here.
-		String fileName = myServer->getCacheRoot() + myBuffer;
+		String fileName = myServer->getCacheRoot() + "/" + myCacheName + "/" + myBuffer;
 
 		// Make sure the cache path exists.
 		String basePath;

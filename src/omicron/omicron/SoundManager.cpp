@@ -367,7 +367,7 @@ void SoundManager::poll()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::setAssetDirectory(const String& directory)
 {
-	assetDirectory = "/"+directory;
+	assetDirectory = directory;
 	assetDirectorySet = true;
 }
 

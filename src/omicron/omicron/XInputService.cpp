@@ -174,17 +174,26 @@ void XInputService::poll()
 		{
 			// If button state is bigger than previous state, it means one additional bit has been
 			// set - so send a down event.
+			
 			if(curButtonState > controller->myButtonState)
 			{
 				evt->reset(Event::Down, Service::Controller, controller->controllerID);
-				if(isDebugEnabled()) ofmsg("Controller %1% button %2% down", %controller->controllerID %controller->myButtonState);
+
+				// Update the button state for the new down event
+				controller->myButtonState = curButtonState;
+
+				if(isDebugEnabled()) ofmsg("Controller %1% flags %2% down event", %controller->controllerID %controller->myButtonState);
 			}
 			else
 			{
 				evt->reset(Event::Up, Service::Controller, controller->controllerID);
-				if(isDebugEnabled()) ofmsg("Controller %1% button %2% up", %controller->controllerID %controller->myButtonState);
+
+				// Temporarly remap controller button state to reflect recently released buttons
+				controller->myButtonState = controller->myButtonState - curButtonState;
+
+				if(isDebugEnabled()) ofmsg("Controller %1% flags %2% up event", %controller->controllerID %controller->myButtonState);
 			}
-			controller->myButtonState = curButtonState;
+			
 		}
 		else
 		{
@@ -193,6 +202,9 @@ void XInputService::poll()
 		}
 
 		evt->setFlags(controller->myButtonState);
+
+		// Re-map back to its current button state (if re-mapped for an up event)
+		controller->myButtonState = curButtonState;
 
 		evt->setExtraDataType(Event::ExtraDataFloatArray);
 

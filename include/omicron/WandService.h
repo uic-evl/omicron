@@ -60,6 +60,12 @@ namespace omicron
 		Vector3f myWandPosition;
 		Quaternion myWandOrientation;
 
+		enum EventBase::Type myType;
+		uint myFlags;
+		EventBase::ExtraDataType myExtraDataType;
+		int myExtraDataItems;
+		int myExtraDataValidMask;
+
 		bool myDebug;
 	};
 

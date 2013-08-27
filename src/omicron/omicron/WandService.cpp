@@ -86,12 +86,28 @@ void WandService::poll()
 				ofmsg("Wand ray origin %1%  orientation %2%", %myWandPosition %dir);
 			}
 		}
-		// Attach the mocap ray to pointer.
+		// Attach the mocap ray to wand.
 		if(evt->isFrom(myControllerService, myControllerSourceId))
 		{
-			evt->setServiceType(Service::Wand);
+			myFlags = evt->getFlags();
+			myExtraDataType = evt->getExtraDataType();
+			myExtraDataItems = evt->getExtraDataItems();
+			myExtraDataValidMask = evt->getExtraDataMask();
+			void* myExtraData = evt->getExtraDataBuffer();
+			myType = evt->getType();
+
+			if(myDebug)
+			{
+				if( evt->isButtonDown(EventBase::Button2) )
+					ofmsg("myRaySourceId %1% serviceName %2% myControllerSourceId %3%", %myRaySourceId %getName() %myControllerSourceId);
+			}
+			// Re-map the controller event as Wand event with the MocapId
+			evt->reset( myType, Service::Wand, myRaySourceId, getServiceId() );
 			evt->setPosition(myWandPosition);
 			evt->setOrientation(myWandOrientation);
+			evt->setFlags(myFlags);
+			evt->setExtraData( myExtraDataType, myExtraDataItems, myExtraDataValidMask, myExtraData );
+			
 		}
 	}
 

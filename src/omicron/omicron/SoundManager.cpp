@@ -677,7 +677,7 @@ Sound* SoundEnvironment::loadSoundFromFile(const String& soundName, const String
 		sound->loadFromFile(soundFullPath);
 
 		// Let the server load the sound before continuing (make sure buffer/sound is ready before a node/soundinstance is created)
-		soundManager->wait(10); 
+		soundManager->wait(1000); 
 	}
 	return sound;
 }

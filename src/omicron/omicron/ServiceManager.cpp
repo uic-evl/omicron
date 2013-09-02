@@ -150,12 +150,6 @@ void ServiceManager::registerDefaultServices()
 #ifdef OMICRON_USE_OSC
 	//registerService("OSCService", (ServiceAllocator)OSCService::New);
 #endif
-////	 Kinda hack: run application initialize here because for now it is used to register services from
-////	 external libraries, so it needs to run before setting up services from the config file.
-////#ifdef OMICRON_USE_DISPLAY
-////	 Initialize the application object (if present)
-////	if(myApplication) myApplication->initialize();
-////#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

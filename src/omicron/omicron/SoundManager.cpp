@@ -26,6 +26,7 @@
 *********************************************************************************************************************/
 #include "omicron/SoundManager.h"
 #include "omicron/AssetCacheManager.h"
+#include <sys/timeb.h>
 
 using namespace omicron;
 using namespace oscpkt;
@@ -300,10 +301,24 @@ bool SoundManager::isDebugEnabled()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::wait(float millis)
 {
-	if( soundServerSocket.receiveNextPacket(millis) ) // Paramater is timeout in milliseconds. -1 (default) will wait indefinatly
+	timeb tb;
+	ftime( &tb );
+	int curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
+	int startTime = curTime;
+
+	while( true )
 	{
-		// Wait a second for server to startup before continuing to load sounds
+		timeb tb;
+		ftime( &tb );
+		curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
+		int timeSinceLastCheck = curTime-startTime;
+
+		if( timeSinceLastCheck > millis )
+		{
+			break;
+		}
 	}
+		
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -677,7 +692,7 @@ Sound* SoundEnvironment::loadSoundFromFile(const String& soundName, const String
 		sound->loadFromFile(soundFullPath);
 
 		// Let the server load the sound before continuing (make sure buffer/sound is ready before a node/soundinstance is created)
-		soundManager->wait(1000); 
+		soundManager->wait(50); 
 	}
 	return sound;
 }

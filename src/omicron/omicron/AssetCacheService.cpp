@@ -138,33 +138,41 @@ void AssetCacheConnection::handleData()
 		const unsigned int buff_size = 65536; 
 		char* buff = new char[buff_size];
 
-		FILE* f = fopen(fileName.c_str(), "wb");
-
-		if(f != NULL)
+		
+		if( fileSize == 0 )
 		{
-			// Read the file in blocks.
-			unsigned int count = 0; 
-			while(count < fileSize)
-			{ 
-				unsigned int nextBlock = buff_size;
-				if(count + nextBlock > fileSize) nextBlock = fileSize - count;
-				size_t len = read(buff, nextBlock);
-				if(len == 0)
-				{
-					ofwarn("Error reading file %1%, skipping.", %fileName);
-					break;
-				}
-				count += len;
-				ofmsg("Read a total of %1% bytes ", %count);
-				fwrite(buff, 1, len, f);
-			}
-
-			// Done! Close the file and remove it from the request queue.
-			fclose(f);
+			omsg("Incoming file size 0 bytes. Skipping file.");
 		}
-		else
+		else 
 		{
-			ofwarn("AssetCacheService: could not open file %1% for writing", %fileName);
+			FILE* f = fopen(fileName.c_str(), "wb");
+
+			if(f != NULL)
+			{
+				// Read the file in blocks.
+				unsigned int count = 0; 
+				while(count < fileSize)
+				{ 
+					unsigned int nextBlock = buff_size;
+					if(count + nextBlock > fileSize) nextBlock = fileSize - count;
+					size_t len = read(buff, nextBlock);
+					if(len == 0)
+					{
+						ofwarn("Error reading file %1%, skipping.", %fileName);
+						break;
+					}
+					count += len;
+					ofmsg("Read a total of %1% bytes ", %count);
+					fwrite(buff, 1, len, f);
+				}
+
+				// Done! Close the file and remove it from the request queue.
+				fclose(f);
+			}
+			else
+			{
+				ofwarn("AssetCacheService: could not open file %1% for writing", %fileName);
+			}
 		}
 		myQueuedFiles.remove(myBuffer);
 

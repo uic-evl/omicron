@@ -28,6 +28,7 @@
 #define __MS_KINECT_SERVICE_H__
 
 #include "omicron/osystem.h"
+#include "omicron/StringUtils.h"
 #include "omicron/ServiceManager.h"
 
 #undef WIN32_LEAN_AND_MEAN // needed to fix syntax errors in NUI headers

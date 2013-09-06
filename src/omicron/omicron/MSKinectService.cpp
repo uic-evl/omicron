@@ -85,6 +85,15 @@ void MSKinectService::setup(Setting& settings)
 	caveSimulator = Config::getBoolValue("caveSimulator", settings, false);
 	caveSimulatorHeadID = Config::getIntValue("caveSimulatorHeadID", settings, 0);
 	caveSimulatorWandID = Config::getIntValue("caveSimulatorWandID", settings, 1);
+
+	if( caveSimulator )
+	{
+		omsg("MSKinectService: CAVE2 tracker simulation mode active!");
+		ofmsg("   Kinect head will be mapped to mocap ID %1%", %caveSimulatorHeadID);
+		ofmsg("   Kinect right hand (wand) will be mapped to mocap ID %1%", %caveSimulatorWandID);
+	}
+
+	
 	//GrammarFileName = (LPCWSTR)Config::getStringValue("speechGrammerFileName", settings, "kinectSpeech.grxml").c_str();
 
 }

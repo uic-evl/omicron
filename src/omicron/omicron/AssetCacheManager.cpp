@@ -70,6 +70,8 @@ public:
 			// If we are, just push files.
 			foreach(String file, myAssetCacheManager->myFileList)
 			{
+				ofmsg(" Push files: %1%", %file);
+				sendMessage("CHCP", (void*)file.c_str(), strlen(file.c_str()));
 				sendFile(file.c_str());
 			}
 			sendMessage("CHCD", NULL, 0);

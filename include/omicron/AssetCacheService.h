@@ -31,6 +31,7 @@
 #define __ASSSET_CACHE_SERVICE_H__
 
 #include "omicron/Tcp.h"
+#include <sys/stat.h>
 
 namespace omicron {
 	

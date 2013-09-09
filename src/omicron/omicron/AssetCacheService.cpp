@@ -97,6 +97,14 @@ void AssetCacheConnection::handleData()
 			// Add the file to the queued list
 			myQueuedFiles.push_back(myBuffer);
 		}
+		else
+		{
+			ofmsg("File found sending timestamp request for %1%", %myBuffer);
+			struct stat st;
+			stat(fileName.c_str(), &st);
+			int timestamp = st.st_mtime;
+			ofmsg("   local file timestamp: %1%", %timestamp);
+		}
 	}
 	// CHCD: The client is done adding files. If we have no files in our request queue, tell the client we are done.
 	if(!strncmp(header, "CHCD", 4)) 

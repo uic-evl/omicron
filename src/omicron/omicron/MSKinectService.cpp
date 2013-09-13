@@ -80,6 +80,20 @@ void MSKinectService::setup(Setting& settings)
 
 	m_bSeatedMode = Config::getBoolValue("seatedMode", settings, false);
 
+	debugInfo = Config::getBoolValue("debug", settings, false);
+
+	caveSimulator = Config::getBoolValue("caveSimulator", settings, false);
+	caveSimulatorHeadID = Config::getIntValue("caveSimulatorHeadID", settings, 0);
+	caveSimulatorWandID = Config::getIntValue("caveSimulatorWandID", settings, 1);
+
+	if( caveSimulator )
+	{
+		omsg("MSKinectService: CAVE2 tracker simulation mode active!");
+		ofmsg("   Kinect head will be mapped to mocap ID %1%", %caveSimulatorHeadID);
+		ofmsg("   Kinect right hand (wand) will be mapped to mocap ID %1%", %caveSimulatorWandID);
+	}
+
+	
 	//GrammarFileName = (LPCWSTR)Config::getStringValue("speechGrammerFileName", settings, "kinectSpeech.grxml").c_str();
 
 }
@@ -495,11 +509,43 @@ void MSKinectService::ProcessSkeleton( INuiSensor* sensor )
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void MSKinectService::GenerateMocapEvent(const NUI_SKELETON_DATA & skel, INuiSensor* currentSensor)
 {      
-	
-	//printf( " %f %f %f \n", headPos.x, headPos.y, headPos.z );
-
 	int kinectID = currentSensor->NuiInstanceIndex();
 	int skeletonID = skel.dwTrackingID;
+	
+	Vector4 headPos = skel.SkeletonPositions[NUI_SKELETON_POSITION_HEAD];
+
+	if( debugInfo )
+		printf( "Kinect Head %d (%f %f %f) \n", skeletonID, headPos.x, headPos.y, headPos.z );
+	
+	if( caveSimulator )
+	{
+		Event* evt = mysInstance->writeHead();
+		evt->reset(Event::Update, Service::Mocap, caveSimulatorHeadID);
+
+		Vector4 jointPos = skel.SkeletonPositions[NUI_SKELETON_POSITION_HEAD];
+		Vector3f pos;
+		pos[0] = jointPos.x;
+		pos[1] = jointPos.y + 1.8f;
+		pos[2] = jointPos.z;
+		evt->setPosition( pos );
+		evt->setOrientation( Quaternion::Identity() );
+	
+		mysInstance->unlockEvents();
+
+		Event* evt2 = mysInstance->writeHead();
+		evt2->reset(Event::Update, Service::Mocap, caveSimulatorWandID);
+
+		Vector4 jointPos2 = skel.SkeletonPositions[NUI_SKELETON_POSITION_HAND_RIGHT];
+		Vector3f pos2;
+		pos2[0] = jointPos2.x;
+		pos2[1] = jointPos2.y + 1.8f;
+		pos2[2] = jointPos2.z;
+		evt2->setPosition( pos2 );
+		evt->setOrientation( Quaternion::Identity() );
+
+		mysInstance->unlockEvents();
+
+	}
 
 	Event* evt = mysInstance->writeHead();
 	evt->reset(Event::Update, Service::Mocap, skeletonID, kinectID);

@@ -230,6 +230,7 @@ public:
 		
 		handleLegacyEvent(evt);
 		
+		
 		std::map<char*,NetClient*> activeClients;
 
 		std::map<char*,NetClient*>::iterator itr = netClients.begin();
@@ -243,24 +244,29 @@ public:
 			}
 			else
 			{
+				// Send an empty message to check if the client is still here.
 				client->sendMsg("",1);
 				client->sendEvent(eventPacket, offset);
 			}
-
-			// If client is still connected add to active list
-			if( client->isConnected() )
+			
+			if( checkForDisconnectedClients )
 			{
-				activeClients[itr->first] = client;
-			}
-			else // Client disconnected, remove from list
-			{
-				ofmsg("OInputServer: Client '%1%' Disconnected.", %itr->first);
-				delete client;
+				// If client is still connected add to active list
+				if( client->isConnected() )
+				{
+					activeClients[itr->first] = client;
+				}
+				else // Client disconnected, remove from list
+				{
+					ofmsg("OInputServer: Client '%1%' Disconnected.", %itr->first);
+					delete client;
+				}
 			}
 			itr++;
 		}
 
-		netClients = activeClients;
+		if( checkForDisconnectedClients )
+			netClients = activeClients;
 	}
 	
 	virtual bool handleLegacyEvent(const Event& evt)
@@ -490,6 +496,7 @@ private:
 	// Collection of unique clients (IP/port combinations)
 	std::map<char*,NetClient*> netClients;
 
+	bool checkForDisconnectedClients;
 #ifdef OMICRON_USE_VRPN
 	// VRPN Server (for CalVR)
 	const char	*TRACKER_NAME;
@@ -509,6 +516,11 @@ void OInputServer::startConnection(Config* cfg)
 
 	Setting& sCfg = cfg->lookup("config");
 	serverPort = strdup(Config::getStringValue("serverPort", sCfg, "27000").c_str());
+
+	checkForDisconnectedClients = Config::getBoolValue("checkForDisconnectedClients", sCfg, false );
+	if( checkForDisconnectedClients )
+		omsg("Check for disconnected clients enabled.");
+
 	listenSocket = INVALID_SOCKET;
 	recvbuflen = DEFAULT_BUFLEN;
 	int iResult;

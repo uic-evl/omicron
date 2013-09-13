@@ -54,10 +54,14 @@ void AssetCacheConnection::handleData()
     read(myBuffer, 4);
 	memcpy(header, myBuffer, 4);
 
+	//ofmsg("DATA: %1%%2%%3%%4%", %myBuffer[0] %myBuffer[1] %myBuffer[2] %myBuffer[3]);
+
     // Read data length.
 	int dataSize;
     read(myBuffer, 4);
 	memcpy(&dataSize, myBuffer, 4);
+
+	
 
 	// CHCS - set the name of the cache we are managing
 	if(!strncmp(header, "CHCS", 4)) 
@@ -96,6 +100,14 @@ void AssetCacheConnection::handleData()
 
 			// Add the file to the queued list
 			myQueuedFiles.push_back(myBuffer);
+		}
+		else
+		{
+			ofmsg("File found sending timestamp request for %1%", %myBuffer);
+			struct stat st;
+			stat(fileName.c_str(), &st);
+			int timestamp = st.st_mtime;
+			ofmsg("   local file timestamp: %1%", %timestamp);
 		}
 	}
 	// CHCD: The client is done adding files. If we have no files in our request queue, tell the client we are done.
@@ -138,33 +150,41 @@ void AssetCacheConnection::handleData()
 		const unsigned int buff_size = 65536; 
 		char* buff = new char[buff_size];
 
-		FILE* f = fopen(fileName.c_str(), "wb");
-
-		if(f != NULL)
+		
+		if( fileSize == 0 )
 		{
-			// Read the file in blocks.
-			unsigned int count = 0; 
-			while(count < fileSize)
-			{ 
-				unsigned int nextBlock = buff_size;
-				if(count + nextBlock > fileSize) nextBlock = fileSize - count;
-				size_t len = read(buff, nextBlock);
-				if(len == 0)
-				{
-					ofwarn("Error reading file %1%, skipping.", %fileName);
-					break;
-				}
-				count += len;
-				ofmsg("Read a total of %1% bytes ", %count);
-				fwrite(buff, 1, len, f);
-			}
-
-			// Done! Close the file and remove it from the request queue.
-			fclose(f);
+			omsg("Incoming file size 0 bytes. Skipping file.");
 		}
-		else
+		else 
 		{
-			ofwarn("AssetCacheService: could not open file %1% for writing", %fileName);
+			FILE* f = fopen(fileName.c_str(), "wb");
+
+			if(f != NULL)
+			{
+				// Read the file in blocks.
+				unsigned int count = 0; 
+				while(count < fileSize)
+				{ 
+					unsigned int nextBlock = buff_size;
+					if(count + nextBlock > fileSize) nextBlock = fileSize - count;
+					size_t len = read(buff, nextBlock);
+					if(len == 0)
+					{
+						ofwarn("Error reading file %1%, skipping.", %fileName);
+						break;
+					}
+					count += len;
+					ofmsg("Read a total of %1% bytes ", %count);
+					fwrite(buff, 1, len, f);
+				}
+
+				// Done! Close the file and remove it from the request queue.
+				fclose(f);
+			}
+			else
+			{
+				ofwarn("AssetCacheService: could not open file %1% for writing", %fileName);
+			}
 		}
 		myQueuedFiles.remove(myBuffer);
 
@@ -193,6 +213,7 @@ void AssetCacheConnection::handleConnected()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void AssetCacheConnection::sendMessage(const char* header, void* data, int size)
 {
+	//ofmsg("AssetCacheConnection sent %1%", %header);
 	write((void*)header, 4);
 	write(&size, sizeof(int));
 	write(data, size);

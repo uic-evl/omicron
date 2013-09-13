@@ -54,10 +54,14 @@ void AssetCacheConnection::handleData()
     read(myBuffer, 4);
 	memcpy(header, myBuffer, 4);
 
+	//ofmsg("DATA: %1%%2%%3%%4%", %myBuffer[0] %myBuffer[1] %myBuffer[2] %myBuffer[3]);
+
     // Read data length.
 	int dataSize;
     read(myBuffer, 4);
 	memcpy(&dataSize, myBuffer, 4);
+
+	
 
 	// CHCS - set the name of the cache we are managing
 	if(!strncmp(header, "CHCS", 4)) 
@@ -209,6 +213,7 @@ void AssetCacheConnection::handleConnected()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void AssetCacheConnection::sendMessage(const char* header, void* data, int size)
 {
+	//ofmsg("AssetCacheConnection sent %1%", %header);
 	write((void*)header, 4);
 	write(&size, sizeof(int));
 	write(data, size);

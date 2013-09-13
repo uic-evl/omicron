@@ -74,7 +74,7 @@ public:
 				sendMessage("CHCP", (void*)file.c_str(), strlen(file.c_str()));
 				sendFile(file.c_str());
 			}
-			sendMessage("CHCD", NULL, 0);
+			//sendMessage("CHCD", NULL, 0);
 		}
 	}
 
@@ -122,6 +122,7 @@ public:
 
 	void sendMessage(const char* header, void* data, int size)
 	{
+		//ofmsg("AssetCacheManager sent %1%", %header);
 		write((void*)header, 4);
 		write(&size, sizeof(int));
 		write(data, size);

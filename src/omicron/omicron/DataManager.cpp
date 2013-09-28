@@ -86,10 +86,15 @@ bool DataManager::createPath(const String& path)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 String DataManager::readTextFile(const String& name)
 {
-	std::ifstream t(name.c_str());
-	std::stringstream buffer;
-	buffer << t.rdbuf();
-	return buffer.str();
+	String path;
+	if(DataManager::findFile(name, path))
+	{
+		std::ifstream t(path.c_str());
+		std::stringstream buffer;
+		buffer << t.rdbuf();
+		return buffer.str();
+	}
+	return "";
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

@@ -26,6 +26,7 @@
 *********************************************************************************************************************/
 #include "omicron/SoundManager.h"
 #include "omicron/AssetCacheManager.h"
+#include <sys/timeb.h>
 
 using namespace omicron;
 using namespace oscpkt;
@@ -303,10 +304,24 @@ bool SoundManager::isDebugEnabled()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::wait(float millis)
 {
-	if( soundServerSocket.receiveNextPacket(millis) ) // Paramater is timeout in milliseconds. -1 (default) will wait indefinatly
+	timeb tb;
+	ftime( &tb );
+	int curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
+	int startTime = curTime;
+
+	while( true )
 	{
-		// Wait a second for server to startup before continuing to load sounds
+		timeb tb;
+		ftime( &tb );
+		curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
+		int timeSinceLastCheck = curTime-startTime;
+
+		if( timeSinceLastCheck > millis )
+		{
+			break;
+		}
 	}
+		
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -365,6 +380,22 @@ void SoundManager::poll()
 			removeInstanceNode(nodeID);
 		}
 	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SoundManager::setForceCacheOverwrite(bool value)
+{
+	if( myAssetCacheManager )
+		myAssetCacheManager->setForceOverwrite(value);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool SoundManager::isForceCacheOverwriteEnabled()
+{
+	if( myAssetCacheManager )
+		return myAssetCacheManager->isForceOverwriteEnabled();
+	else
+		return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -678,6 +709,9 @@ Sound* SoundEnvironment::loadSoundFromFile(const String& soundName, const String
 	if(sound != NULL)
 	{
 		sound->loadFromFile(soundFullPath);
+
+		// Let the server load the sound before continuing (make sure buffer/sound is ready before a node/soundinstance is created)
+		soundManager->wait(50); 
 	}
 	return sound;
 }
@@ -766,6 +800,18 @@ void SoundEnvironment::setServerVolume(int value)
 int SoundEnvironment::getServerVolume()
 {
 	return soundManager->getServerVolume();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SoundEnvironment::setForceCacheOverwrite(bool value)
+{
+	soundManager->setForceCacheOverwrite(value);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool SoundEnvironment::isForceCacheOverwriteEnabled()
+{
+	return soundManager->isForceCacheOverwriteEnabled();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

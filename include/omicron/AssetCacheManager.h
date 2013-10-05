@@ -73,7 +73,7 @@ namespace omicron {
 		//! When set to true, forces overwriting of files in the cache. Useful for
 		//! replacing cache contents.
 		//! Must be done before starting a sync.
-		void setForceOverwrite(bool value) { myForceOverwrite = true; }
+		void setForceOverwrite(bool value) { myForceOverwrite = value; }
 		bool isForceOverwriteEnabled() { return myForceOverwrite; }
 
 		//! Start synching.

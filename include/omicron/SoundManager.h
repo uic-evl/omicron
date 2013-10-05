@@ -82,6 +82,9 @@ public:
 	void setServerVolume(int);
 	int getServerVolume();
 
+	void setForceCacheOverwrite(bool value);
+	bool isForceCacheOverwriteEnabled();
+
 	//void addInstanceID(int);
 	//void addBufferID(int);
 	//void addInstance( Ref<SoundInstance> );
@@ -128,6 +131,8 @@ public:
 	void setAssetCacheEnabled(bool value) { myAssetCacheEnabled = value; }
 	bool isAssetCacheEnabled() { return myAssetCacheEnabled; }
 	AssetCacheManager* getAssetCacheManager() { return myAssetCacheManager; }
+	void setForceCacheOverwrite(bool value);
+	bool isForceCacheOverwriteEnabled();
 	//@}
 
 	// Getters/Setters for SoundEnvironments

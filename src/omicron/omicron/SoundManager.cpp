@@ -117,17 +117,20 @@ void SoundManager::startSoundServer()
 	startingSoundServer = true;
 	Message msg("/startServer");
 	sendOSCMessage(msg);
+	wait(500); // Give the server a chance to reply
 
 	Message msg2("/loadSynth");
 	sendOSCMessage(msg2);
+	wait(500); // Give the server a chance to reply
 
 	Message msg3("/loadStereoSynth");
 	sendOSCMessage(msg3);
+	wait(500); // Give the server a chance to reply
 
 	Message msg4("/startup");
 	sendOSCMessage(msg4);
 
-	wait(1000); // Give the server a second to startup
+	wait(2000); // Give the server a second to startup
 	startingSoundServer = false;
 }
 

@@ -46,8 +46,9 @@ Sound::Sound()
 	loop = false;
 	useEnvironmentParameters = true;
 
+	rolloffMode = Rolloff::None;
 	minRolloffDistance = 1.0f;
-	maxDistance = 500.0f;
+	maxDistance = 20.0f;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -66,8 +67,9 @@ Sound::Sound(const String& soundName)
 	loop = false;
 	useEnvironmentParameters = true;
 
+	rolloffMode = Rolloff::None;
 	minRolloffDistance = 1.0f;
-	maxDistance = 500.0f;
+	maxDistance = 20.0f;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -86,8 +88,9 @@ Sound::Sound(const String& soundName, float volume, float width, float roomSize,
 	this->environmentSound = env;
 	useEnvironmentParameters = false;
 
+	rolloffMode = Rolloff::None;
 	minRolloffDistance = 1.0f;
-	maxDistance = 500.0f;
+	maxDistance = 20.0f;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -214,6 +217,88 @@ SoundEnvironment* Sound::getSoundEnvironment()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void Sound::setMaxDistance(float value)
+{
+	this->maxDistance = value;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+float Sound::getMaxDistance()
+{
+	return maxDistance;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void Sound::setMinRolloffDistance(float value)
+{
+	this->minRolloffDistance = value;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+float Sound::getMinRolloffDistance()
+{
+	return minRolloffDistance;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void Sound::setDistanceRange(float min, float max)
+{
+	this->minRolloffDistance = min;
+	this->maxDistance = max;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void Sound::setNoRolloff()
+{
+	rolloffMode = Rolloff::None;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void Sound::setLinearRolloff()
+{
+	rolloffMode = Rolloff::Linear;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void Sound::setLogarthmicRolloff()
+{
+	rolloffMode = Rolloff::Logarithmic;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Sound::Rolloff Sound::getRolloffMode()
+{
+	return rolloffMode;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool Sound::isRolloffEnabled()
+{
+	if( rolloffMode != Rolloff::None )
+		return true;
+	else
+		return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool Sound::isRolloffLinear()
+{
+	if( rolloffMode == Rolloff::Linear )
+		return true;
+	else
+		return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool Sound::isRolloffLogarithmic()
+{
+	if( rolloffMode == Rolloff::Logarithmic )
+		return true;
+	else
+		return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int Sound::getBufferID()
 {
 	return bufferID;
@@ -248,7 +333,12 @@ SoundInstance::SoundInstance(Sound* sound)
 	loop = sound->isDefaultLooping();
 	environmentSound = sound->isEnvironmentSound();
 	pitch = sound->getDefaultPitch();
+	
 	stereoSound = false;
+
+	rolloffMode = sound->getRolloffMode();
+	maxDistance = sound->getMaxDistance();
+	minRolloffDistance = sound->getMinRolloffDistance();
 
 	position = Vector3f(0,0,0);
 	localPosition = Vector3f(0,0,0);
@@ -289,7 +379,30 @@ void SoundInstance::play()
 	msg.pushInt32(instanceID);
 	msg.pushInt32(sound->getBufferID());
 
-	float scaledVolume = volume;
+	Vector3f audioListener = environment->getUserPosition();
+	float newVol = volume;
+	/*
+	
+
+	// Sound Envelope / Rolloff
+	float distanceToListener = Math::sqrt( Math::sqr(audioListener[0] - position[0]) + Math::sqr(audioListener[3] - position[3]) );
+	
+	if( rolloffMode == Sound::Rolloff::Linear )
+	{
+		newVol = ( 1 - ((distanceToListener - minRolloffDistance) / maxDistance)) * volume; //Linear rolloff
+	}
+	else if( rolloffMode == Sound::Rolloff::Logarithmic )
+	{
+		if( distanceToListener > 0 )
+			newVol = minRolloffDistance * (maxDistance / Math::sqr(distanceToListener) );  // Logarithmic
+	}
+	if( newVol > volume )
+		newVol = volume;
+	else if( newVol < 0 )
+		newVol = 0;
+	*/
+
+	float scaledVolume = newVol;
 	if( volume * sound->getVolumeScale() > 1 )
 	{
 		scaledVolume = 1.0;
@@ -307,7 +420,6 @@ void SoundInstance::play()
 	msg.pushFloat( position[2] );
 	
 	// User's position relative to the audio system
-	Vector3f audioListener = environment->getUserPosition();
 	msg.pushFloat( audioListener[0] );
 	msg.pushFloat( audioListener[1] );
 	msg.pushFloat( audioListener[2] );
@@ -434,7 +546,6 @@ void SoundInstance::play( Vector3f position, float volume, float width, float mi
 	
 	// Position in Audio System (local) coordinates
 	localPosition = environment->getSoundManager()->worldToLocalPosition( position );
-
 	msg.pushFloat( localPosition[0] );
 	msg.pushFloat( localPosition[1] );
 	msg.pushFloat( localPosition[2] );
@@ -721,6 +832,24 @@ void SoundInstance::setLocalPosition(Vector3f pos)
 		msg.pushFloat( position[2] );
 
 		environment->getSoundManager()->sendOSCMessage(msg);
+
+		Vector3f audioListener = environment->getUserPosition();
+		float distanceToListener = Math::sqrt( Math::sqr(audioListener[0] - localPosition[0]) + Math::sqr(audioListener[3] - localPosition[3]) );
+		float newVol = volume;
+		if( rolloffMode == Sound::Rolloff::Linear )
+		{
+			newVol = ( 1 - ((distanceToListener - minRolloffDistance) / maxDistance)) * volume; //Linear rolloff
+		}
+		else if( rolloffMode == Sound::Rolloff::Logarithmic )
+		{
+			if( distanceToListener > 0 )
+				newVol = minRolloffDistance * (maxDistance / Math::sqr(distanceToListener) );  // Logarithmic
+		}
+		if( newVol > volume )
+			newVol = volume;
+
+		setVolume( newVol );
+
 	}
 }
 
@@ -958,7 +1087,6 @@ void SoundInstance::setCurrentFrame(int value)
 void SoundInstance::setMaxDistance(float value)
 {
 	this->maxDistance = value;
-	printf( "%s: Not fully implemented yet \n", __FUNCTION__);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -971,7 +1099,6 @@ float SoundInstance::getMaxDistance()
 void SoundInstance::setMinRolloffDistance(float value)
 {
 	this->minRolloffDistance = value;
-	printf( "%s: Not fully implemented yet \n", __FUNCTION__);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -985,7 +1112,51 @@ void SoundInstance::setDistanceRange(float min, float max)
 {
 	this->minRolloffDistance = min;
 	this->maxDistance = max;
-	printf( "%s: Not fully implemented yet \n", __FUNCTION__);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SoundInstance::setNoRolloff()
+{
+	rolloffMode = Sound::Rolloff::None;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SoundInstance::setLinearRolloff()
+{
+	rolloffMode = Sound::Rolloff::Linear;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SoundInstance::setLogarthmicRolloff()
+{
+	rolloffMode = Sound::Rolloff::Logarithmic;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool SoundInstance::isRolloffEnabled()
+{
+	if( rolloffMode != Sound::Rolloff::None )
+		return true;
+	else
+		return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool SoundInstance::isRolloffLinear()
+{
+	if( rolloffMode == Sound::Rolloff::Linear )
+		return true;
+	else
+		return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool SoundInstance::isRolloffLogarithmic()
+{
+	if( rolloffMode == Sound::Rolloff::Logarithmic )
+		return true;
+	else
+		return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

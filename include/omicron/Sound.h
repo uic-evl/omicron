@@ -73,6 +73,23 @@ public:
 
 	void setSoundEnvironment(SoundEnvironment*);
 	SoundEnvironment* getSoundEnvironment();
+
+	// Sound envelope / rolloff
+	void setMaxDistance(float);
+	float getMaxDistance();
+	void setMinRolloffDistance(float);
+	float getMinRolloffDistance();
+	void setDistanceRange(float, float);
+
+	enum Rolloff { None, Linear, Logarithmic };
+	void setNoRolloff();
+	void setLinearRolloff();
+	void setLogarthmicRolloff();
+
+	Rolloff getRolloffMode();
+	bool isRolloffEnabled();
+	bool isRolloffLinear();
+	bool isRolloffLogarithmic();
 private:
 
 public:
@@ -91,9 +108,13 @@ private:
 	float pitch;	// Sample rate (1.0 normal, 2.0 one octave up, 0.5 one octave down, -1 backwards
 	bool loop;
 	bool environmentSound; // Plays on all 20 speakers
+	bool useEnvironmentParameters;
+
+	// Rolloff / Sound Envelope
+	Rolloff rolloffMode;
 	float maxDistance;
 	float minRolloffDistance;
-	bool useEnvironmentParameters;
+	
 
 	// Sound environment this sound belongs to
 	SoundEnvironment* environment;
@@ -146,11 +167,20 @@ public:
 
 	void setCurrentFrame(int);
 
+	// Rolloff / Sound Envelope
 	void setMaxDistance(float);
 	float getMaxDistance();
 	void setMinRolloffDistance(float);
 	float getMinRolloffDistance();
 	void setDistanceRange(float, float);
+
+	void setNoRolloff();
+	void setLinearRolloff();
+	void setLogarthmicRolloff();
+
+	bool isRolloffEnabled();
+	bool isRolloffLinear();
+	bool isRolloffLogarithmic();
 
 	int getID();
 	int getBufferID();
@@ -177,6 +207,7 @@ private:
 	Vector3f position;
 	Vector3f localPosition;
 
+	Sound::Rolloff rolloffMode;
 	float maxDistance; // Max distance sound amplitude > 0
 	float minRolloffDistance; // Min distance sound amplitude at full before rolling off
 

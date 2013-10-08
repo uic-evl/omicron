@@ -595,8 +595,7 @@ void SoundManager::updateInstancePositions()
 
 		if( inst->isPlaying() )
 		{
-			//if( isDebugEnabled() )
-			//	ofmsg("%1%: instanceID %2%", %__FUNCTION__ %inst->getID() );
+			
 
 			Message msg("/setObjectLoc");
 			msg.pushInt32(inst->getID());
@@ -608,6 +607,37 @@ void SoundManager::updateInstancePositions()
 			msg.pushFloat( soundLocalPosition[2] );
 
 			sendOSCMessage(msg);
+
+			// Calculate and send the volume rolloff
+			Vector3f audioListener = environment->getUserPosition();
+			float distanceToListener = Math::sqrt( Math::sqr(audioListener[0] - soundLocalPosition[0]) + Math::sqr(audioListener[1] - soundLocalPosition[1]) + Math::sqr(audioListener[2] - soundLocalPosition[2]) );
+			float newVol = inst->getVolume();
+
+			int rolloffType = 0;
+			if( inst->isRolloffLinear() )
+			{
+				rolloffType = 1;
+				newVol = ( 1 - ((distanceToListener - inst->getMinRolloffDistance() ) / inst->getMaxDistance())) * inst->getVolume(); //Linear rolloff
+			}
+			else if( inst->isRolloffLogarithmic() )
+			{
+				rolloffType = 2;
+				if( distanceToListener > 0 )
+					newVol = inst->getMinRolloffDistance() * (inst->getMaxDistance() / Math::sqr(distanceToListener) );  // Logarithmic
+			}
+			if( newVol > inst->getVolume() )
+				newVol = inst->getVolume();
+			else if( newVol < 0 )
+				newVol = 0;
+
+			Message msg2("/setVol");
+			msg2.pushInt32(inst->getID());
+			msg2.pushFloat(newVol);
+
+			environment->getSoundManager()->sendOSCMessage(msg2);
+			//if( isDebugEnabled() )
+			//	ofmsg("%1%: instanceID %2% rolloff type %3% newVol %4%", %__FUNCTION__ %inst->getID() %rolloffType %newVol );
+
 		}
 	}
 };

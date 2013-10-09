@@ -68,7 +68,7 @@ SoundManager::SoundManager():
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 SoundManager::~SoundManager()
 {
-	//stopSoundServer(); // Do not call this under penalty of flogging
+	//stopSoundServer(); // Do not call this under penalty of catapult
 	stopAllSounds();
 }
 
@@ -609,6 +609,7 @@ void SoundManager::updateInstancePositions()
 			sendOSCMessage(msg);
 
 			// Calculate and send the volume rolloff
+			
 			Vector3f audioListener = environment->getUserPosition();
 			float distanceToListener = Math::sqrt( Math::sqr(audioListener[0] - soundLocalPosition[0]) + Math::sqr(audioListener[1] - soundLocalPosition[1]) + Math::sqr(audioListener[2] - soundLocalPosition[2]) );
 			float newVol = inst->getVolume();
@@ -630,14 +631,18 @@ void SoundManager::updateInstancePositions()
 			else if( newVol < 0 )
 				newVol = 0;
 
+			if( newVol * inst->getVolumeScale() > 1 )
+				newVol = 1.0;
+			else
+				newVol =  newVol * inst->getVolumeScale();
+
 			Message msg2("/setVol");
 			msg2.pushInt32(inst->getID());
 			msg2.pushFloat(newVol);
-
+			
 			environment->getSoundManager()->sendOSCMessage(msg2);
 			//if( isDebugEnabled() )
 			//	ofmsg("%1%: instanceID %2% rolloff type %3% newVol %4%", %__FUNCTION__ %inst->getID() %rolloffType %newVol );
-
 		}
 	}
 };

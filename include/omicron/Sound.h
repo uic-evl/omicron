@@ -150,6 +150,8 @@ public:
 	void setVolume(float);
 	float getVolume();
 
+	float getVolumeScale();
+
 	void fade(float, float);
 
 	void setWidth(float);

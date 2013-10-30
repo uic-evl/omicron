@@ -213,7 +213,11 @@ void XInputService::poll()
 		evt->setExtraDataFloat(2, _controllerState.Gamepad.sThumbRX / 32767.0f); // Right analog (-left, +right)
 		evt->setExtraDataFloat(3, _controllerState.Gamepad.sThumbRY / 32767.0f); // Right analog (-up, +down)
 		evt->setExtraDataFloat(4, _controllerState.Gamepad.bLeftTrigger / 255.0f); // Trigger 2 (+left, -right)
-		
+		evt->setExtraDataFloat(5, _controllerState.Gamepad.bRightTrigger / 255.0f); // Trigger 2 (+left, -right)
+
+		//if(isDebugEnabled()) ofmsg("Controller %1% extra data 4: %2%", %controller->controllerID %(_controllerState.Gamepad.bLeftTrigger / 255.0f) );
+		//if(isDebugEnabled()) ofmsg("Controller %1% extra data 5: %2%", %controller->controllerID %(_controllerState.Gamepad.bRightTrigger / 255.0f) );
+
 		//printf("Created controller %d event \n", j);
 		unlockEvents();
 	}

@@ -472,7 +472,12 @@ void MSKinectService::ProcessSkeleton( INuiSensor* sensor )
     GetClientRect( GetDlgItem( m_hWnd, IDC_VIDEOVIEW ), &rct);
     int width = rct.right;
     int height = rct.bottom;
-
+	
+	// Check for the closest head
+	int closestID = -1;
+	float closestDistance = 1000;
+	bool validSkeleton = false;
+	
     for (int i = 0 ; i < NUI_SKELETON_COUNT; ++i)
     {
         NUI_SKELETON_TRACKING_STATE trackingState = skeletonFrame.SkeletonData[i].eTrackingState;
@@ -480,7 +485,15 @@ void MSKinectService::ProcessSkeleton( INuiSensor* sensor )
         if (NUI_SKELETON_TRACKED == trackingState)
         {
             // We're tracking the skeleton, draw it
-            GenerateMocapEvent(skeletonFrame.SkeletonData[i], sensor );
+			Vector4 headPos = ((const NUI_SKELETON_DATA &)skeletonFrame.SkeletonData[i]).SkeletonPositions[NUI_SKELETON_POSITION_HEAD];
+			float curHeadDist = headPos.z;
+			if( curHeadDist < closestDistance )
+			{
+				closestDistance = curHeadDist;
+				closestID = i;
+				validSkeleton = true;
+			}
+            
         }
         else if (NUI_SKELETON_POSITION_ONLY == trackingState)
         {
@@ -494,7 +507,11 @@ void MSKinectService::ProcessSkeleton( INuiSensor* sensor )
             m_pRenderTarget->DrawEllipse(ellipse, m_pBrushJointTracked);*/
         }
     }
-
+	
+	if( validSkeleton )
+	{
+		GenerateMocapEvent(skeletonFrame.SkeletonData[closestID], sensor );
+	}
     //hr = m_pRenderTarget->EndDraw();
 
     // Device lost, need to recreate the render target
@@ -535,11 +552,24 @@ void MSKinectService::GenerateMocapEvent(const NUI_SKELETON_DATA & skel, INuiSen
 		Event* evt2 = mysInstance->writeHead();
 		evt2->reset(Event::Update, Service::Mocap, caveSimulatorWandID);
 
-		Vector4 jointPos2 = skel.SkeletonPositions[NUI_SKELETON_POSITION_HAND_RIGHT];
+		Vector4 jointLPos = skel.SkeletonPositions[NUI_SKELETON_POSITION_HAND_LEFT];
+		Vector4 jointRPos = skel.SkeletonPositions[NUI_SKELETON_POSITION_HAND_RIGHT];
+		
 		Vector3f pos2;
-		pos2[0] = jointPos2.x;
-		pos2[1] = jointPos2.y + 1.8f;
-		pos2[2] = jointPos2.z;
+		// Check for the closest hand
+		if( jointLPos.z < jointRPos.z )
+		{
+			pos2[0] = jointLPos.x;
+			pos2[1] = jointLPos.y + 1.8f;
+			pos2[2] = jointLPos.z;
+		}
+		else
+		{
+			pos2[0] = jointRPos.x;
+			pos2[1] = jointRPos.y + 1.8f;
+			pos2[2] = jointRPos.z;
+		}
+		
 		evt2->setPosition( pos2 );
 		evt->setOrientation( Quaternion::Identity() );
 

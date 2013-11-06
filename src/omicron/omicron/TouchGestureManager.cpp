@@ -157,15 +157,14 @@ void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID 
 		}
 
 		touchListLock->unlock();
-
-		xPos = x;
-		yPos = y;
-		centerTouch.xPos = xPos;
-		centerTouch.yPos = yPos;
 		
 		// Performance hack? Allows a smoother touch drag by processing event as it comes in
 		if( getTouchCount() == 1 && gestureFlag == GESTURE_SINGLE_TOUCH )
+		{
+			centerTouch.xPos = x;
+			centerTouch.yPos = y;
 			gestureManager->generatePQServiceEvent( Event::Move, getCenterTouch(), gestureFlag );
+		}
 			
 	}
 	lastUpdated = tb.millitm + (tb.time & 0xfffff) * 1000;
@@ -248,8 +247,8 @@ void TouchGroup::process(){
 
 	if( touchList.size() > 0 )
 	{
-		xPos /= touchList.size();
-		yPos /= touchList.size();
+		xPos /= (float)touchList.size();
+		yPos /= (float)touchList.size();
 
 		centerTouch.xPos = xPos;
 		centerTouch.yPos = yPos;
@@ -307,6 +306,7 @@ void TouchGroup::process(){
 		}
 
 	}
+	
 	else if( gestureFlag == Event::Zoom && getTouchCount() != 2 )
 	{
 		//ofmsg("TouchGroup %1% end zoom", %ID );
@@ -314,10 +314,11 @@ void TouchGroup::process(){
 		gestureFlag = GESTURE_UNPROCESSED;
 	}
 	// Single touch gestures
-	else if( gestureFlag == GESTURE_UNPROCESSED && getTouchCount() == 1 )
+	
+	if( getTouchCount() == 1 )
 	{
 		gestureFlag = GESTURE_SINGLE_TOUCH;
-		gestureManager->generatePQServiceEvent( Event::Down, getCenterTouch(), gestureFlag );
+		gestureManager->generatePQServiceEvent( Event::Move, getCenterTouch(), gestureFlag );
 	}
 	/*
 	else if( gestureFlag == GESTURE_SINGLE_TOUCH && getTouchCount() == 1 )
@@ -370,8 +371,6 @@ void TouchGroup::process(){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Returns the number of touches in the group
 int TouchGroup::getTouchCount(){
-	
-
 	return touchList.size();
 }
 
@@ -427,6 +426,7 @@ TouchGestureManager::TouchGestureManager()
 	//omsg("TouchGestureManager: TouchGestureManager()");
 	touchListLock = new Lock();
 	touchGroupListLock = new Lock();
+	runGestureThread = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -471,6 +471,7 @@ void TouchGestureManager::poll()
 	touchGroupList = newTouchGroupList;
 
 	touchGroupListLock->unlock();
+	
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -539,6 +540,7 @@ bool TouchGestureManager::addTouch(Event::Type eventType, Touch touch)
 	}
 
 	touchListLock->unlock();
+	
 	return true;
 }
 
@@ -596,6 +598,22 @@ bool TouchGestureManager::addTouchGroup( Event::Type eventType, float xPos, floa
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void TouchGestureManager::generatePQServiceEvent( Event::Type eventType, Touch touch, int gesture )
 {
+	timeb tb;
+	ftime( &tb );
+	int curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
+	int timeSinceLastSentEvent = curTime-timeLastEventSent;
+	//ofmsg("Time since last event sent %1%", %timeSinceLastSentEvent);
+	
+	if( timeSinceLastSentEvent < 30 )
+	{
+		//ofmsg("STOPPED: Time since last move event sent %1%", %timeSinceLastSentEvent);
+		return;
+	}
+	else// if( eventType == Event::Move )
+	{
+		//ofmsg("GO: Time since last event sent %1%", %timeSinceLastSentEvent);
+		timeLastEventSent = curTime;
+	}
 
 	if( pqsInstance ){
 		pqsInstance->lockEvents();
@@ -614,7 +632,7 @@ void TouchGestureManager::generatePQServiceEvent( Event::Type eventType, Touch t
 			evt->reset(Event::Up, Service::Pointer, touch.ID);
 			break;
 		}		
-		evt->setPosition(touch.xPos, touch.yPos);
+		evt->setPosition( Vector3f(touch.xPos, touch.yPos, 0 ) );
 
 		evt->setExtraDataType(Event::ExtraDataFloatArray);
 		evt->setExtraDataFloat(0, touch.xWidth);
@@ -624,6 +642,7 @@ void TouchGestureManager::generatePQServiceEvent( Event::Type eventType, Touch t
 			evt->setFlags( gesture );
 
 		pqsInstance->unlockEvents();
+		
 	} else {
 		printf("TouchGestureManager: No PQService Registered\n");
 	}
@@ -632,7 +651,6 @@ void TouchGestureManager::generatePQServiceEvent( Event::Type eventType, Touch t
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void TouchGestureManager::generateZoomEvent( Event::Type eventType, Touch touch, float zoomDelta )
 {
-
 	if( pqsInstance ){
 		pqsInstance->lockEvents();
 

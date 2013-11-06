@@ -55,6 +55,8 @@
 #endif
 #ifdef OMICRON_USE_NETSERVICE
 	#include "omicron/NetService.h"
+#endif
+#ifdef OMICRON_USE_LEGACY_NETSERVICE
 	#include "omicron/LegacyNetService.h"
 #endif
 #ifdef OMICRON_USE_PQLABS
@@ -127,6 +129,8 @@ void ServiceManager::registerDefaultServices()
 #endif
 #ifdef OMICRON_USE_NETSERVICE
 	registerService("NetService", (ServiceAllocator)NetService::New);
+#endif
+#ifdef OMICRON_USE_LEGACY_NETSERVICE
 	registerService("LegacyNetService", (ServiceAllocator)LegacyNetService::New);
 #endif
 #ifdef OMICRON_USE_PQLABS

@@ -130,7 +130,7 @@ if(OMICRON_USE_NETSERVICE)
 endif()
 
 # Network input support    
-set(OMICRON_USE_LEGACY_NETSERVICE true CACHE BOOL "Enable/disable Legacy network input support")
+set(OMICRON_USE_LEGACY_NETSERVICE false CACHE BOOL "Enable/disable Legacy network input support")
 if(OMICRON_USE_LEGACY_NETSERVICE)
 	set( srcs	 ${srcs} omicron/LegacyNetService.cpp )
 	set( headers ${headers} ${CMAKE_SOURCE_DIR}/include/omicron/LegacyNetService.h )

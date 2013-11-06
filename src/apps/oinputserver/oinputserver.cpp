@@ -198,6 +198,10 @@ public:
 		// If the event has been processed locally (i.e. by a filter event service)
 		if(evt.isProcessed()) return;
 
+		timeb tb;
+		ftime( &tb );
+		int timestamp = tb.millitm + (tb.time & 0xfffff) * 1000;
+
 #ifdef OMICRON_USE_VRPN
 		vrpnDevice->update(evt);
 #endif
@@ -228,8 +232,24 @@ public:
 		}
 		offset += evt.getExtraDataSize();
 		
-		handleLegacyEvent(evt);
+		//handleLegacyEvent(evt);
 		
+		if( showStreamSpeed )
+		{
+			if( (timestamp - lastOutgoingEventTime) >= 1000 )
+			{
+				lastOutgoingEventTime = timestamp;
+				ofmsg("oinputserver: Outgoing event stream %1% event(s)/sec", %eventCount );
+				eventCount = 0;
+			}
+			else
+			{
+				eventCount++;
+			}
+		}
+
+		if( showEventStream )
+			printf("oinputserver: Event %d sent at pos %f %f\n", evt.getSourceId(), evt.getPosition().x(), evt.getPosition().y() );
 		
 		std::map<char*,NetClient*> activeClients;
 
@@ -497,6 +517,12 @@ private:
 	std::map<char*,NetClient*> netClients;
 
 	bool checkForDisconnectedClients;
+
+	bool showEventStream;
+	bool showStreamSpeed;
+	int lastOutgoingEventTime;
+	int eventCount;
+
 #ifdef OMICRON_USE_VRPN
 	// VRPN Server (for CalVR)
 	const char	*TRACKER_NAME;
@@ -514,10 +540,16 @@ void OInputServer::startConnection(Config* cfg)
 	WSADATA wsaData;
 #endif
 
+	lastOutgoingEventTime = 0;
+	eventCount = 0;
+
 	Setting& sCfg = cfg->lookup("config");
 	serverPort = strdup(Config::getStringValue("serverPort", sCfg, "27000").c_str());
 
 	checkForDisconnectedClients = Config::getBoolValue("checkForDisconnectedClients", sCfg, false );
+	showEventStream = Config::getBoolValue("showEventStream", sCfg, false );
+	showStreamSpeed = Config::getBoolValue("showStreamSpeed", sCfg, false );
+
 	if( checkForDisconnectedClients )
 		omsg("Check for disconnected clients enabled.");
 

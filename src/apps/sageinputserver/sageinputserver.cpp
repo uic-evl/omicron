@@ -78,6 +78,8 @@ bool sageConnected = false;
 #define SOCKET_ERROR    -1
 #endif
 
+float timeLastEventSent = 0;
+
 class SAGEInputServer{
 public:
 	void connectToSage();
@@ -119,10 +121,10 @@ void SAGEInputServer::connectToSage(){
     sprintf(myIP, "%s", inet_ntoa(*(struct in_addr*) myInfo->h_addr));
 
     // ignore SIGPIPE
-    //int set = 1;
-    //setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, (void *)&set, sizeof(int));
-    //setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void *)&set, sizeof(int));
-    //setsockopt(sock, SOL_SOCKET, TCP_NODELAY, (void *)&set, sizeof(int));
+    int set = 1;
+    //setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, (void *)&set, sizeof(int)); //Windows doesn't have SIGPIPE
+    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char *)&set, sizeof(int));
+    setsockopt(sock, SOL_SOCKET, TCP_NODELAY, (const char *)&set, sizeof(int));
 
 	
     while ((error = connect(sock, (struct sockaddr*)&peer, sizeof(peer))) != 0)
@@ -138,10 +140,10 @@ void SAGEInputServer::connectToSage(){
 		sock = socket(AF_INET, SOCK_STREAM, 0);
 
 		// ignore SIGPIPE
-		//int set = 1;
-		//setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, (void *)&set, sizeof(int));
-		//setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void *)&set, sizeof(int));		
-		//setsockopt(sock, SOL_SOCKET, TCP_NODELAY, (void *)&set, sizeof(int));
+		int set = 1;
+		//setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, (void *)&set, sizeof(int)); //Windows doesn't have SIGPIPE
+		setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char *)&set, sizeof(int));
+		setsockopt(sock, SOL_SOCKET, TCP_NODELAY, (const char *)&set, sizeof(int));
     }
 	
     Sleep(1000);
@@ -155,55 +157,7 @@ void SAGEInputServer::handleEvent(Event* evt){
 	if( evt->getServiceType() == Service::Pointer ){
 		pointerToSAGEEvent( evt );
 	}
-	if( evt->getServiceType() == Service::Controller ){
-		//pointerToSAGEEvent( evt );
-		float analogLR = evt->getExtraDataFloat(0);
-		float analogTrigger = evt->getExtraDataFloat(4);
 
-		char msgData[256];
-		float xPos = 0.5f;
-		float yPos = 0.5f;
-		int eventType = evt->getType();
-		int id = 4;
-		float amount = analogLR / 100.0f;
-		int gestureType = GESTURE_SINGLE_TOUCH;
-
-		if( analogTrigger > 0 && triggerFlag == 0 )
-		{
-			gestureType = GESTURE_ZOOM;
-			triggerFlag = 1;
-			eventType = 1; // Begin
-			sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %f %d\n", 
-				myIP, id, gestureType, xPos, yPos, amount, eventType);
-			printf(msgData);
-		queueMessage(msgData);
-		sendToSage();
-		}
-		if( analogTrigger == 0 && triggerFlag != 0 )
-		{
-			gestureType = GESTURE_ZOOM;
-			triggerFlag = 0;
-			eventType = 3; // End
-			sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %f %d\n", 
-				myIP, id, gestureType, xPos, yPos, amount, eventType);
-			printf(msgData);
-		queueMessage(msgData);
-		sendToSage();
-		}
-
-		if( analogLR != 0 )
-		{
-
-		gestureType = GESTURE_ZOOM;
-		eventType = 2;
-		sprintf(msgData, "%s:pqlabs%d pqlabs %d %f %f %f %d\n", 
-				myIP, id, gestureType, xPos, yPos, amount, eventType);
-
-		printf(msgData);
-		queueMessage(msgData);
-		sendToSage();
-		}
-	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -217,6 +171,8 @@ void SAGEInputServer::pointerToSAGEEvent(Event* evt)
 	bool validEvent = false;
 
 	int gestureType = GESTURE_SINGLE_TOUCH;
+
+	memset( msgData, 0, 256 );
 
 	// Get gesture type from event flag
 	if( (evt->getFlags() & Event::Click) == Event::Click )
@@ -240,7 +196,7 @@ void SAGEInputServer::pointerToSAGEEvent(Event* evt)
 		case Event::Move: eventType = 2; break; // Middle
 		case Event::Up: eventType = 3; break; // End
 	}
-	
+
 	// Single touch - Double touch - Big/Palm touch
 	if( gestureType == GESTURE_SINGLE_TOUCH || gestureType == GESTURE_DOUBLE_CLICK || gestureType == GESTURE_BIG_TOUCH )
 	{
@@ -283,12 +239,12 @@ void SAGEInputServer::pointerToSAGEEvent(Event* evt)
 		validEvent = true;
 	}
 
-
 	if( validEvent ){
-		printf(msgData);
+		
 		queueMessage(msgData);
 		sendToSage();
 	}
+
 }
 
 void SAGEInputServer::queueMessage(char *newMsg) 
@@ -305,17 +261,16 @@ void SAGEInputServer::queueMessage(char *newMsg)
 
 void SAGEInputServer::sendToSage()
 {
-    if (!USE_SAGE || strlen(msg) == 0) return;
+    if (!USE_SAGE || strlen(msg) == 0)
+		return;
     
     if (send(sock, msg, strlen(msg), 0) == SOCKET_ERROR)
     {
-	printf("\nDisconnected from sage... reconnecting\n");
-
-	connectToSage();   // reconnect automatically
-
+		printf("\nDisconnected from sage... reconnecting\n");
+		connectToSage();   // reconnect automatically
     }
-	    
-    strcpy(msg,"\0");
+	
+	memset( msg, 0, 1024 );
 }
 
 
@@ -365,10 +320,13 @@ void main(int argc, char** argv)
 	bool printOutput = false;
 	bool runServer = true;
 
+	float xPos = 0;
+	float yPos = 0.5;
+	float increment = 0.00001;
+
 	while(runServer)
 	{
 		sm->poll();
-
 		sm->lockEvents();
 		int numEvts = sm->getAvailableEvents();
 		for(int i = 0; i < numEvts; i++)
@@ -380,6 +338,11 @@ void main(int argc, char** argv)
 		}
 		sm->clearEvents();
 		sm->unlockEvents();
+#ifdef WIN32
+		Sleep(1);
+#else
+		usleep(1000);
+#endif	
 	}
 
 	sm->stop();

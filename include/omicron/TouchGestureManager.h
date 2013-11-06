@@ -74,7 +74,7 @@ namespace omicron {
 			float diameter;
 
 			int lastUpdated; // Milliseconds
-
+			
 			float initialZoomDistance;
 			float zoomDistance;
 			float zoomLastDistance;
@@ -110,13 +110,14 @@ namespace omicron {
 			Event::Type getEventType();
 	};
 
-	class TouchGestureManager
+	class TouchGestureManager: public Thread
 	{
 
 	public:
 		TouchGestureManager();
 		void registerPQService(Service*);
 		void setMaxTouchIDs(int);
+
 		void poll();
 		
 		bool addTouch(Event::Type eventType, Touch touch);
@@ -140,6 +141,11 @@ namespace omicron {
 		static int touchTimeout; 
 
 		bool addTouchGroup( Event::Type eventType, float xPos, float yPos, int id );
+
+		// Threaded
+		bool runGestureThread;
+		
+		int timeLastEventSent; // Milliseconds
 	};
 }
 

@@ -169,6 +169,8 @@ public:
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	void handleInfoMessage()
 	{
+		String myAddress = getSocket().remote_endpoint().address().to_string();
+
 		// Read r
 		readUntil(myBuffer, BufferSize, ' ');
 		int r = atoi(myBuffer);
@@ -186,8 +188,10 @@ public:
 		evt->reset(Event::Update, Service::Pointer, mySourceId);
 		evt->setPosition((float)r/255, (float)g/255, (float)b/255);
 		evt->setExtraDataType(Event::ExtraDataString);
-		evt->setExtraDataString(myName);
+		evt->setExtraDataString(myName+""+myAddress); // Note: A ' ' is already appended after the name
 		myService->unlockEvents();
+
+		ofmsg("SagePointerConnection: pointerID: %1% updated with name '%2%' color (%3%,%4%,%5%)", %mySourceId %evt->getExtraDataString() %r %g %b);
 	}
 
 private:
@@ -211,8 +215,10 @@ public:
 
 	virtual TcpConnection* createConnection(const ConnectionInfo& ci)
 	{
-		ofmsg("New sage pointer connection (id=%1%)", %ci.id);
+		
 		SagePointerConnection* conn = new SagePointerConnection(ci, myService);
+		ofmsg("New sage pointer connection (id=%1%) from ", %ci.id );
+		
 	    return conn;
 	}
 

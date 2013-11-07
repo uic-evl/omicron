@@ -44,6 +44,8 @@ namespace omicron {
 	//! pixel-space regions.
     struct Rect
     {
+	public:
+
 		Vector2i min;
 		Vector2i max;
 
@@ -60,6 +62,20 @@ namespace omicron {
 
 		int x() const { return min(0); }
 		int y() const { return min(1); }
+
+		bool intersects(const Rect& other)
+		{
+			// Check overlap
+			bool xOverlap = valueInRange(other.min[0], min[0], max[0]) || valueInRange(min[0], other.min[0], other.max[0]);
+			bool yOverlap = valueInRange(other.min[1], min[1], max[1]) || valueInRange(min[1], other.min[1], other.max[1]);
+	
+			return xOverlap && yOverlap;
+		}
+
+	private:
+		// Used by intersects.
+		bool valueInRange(int value, int vmin, int vmax)
+		{ return (value >= vmin) && (value <= vmax); }
     };
 
 	///////////////////////////////////////////////////////////////////////////////////////////////

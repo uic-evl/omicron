@@ -51,13 +51,18 @@ namespace omicron {
 
 		bool forceSourceId() { return myForcedSourceId != -1; }
 		int getForcedSourceId() { return myForcedSourceId; }
-
+		int doesPointerExist( String pointerInfo ); // Returns the existing pointer ID, -1 if does not exist
+		void addClient( String clientNameAddr, int sourceID ) { clientList[clientNameAddr] = sourceID; }
+		bool isDebugEnabled() { return debugInfo; }
 	private:
 		// NOTE: this class is using the obsolete version of using a TcpServer.
 		// The correct way is to derive BasicPortholeService from TcpServer directly 
 		// (TcpServer derives from Service now)
 		SagePointerServer* myServer;
 		int myForcedSourceId;
+
+		std::map<String,int> clientList;
+		bool debugInfo;
 	};
 }; // namespace omega
 

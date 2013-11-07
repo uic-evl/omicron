@@ -1,11 +1,12 @@
 /**************************************************************************************************
  * THE OMICRON PROJECT
  *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2012		Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2013		Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Alessandro Febretti		febret@gmail.com
+ *  Arthur Nishimoto		anishimoto42@gmail.com
  *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2011, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2013, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted 
  * provided that the following conditions are met:
@@ -183,6 +184,16 @@ public:
 		readUntil(myBuffer, BufferSize, '\n');
 		int b = atoi(myBuffer);
 
+		int prevID = myService->doesPointerExist( myName+""+myAddress );
+		if( prevID != -1 )
+		{
+			mySourceId = prevID;
+		}
+		else
+		{
+			myService->addClient( myName+""+myAddress, mySourceId );
+		}
+
         myService->lockEvents();
 		Event* evt = myService->writeHead();
 		evt->reset(Event::Update, Service::Pointer, mySourceId);
@@ -191,7 +202,8 @@ public:
 		evt->setExtraDataString(myName+""+myAddress); // Note: A ' ' is already appended after the name
 		myService->unlockEvents();
 
-		ofmsg("SagePointerConnection: pointerID: %1% updated with name '%2%' color (%3%,%4%,%5%)", %mySourceId %evt->getExtraDataString() %r %g %b);
+		if( myService->isDebugEnabled() )
+			ofmsg("SagePointerConnection: pointerID: %1% updated with name '%2%' color (%3%,%4%,%5%)", %mySourceId %evt->getExtraDataString() %r %g %b);
 	}
 
 private:
@@ -217,7 +229,8 @@ public:
 	{
 		
 		SagePointerConnection* conn = new SagePointerConnection(ci, myService);
-		ofmsg("New sage pointer connection (id=%1%) from ", %ci.id );
+
+		//ofmsg("New sage pointer connection (id=%1%) from ", %ci.id );
 		
 	    return conn;
 	}
@@ -248,10 +261,25 @@ void SagePointerService::setup(Setting& settings)
 	myServer->setPort(20005);
 	myServer->initialize();
 	myServer->start();
+
+	debugInfo = Config::getBoolValue("debug", settings, false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void SagePointerService::poll() 
 {
 	myServer->poll();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+int SagePointerService::doesPointerExist(String pointerName) 
+{
+	if( clientList.count(pointerName) > 0 )
+	{
+		return clientList[pointerName];
+	}
+	else
+	{
+		return -1;
+	}
 }

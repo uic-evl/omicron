@@ -308,8 +308,8 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 
 		touch.xPos = tp.x / (float)serverResolution[0] + screenOffset[0];
 		touch.yPos = tp.y / (float)serverResolution[1] + screenOffset[1];
-		touch.xWidth = xWidth / (float)serverResolution[0];
-		touch.yWidth = yWidth / (float)serverResolution[1];
+		touch.xWidth = tp.dx / (float)serverResolution[0];
+		touch.yWidth = tp.dy / (float)serverResolution[1];
 
 		touch.timestamp = timestamp;
 
@@ -363,8 +363,8 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 			evt->setPosition(touch.xPos, touch.yPos);
 
 			evt->setExtraDataType(Event::ExtraDataFloatArray);
-			evt->setExtraDataFloat(0, xWidth);
-			evt->setExtraDataFloat(1, yWidth);
+			evt->setExtraDataFloat(0, touch.xWidth);
+			evt->setExtraDataFloat(1, touch.yWidth);
 
 			//printf(" Server %d,%d Screen %d, %d\n", serverX, serverY, screenX, screenY );
 			//printf("      at %d,%d\n", tp.x, tp.y);

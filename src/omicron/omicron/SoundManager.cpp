@@ -47,6 +47,7 @@ float SoundManager::peakCPU = -1;
 double SoundManager::nominalSampleRate = -1;
 double SoundManager::actualSampleRate = -1;
 int SoundManager::soundServerVolume = -16;
+int SoundManager::soundLoadWaitTime = 200;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 SoundManager::SoundManager():
@@ -118,20 +119,18 @@ void SoundManager::startSoundServer()
 	startingSoundServer = true;
 	Message msg("/startServer");
 	sendOSCMessage(msg);
-	wait(500); // Give the server a chance to reply
+
+	wait(2000); // Give the server a second to startup
 
 	Message msg2("/loadSynth");
 	sendOSCMessage(msg2);
-	wait(500); // Give the server a chance to reply
 
 	Message msg3("/loadStereoSynth");
 	sendOSCMessage(msg3);
-	wait(500); // Give the server a chance to reply
 
 	Message msg4("/startup");
 	sendOSCMessage(msg4);
 
-	wait(2000); // Give the server a second to startup
 	startingSoundServer = false;
 }
 
@@ -163,8 +162,11 @@ bool SoundManager::isSoundServerRunning()
 
 		int nodeID = -1;
 
-        while (pr.isOk() && (incoming_msg = pr.popMessage()) != 0) {			
-			//ofmsg( "Client: received %1%", %incoming_msg->addressPattern() );
+        while (pr.isOk() && (incoming_msg = pr.popMessage()) != 0) {		
+
+			//if( isDebugEnabled() )
+			//	ofmsg( "SoundManager::isSoundServerRunning(): /status.reply received %1%", %incoming_msg->addressPattern() );
+
 			if( incoming_msg->addressPattern() == "/status.reply" )
 				msgType = MSG_STATUS;
 			else if( incoming_msg->addressPattern() == "/n_end" )
@@ -230,6 +232,7 @@ bool SoundManager::isSoundServerRunning()
 
 			if( msgType == MSG_STATUS && nLoadedSynths > 0 )
 			{
+				/*
 				if( isDebugEnabled() )
 				{
 					omsg( "  Sound Server Status: Running");
@@ -242,7 +245,8 @@ bool SoundManager::isSoundServerRunning()
 					ofmsg( "    Nominal Sample Rate: %1%", %nominalSampleRate );
 					ofmsg( "    Actual Sample Rate: %1%", %actualSampleRate );
 				}
-				
+				*/
+
 				if( !soundServerRunning )
 				{
 					Message msg5("/notify");
@@ -256,7 +260,8 @@ bool SoundManager::isSoundServerRunning()
 			}
 			else if(  msgType == MSG_NODE_END )
 			{
-				//ofmsg("Removed node %1%", %nodeID );
+				if( isDebugEnabled() )
+					ofmsg("SoundManager::isSoundServerRunning(): received /n_end Removed node %1%", %nodeID );
 				removeInstanceNode(nodeID);
 			}
 
@@ -316,6 +321,8 @@ void SoundManager::wait(float millis)
 		curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
 		int timeSinceLastCheck = curTime-startTime;
 
+		if( isDebugEnabled() )
+			ofmsg("SoundManager: Waiting: %1%", %timeSinceLastCheck);
 		if( timeSinceLastCheck > millis )
 		{
 			break;
@@ -335,8 +342,8 @@ void SoundManager::poll()
 		int nodeID = -1;
 
         while (pr.isOk() && (incoming_msg = pr.popMessage()) != 0) {
-			if( isDebugEnabled() )
-				ofmsg( "Client: received %1%", %incoming_msg->addressPattern() );
+			//if( isDebugEnabled() )
+			//	ofmsg( "SoundManager::poll() received %1%", %incoming_msg->addressPattern() );
 			if( incoming_msg->addressPattern() == "/n_end" )
 				nodeEndEvent = true;
 
@@ -346,37 +353,38 @@ void SoundManager::poll()
 					std::vector<char> b; arg.popBlob(b); 
 				} else if (arg.isBool()) {
 					bool b; arg.popBool(b);
-					if( isDebugEnabled() )
-						ofmsg( "  received %1%", %b );
+					//if( isDebugEnabled() )
+					//	ofmsg( "  received %1%", %b );
 				} else if (arg.isInt32()) {
 					int i; arg.popInt32(i);
-					if( isDebugEnabled() ) 
-						ofmsg( "  received %1%", %i );
+					//if( isDebugEnabled() ) 
+					//	ofmsg( "  received %1%", %i );
 
 					if( nodeID == -1 )
 						nodeID = i;
 				} else if (arg.isInt64()) {
 					int64_t h; arg.popInt64(h);
-					if( isDebugEnabled() ) 
-						ofmsg( "  received %1%", %h );
+					//if( isDebugEnabled() ) 
+					//	ofmsg( "  received %1%", %h );
 				} else if (arg.isFloat()) {
 					float f; arg.popFloat(f);
-					if( isDebugEnabled() ) 
-						ofmsg( "  received %1%", %f );
+					//if( isDebugEnabled() ) 
+					//	ofmsg( "  received %1%", %f );
 				} else if (arg.isDouble()) {
 					double d; arg.popDouble(d);
-					if( isDebugEnabled() ) 
-						ofmsg( "  received %1%", %d );
+					//if( isDebugEnabled() ) 
+					//	ofmsg( "  received %1%", %d );
 				} else if (arg.isStr()) {
 					std::string s; arg.popStr(s); 
-					if( isDebugEnabled() ) 
-						ofmsg( "  received %1%", %s );
+					//if( isDebugEnabled() ) 
+					//	ofmsg( "  received %1%", %s );
 			  }
 			}
         }
 		if( nodeEndEvent )
 		{
-			//ofmsg("Removed node %1%", %nodeID );
+			if( isDebugEnabled() )
+					ofmsg("SoundManager::poll(): received /n_end Removed node %1%", %nodeID );
 			removeInstanceNode(nodeID);
 		}
 	}
@@ -421,7 +429,8 @@ bool SoundManager::isAssetDirectorySet()
 void SoundManager::addInstance( Ref<SoundInstance> newInstance )
 {
 	soundInstanceList[newInstance->getID()] = newInstance;
-	//ofmsg("Added instance %1% from buffer %2%", %newInstance->getID() %newInstance->getBufferID() );
+	if( isDebugEnabled() )
+		ofmsg("Added instance %1% from buffer %2%", %newInstance->getID() %newInstance->getBufferID() );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -429,7 +438,9 @@ void SoundManager::addBuffer( Ref<Sound> newSound )
 {
 	soundList[newSound->getBufferID()] = newSound;
 	soundNameList[newSound->getName()] = newSound->getBufferID();
-	//ofmsg("Added buffer %1%", %newSound->getBufferID() );
+
+	if( isDebugEnabled() )
+		ofmsg("Added buffer %1%", %newSound->getBufferID() );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -544,23 +555,43 @@ Vector<int> SoundManager::getInstanceIDList()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::stopAllSounds()
 {
-	for( int i = 0; i < instanceNodeIDList.size(); i++ )
+	if( isDebugEnabled() )
+		ofmsg("SoundManager: Freeing %1% nodes...", %soundInstanceList.size());
+
+	map< int, Ref<SoundInstance> >::iterator it = soundInstanceList.begin();
+	for ( it = soundInstanceList.begin(); it != soundInstanceList.end(); ++it )
 	{
+		SoundInstance* inst = it->second;
+		int nodeID = inst->getID();
 		Message msg("/freeNode");
-		msg.pushInt32(instanceNodeIDList[i]);
+		msg.pushInt32(nodeID);
 		sendOSCMessage(msg);
+
+		if( isDebugEnabled() )
+			ofmsg("SoundManager: Node %1% freed", %nodeID);
 	}
+	soundInstanceList.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::cleanupAllSounds()
 {
-	for( int i = 0; i < bufferIDList.size(); i++ )
+	if( isDebugEnabled() )
+		ofmsg("SoundManager: Freeing %1% buffers...", %soundList.size());
+
+	map< int, Ref<Sound> >::iterator it = soundList.begin();
+	for ( it = soundList.begin(); it != soundList.end(); ++it )
 	{
+		Sound* snd = it->second;
+		int bufferID = snd->getBufferID();
 		Message msg("/freeBuf");
-		msg.pushInt32(bufferIDList[i]);
+		msg.pushInt32(bufferID);
 		sendOSCMessage(msg);
+
+		if( isDebugEnabled() )
+			ofmsg("SoundManager: Buffer %1% freed", %bufferID);
 	}
+	soundList.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -746,7 +777,7 @@ Sound* SoundEnvironment::loadSoundFromFile(const String& soundName, const String
 		sound->loadFromFile(soundFullPath);
 
 		// Let the server load the sound before continuing (make sure buffer/sound is ready before a node/soundinstance is created)
-		soundManager->wait(50); 
+		soundManager->wait(soundManager->getSoundLoadWaitTime()); 
 	}
 	return sound;
 }

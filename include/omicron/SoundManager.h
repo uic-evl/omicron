@@ -170,6 +170,9 @@ public:
 
 	void setServerVolume(int); // typically -30 to 8
 	int getServerVolume();
+
+	void setSoundLoadWaitTime(int time) { soundLoadWaitTime = time; };
+	int getSoundLoadWaitTime() { return soundLoadWaitTime; };
 private:
 	void updateInstancePositions();
 	void removeInstanceNode(int);
@@ -220,6 +223,7 @@ private:
 
 	// Sound server control
 	static int soundServerVolume;
+	static int soundLoadWaitTime;
 };// SoundManager
 
 }; // namespace omicron

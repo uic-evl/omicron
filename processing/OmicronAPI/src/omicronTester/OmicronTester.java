@@ -43,11 +43,11 @@ public class OmicronTester extends PApplet
 
 		// Create a listener to get events
 		touchListener = new TouchListener();
-		// eventListener = new EventListener();
+		eventListener = new EventListener();
 
 		// Register listener with OmicronAPI
 		omicronManager.setTouchListener(touchListener);
-		// omicronManager.setEventListener(eventListener);
+		omicronManager.setEventListener(eventListener);
 
 		// Scaling the application display:
 		// Use this if you want to preview what you application would look like

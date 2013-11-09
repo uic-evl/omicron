@@ -1177,17 +1177,9 @@ public class OmicronAPI
 		}
 		else if( evt.extraDataType == OmicronAPI.ExtraDataType.ExtraDataString )
 		{
-			evt.vectorArray = new PVector[evt.extraDataItems];
-			
-			for( int i = 0; i < evt.extraDataItems; i++ )
-			{
-				PVector vec = new PVector();
-				vec.x = Float.intBitsToFloat( Integer.reverseBytes(byteBuffer.getInt()) );
-				vec.y = Float.intBitsToFloat( Integer.reverseBytes(byteBuffer.getInt()) );
-				vec.z = Float.intBitsToFloat( Integer.reverseBytes(byteBuffer.getInt()) );
-				
-				evt.vectorArray[i] = vec;
-			}
+			String byteSting = new String(byteBuffer.array() ); // Convert the entire buffer to a string
+			byteSting = byteSting.substring(byteBuffer.position()); // Parse out the non-extra data part of the buffer
+			evt.stringData = byteSting;
 		}
 		return evt;
 	}

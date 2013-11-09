@@ -277,6 +277,11 @@ void SAGEInputServer::sendToSage()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void main(int argc, char** argv)
 {
+	omsg("OmicronSDK - SAGEInputServer");
+	omsg("Copyright (C) 2010-2013 Electronic Visualization Laboratory\nUniversity of Illinois at Chicago");
+	omsg("======================================================");
+	omsg("");
+
 	SAGEInputServer app;
 
 	// Read config file name from command line or use default one.

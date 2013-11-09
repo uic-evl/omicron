@@ -34,6 +34,11 @@ using namespace omicron;
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char** argv)
 {
+	omsg("OmicronSDK - ocachesrv");
+	omsg("Copyright (C) 2010-2013 Electronic Visualization Laboratory\nUniversity of Illinois at Chicago");
+	omsg("======================================================");
+	omsg("");
+
 	// Add a default filesystem data sources (used to retrieve configuration files and other resources)
 	DataManager* dm = DataManager::getInstance();
 	dm->addSource(new FilesystemDataSource(""));

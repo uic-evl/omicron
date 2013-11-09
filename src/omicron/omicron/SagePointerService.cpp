@@ -261,8 +261,6 @@ void SagePointerService::setup(Setting& settings)
 	myServer->setPort(20005);
 	myServer->initialize();
 	myServer->start();
-
-	debugInfo = Config::getBoolValue("debug", settings, false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

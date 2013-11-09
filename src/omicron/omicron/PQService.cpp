@@ -74,7 +74,6 @@ void PQService::setup(Setting& settings)
 			printf("PQService: Normalizing data");
 	}
 
-	debugInfo = Config::getBoolValue("debug", settings, false);
 	debugRawPQInfo = Config::getBoolValue("debugRawPQInfo", settings, false);
 	showStreamSpeed = Config::getBoolValue("showStreamSpeed", settings, false);
 
@@ -313,7 +312,7 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 
 		touch.timestamp = timestamp;
 
-		if( debugInfo )
+		if( isDebugEnabled() )
 		{
 			ofmsg("PQService: New touch created ID: %1% at (%2%,%3%) size: (%4%,%5%)", %touch.ID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth );
 		}

@@ -72,7 +72,7 @@ public:
 	int init();
 private:
 	static PQService* mysInstance;
-	bool debugInfo, debugRawPQInfo;
+	bool debugRawPQInfo;
 
 	static int maxBlobSize;
 

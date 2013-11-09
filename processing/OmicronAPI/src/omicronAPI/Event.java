@@ -55,7 +55,8 @@ public class Event
 	// Data array types
 	public float[] dataArray;
 	public PVector[] vectorArray;
-	public String[] stringArray;
+	public String[] stringArray; // Legacy Omicron data
+	public String stringData; // Current Omicron data
 
 	public float[] position;
 	public float[] orientation;
@@ -98,7 +99,12 @@ public class Event
 	{
 		return sourceID;
 	}
-
+	
+	public int getServiceID()
+	{
+		return serviceID;
+	}
+	
 	public OmicronAPI.Type getEventType()
 	{
 		return eventType;
@@ -137,7 +143,12 @@ public class Event
 		else
 			return "";
 	}
-
+	
+	public String getStringData()
+	{
+		return stringData;
+	}
+	
 	public int getFlags()
 	{
 		return flags;

@@ -827,6 +827,11 @@ void OInputServer::createClient(const char* clientAddress, int dataPort, bool le
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int  main(int argc, char** argv)
 {
+	omsg("OmicronSDK - oinputserver");
+	omsg("Copyright (C) 2010-2013 Electronic Visualization Laboratory\nUniversity of Illinois at Chicago");
+	omsg("======================================================");
+	omsg("");
+
 	OInputServer app;
 	
 	// Read config file name from command line or use default one.

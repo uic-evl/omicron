@@ -366,9 +366,6 @@ public class OmicronAPI
 	
 	private void processMouseEvent()
 	{
-		if (touchListener == null)
-			return;
-		
 		float mouseOffsetX = 0;
 		float mouseOffsetY = 0;
 		float mouseScale = 1;
@@ -382,7 +379,24 @@ public class OmicronAPI
 		{
 			if (!mouseDown)
 			{
-				touchListener.touchDown(mouseID, (applet.mouseX - mouseOffsetX) / mouseScale, (applet.mouseY - mouseOffsetY) / mouseScale, 10, 10);
+				if (touchListener != null)
+					touchListener.touchDown(mouseID, (applet.mouseX - mouseOffsetX) / mouseScale, (applet.mouseY - mouseOffsetY) / mouseScale, 10, 10);
+				
+				if( eventListener != null )
+				{
+					Event e = new Event();
+					e.timestamp = applet.millis();
+					e.sourceID = mouseID;
+					e.serviceType = ServiceType.Pointer;
+					e.serviceID = -1;
+					e.eventType = Type.Down;
+					e.position[0] = (applet.mouseX - mouseOffsetX) / mouseScale / applet.width;
+					e.position[1] = (applet.mouseY - mouseOffsetY) / mouseScale / applet.height;
+					e.extraDataType = ExtraDataType.ExtraDataFloatArray;
+					e.dataArray = new float[] { 10f/ applet.width, 10f/ applet.height };
+					e.dataArraySize = 2;
+					eventListener.onEvent(e);
+				}
 				mouseDown = true;
 				
 				if(scaledViewMode)
@@ -390,7 +404,24 @@ public class OmicronAPI
 			}
 			else
 			{
-				touchListener.touchMove(mouseID, (applet.mouseX - mouseOffsetX) / mouseScale, (applet.mouseY - mouseOffsetY) / mouseScale, 10, 10);
+				if (touchListener != null)
+					touchListener.touchMove(mouseID, (applet.mouseX - mouseOffsetX) / mouseScale, (applet.mouseY - mouseOffsetY) / mouseScale, 10, 10);
+				
+				if( eventListener != null )
+				{
+					Event e = new Event();
+					e.timestamp = applet.millis();
+					e.sourceID = mouseID;
+					e.serviceType = ServiceType.Pointer;
+					e.serviceID = -1;
+					e.eventType = Type.Move;
+					e.position[0] = (applet.mouseX - mouseOffsetX) / mouseScale / applet.width;
+					e.position[1] = (applet.mouseY - mouseOffsetY) / mouseScale / applet.height;
+					e.extraDataType = ExtraDataType.ExtraDataFloatArray;
+					e.dataArray = new float[] { 10f/ applet.width, 10f/ applet.height };
+					e.dataArraySize = 2;
+					eventListener.onEvent(e);
+				}
 				
 				if(scaledViewMode){
 					if (lastMovePosition != null)
@@ -409,7 +440,25 @@ public class OmicronAPI
 		{
 			if (mouseDown)
 			{
-				touchListener.touchUp(mouseID, (applet.mouseX - mouseOffsetX) / mouseScale, (applet.mouseY - mouseOffsetY) / mouseScale, 10, 10);
+				if (touchListener != null)
+					touchListener.touchUp(mouseID, (applet.mouseX - mouseOffsetX) / mouseScale, (applet.mouseY - mouseOffsetY) / mouseScale, 10, 10);
+				
+				if( eventListener != null )
+				{
+					Event e = new Event();
+					e.timestamp = applet.millis();
+					e.sourceID = mouseID;
+					e.serviceType = ServiceType.Pointer;
+					e.serviceID = -1;
+					e.eventType = Type.Up;
+					e.position[0] = (applet.mouseX - mouseOffsetX) / mouseScale / applet.width;
+					e.position[1] = (applet.mouseY - mouseOffsetY) / mouseScale / applet.height;
+					e.extraDataType = ExtraDataType.ExtraDataFloatArray;
+					e.dataArray = new float[] { 10f/ applet.width, 10f/ applet.height };
+					e.dataArraySize = 2;
+					eventListener.onEvent(e);
+				}
+				
 				mouseDown = false;
 				mouseID--;
 			}
@@ -422,21 +471,73 @@ public class OmicronAPI
 		{
 			if (!secondMouseDown)
 			{
-				touchListener.touchDown(secondMouseID, (applet.mouseX - mouseOffsetX) / mouseScale, (applet.mouseY - mouseOffsetY) / mouseScale, 10, 10);
+				if( touchListener != null )
+					touchListener.touchDown(secondMouseID, (applet.mouseX - mouseOffsetX) / mouseScale, (applet.mouseY - mouseOffsetY) / mouseScale, 10, 10);
+				
+				if( eventListener != null )
+				{
+					Event e = new Event();
+					e.timestamp = applet.millis();
+					e.sourceID = secondMouseID;
+					e.serviceType = ServiceType.Pointer;
+					e.serviceID = -1;
+					e.eventType = Type.Down;
+					e.position[0] = (applet.mouseX - mouseOffsetX) / mouseScale / applet.width;
+					e.position[1] = (applet.mouseY - mouseOffsetY) / mouseScale / applet.height;
+					e.extraDataType = ExtraDataType.ExtraDataFloatArray;
+					e.dataArray = new float[] { 10f/ applet.width, 10f/ applet.height };
+					e.dataArraySize = 2;
+					eventListener.onEvent(e);
+				}
+				
 				secondMouseDown = true;
 				secondMouseX = (applet.mouseX - mouseOffsetX) / mouseScale;
 				secondMouseY = (applet.mouseY - mouseOffsetY) / mouseScale;
 			}
 			else
 			{
-				touchListener.touchMove(secondMouseID, secondMouseX, secondMouseY, 10, 10);
+				
+					touchListener.touchMove(secondMouseID, secondMouseX, secondMouseY, 10, 10);
+				
+				if( eventListener != null )
+				{
+					Event e = new Event();
+					e.timestamp = applet.millis();
+					e.sourceID = secondMouseID;
+					e.serviceType = ServiceType.Pointer;
+					e.serviceID = -1;
+					e.eventType = Type.Move;
+					e.position[0] = (applet.mouseX - mouseOffsetX) / mouseScale / applet.width;
+					e.position[1] = (applet.mouseY - mouseOffsetY) / mouseScale / applet.height;
+					e.extraDataType = ExtraDataType.ExtraDataFloatArray;
+					e.dataArray = new float[] { 10f/ applet.width, 10f/ applet.height };
+					e.dataArraySize = 2;
+					eventListener.onEvent(e);
+				}
 			}
 		}
 		else if (!applet.keyPressed)
 		{
 			if (secondMouseDown)
 			{
-				touchListener.touchUp(secondMouseID, secondMouseX, secondMouseY, 10, 10);
+				if( touchListener != null )
+					touchListener.touchUp(secondMouseID, secondMouseX, secondMouseY, 10, 10);
+				
+				if( eventListener != null )
+				{
+					Event e = new Event();
+					e.timestamp = applet.millis();
+					e.sourceID = secondMouseID;
+					e.serviceType = ServiceType.Pointer;
+					e.serviceID = -1;
+					e.eventType = Type.Move;
+					e.position[0] = (applet.mouseX - mouseOffsetX) / mouseScale / applet.width;
+					e.position[1] = (applet.mouseY - mouseOffsetY) / mouseScale / applet.height;
+					e.extraDataType = ExtraDataType.ExtraDataFloatArray;
+					e.dataArray = new float[] { 10.0f/ applet.width, 10.0f/ applet.height };
+					e.dataArraySize = 2;
+					eventListener.onEvent(e);
+				}
 				secondMouseDown = false;
 				secondMouseID--;
 			}

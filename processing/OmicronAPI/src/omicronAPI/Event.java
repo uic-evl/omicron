@@ -64,6 +64,8 @@ public class Event
 
 	Event()
 	{
+		position = new float[] { 0, 0, 0 };
+		orientation = new float[] { 0, 0, 0, 0 };
 	}
 
 	public float getXPos()

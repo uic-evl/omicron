@@ -61,11 +61,9 @@
 
 #ifdef HAVE_STD_UNORDERED_MAP
 	#include <unordered_map>
-    #define _UNSORTED_MAP std::unordered_map
 #else
 	#ifdef __GNUC__
  		#include <tr1/unordered_map>
- 		#define _UNSORTED_MAP std::tr1::unordered_map
 	#else
 		#include <hash_map>
 	#endif
@@ -120,10 +118,14 @@ namespace omicron
 	// Container typedefs
 	//! A Dictionary storing key-value pairs using a hashtable implementation.
 	//! @remarks Dictionary is usually a lightweight wrapper around a standard library implementation
-	#ifdef __GNUC__
-		template<typename K, typename T> class Dictionary: public _UNSORTED_MAP<K, T> {
+	#ifdef HAVE_STD_UNORDERED_MAP
+		template<typename K, typename T> class Dictionary: public std::unordered_map<K, T> {
 	#else
-		template<typename K, typename T> class Dictionary: public stdext::hash_map<K, T> {
+		#ifdef __GNUC__
+			template<typename K, typename T> class Dictionary: public std::tr1::unordered_map<K, T> {
+		#else
+			template<typename K, typename T> class Dictionary: public stdext::hash_map<K, T> {
+		#endif
 	#endif
 		public:
 			typedef KeyValue<K, T> Item;

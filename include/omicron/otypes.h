@@ -2,26 +2,26 @@
 * THE OMICRON PROJECT
  *-------------------------------------------------------------------------------------------------
  * Copyright 2010-2012		Electronic Visualization Laboratory, University of Illinois at Chicago
- * Authors:										
+ * Authors:
  *  Alessandro Febretti		febret@gmail.com
  *-------------------------------------------------------------------------------------------------
  * Copyright (c) 2010-2012, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
- * Redistribution and use in source and binary forms, with or without modification, are permitted 
+ * Redistribution and use in source and binary forms, with or without modification, are permitted
  * provided that the following conditions are met:
- * 
- * Redistributions of source code must retain the above copyright notice, this list of conditions 
- * and the following disclaimer. Redistributions in binary form must reproduce the above copyright 
- * notice, this list of conditions and the following disclaimer in the documentation and/or other 
- * materials provided with the distribution. 
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR 
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
- * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR 
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE  GOODS OR SERVICES; LOSS OF 
- * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
+ *
+ * Redistributions of source code must retain the above copyright notice, this list of conditions
+ * and the following disclaimer. Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the documentation and/or other
+ * materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE  GOODS OR SERVICES; LOSS OF
+ * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************************************/
 #ifndef __OMICRON_TYPES_H__
@@ -50,10 +50,25 @@
 #define NOMINMAX
 
 // Unordered map: use different implementations on linux & windows.
-#ifdef __GNUC__
-	#include <tr1/unordered_map>
+#if defined(_LIBCPP_VERSION) || __cplusplus >= 201103L
+	// C++11 support or using libc++
+	#define HAVE_STD_UNORDERED_MAP
+#elif _MSC_VER
+ 	// At least on supported versions of MSVC (>= 2008) we have
+ 	// std::unordered_map
+ 	#define HAVE_STD_UNORDERED_MAP
+#endif
+
+#ifdef HAVE_STD_UNORDERED_MAP
+	#include <unordered_map>
+    #define _UNSORTED_MAP std::unordered_map
 #else
-	#include <hash_map>
+	#ifdef __GNUC__
+ 		#include <tr1/unordered_map>
+ 		#define _UNSORTED_MAP std::tr1::unordered_map
+	#else
+		#include <hash_map>
+	#endif
 #endif
 
 // Libconfig
@@ -80,7 +95,7 @@ namespace omicron
 {
 	// Basic typedefs
 	typedef unsigned char byte;
-	#ifndef OMICRON_OS_LINUX 
+	#ifndef OMICRON_OS_LINUX
 	typedef unsigned int uint;
 	#endif
 	typedef unsigned long long uint64;
@@ -106,7 +121,7 @@ namespace omicron
 	//! A Dictionary storing key-value pairs using a hashtable implementation.
 	//! @remarks Dictionary is usually a lightweight wrapper around a standard library implementation
 	#ifdef __GNUC__
-		template<typename K, typename T> class Dictionary: public std::tr1::unordered_map<K, T> {
+		template<typename K, typename T> class Dictionary: public _UNSORTED_MAP<K, T> {
 	#else
 		template<typename K, typename T> class Dictionary: public stdext::hash_map<K, T> {
 	#endif
@@ -127,7 +142,7 @@ namespace omicron
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	//! List is usually a lightweight wrapper around a standard library list implementation
-	template<typename T> class List: public std::list<T> 
+	template<typename T> class List: public std::list<T>
 	{
 	public:
 		typedef std::pair<  typename List<T>::iterator, typename List<T>::iterator> Range;
@@ -157,15 +172,15 @@ namespace omicron
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	//! Enumeration for orientation.
-	enum Orientation 
+	enum Orientation
 	{
-		Horizontal = 0, 
+		Horizontal = 0,
 		Vertical = 1
 	};
 
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
-	//! Implements a base class for reference-counted types. o be used in conjunction with the 
+	//! Implements a base class for reference-counted types. o be used in conjunction with the
 	//! Ref<> type.
 	class OMICRON_API ReferenceType
 	{
@@ -179,8 +194,8 @@ namespace omicron
 		void ref();
 		void unref();
 
-		long refCount() 
-		{  
+		long refCount()
+		{
 			return myRefCount;
 		}
 
@@ -208,7 +223,7 @@ namespace omicron
 	public:
 		NameGenerator(const NameGenerator& rhs)
 			: mPrefix(rhs.mPrefix), mNext(rhs.mNext) {}
-		
+
 		NameGenerator(const String& prefix) : mPrefix(prefix), mNext(1) {}
 
 		/// Generate a new name

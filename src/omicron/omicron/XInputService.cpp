@@ -153,14 +153,19 @@ void XInputService::poll()
 		if( analog4 > 0.5 )
 			curButtonState |= Event::Button7;
 
+		// Right Shoulder Button (R1)
+		if(_controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) curButtonState |= Event::Button8;
+		// Right Analog Pad Pressed (R3)
+		if(_controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) curButtonState |= Event::Button9;
+
 		// NOTE: We are NOT mapping right shoulder, trigger and analog pad buttons.
 		// This implementation is mostly targeted at PS3 Move controllers.
 		// We could use SpecialButton3 but we leave it out for now.
 
 		// Select Button
-		//if(js.rgbButtons[8] & 0x80) curButtonState |= Event::SpecialButton1;
+		if(_controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) curButtonState |= Event::SpecialButton1;
 		// Start Button
-		//if(js.rgbButtons[11] & 0x80) curButtonState |= Event::SpecialButton2;
+		if(_controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_START) curButtonState |= Event::SpecialButton2;
 		
 		// PS Button
 		//if(js.rgbButtons[12] & 0x80) curButtonState |= Event::SpecialButton3;

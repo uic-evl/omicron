@@ -44,8 +44,10 @@ public:
 			myService(service),
 			myButtonFlags(0)
 	{
-		if(myService->forceSourceId()) mySourceId = myService->getForcedSourceId();
-		else mySourceId = ci.id;
+		//if(myService->forceSourceId()) mySourceId = myService->getForcedSourceId();
+		//else mySourceId = ci.id;
+        mySourceId = ci.id;
+        myInitialized = false;
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
@@ -87,6 +89,8 @@ public:
 		case 4:
 			handleInfoMessage();
 			break;
+        default:
+            omsg("Unknown msg id");
 		}
 	}
 
@@ -103,12 +107,15 @@ public:
 		readUntil(myBuffer, BufferSize, '\n');
 		int wheel = atoi(myBuffer);
 
-        myService->lockEvents();
-		Event* evt = myService->writeHead();
-		evt->reset(Event::Zoom, Service::Pointer, mySourceId);
-		evt->setExtraDataType(Event::ExtraDataIntArray);
-		evt->setExtraDataInt(0, wheel);
-		myService->unlockEvents();
+        if(myInitialized)
+        {
+            myService->lockEvents();
+		    Event* evt = myService->writeHead();
+		    evt->reset(Event::Zoom, Service::Pointer, mySourceId);
+		    evt->setExtraDataType(Event::ExtraDataIntArray);
+		    evt->setExtraDataInt(0, wheel);
+		    myService->unlockEvents();
+        }
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
@@ -122,26 +129,29 @@ public:
 		readUntil(myBuffer, BufferSize, '\n');
 		int pressed = atoi(myBuffer);
 
-        myService->lockEvents();
-		Event* evt = myService->writeHead();
-		evt->reset(pressed == 1 ? Event::Down : Event::Up, Service::Pointer, mySourceId);
-		evt->setPosition(myPosition[0], myPosition[1]);
+        if(myInitialized)
+        {
+            myService->lockEvents();
+		    Event* evt = myService->writeHead();
+		    evt->reset(pressed == 1 ? Event::Down : Event::Up, Service::Pointer, mySourceId);
+		    evt->setPosition(myPosition[0], myPosition[1]);
 
-		if(pressed == 1)
-		{
-			if(btn == 1) myButtonFlags |= Event::Left;
-			if(btn == 2) myButtonFlags |= Event::Right;
-			if(btn == 3) myButtonFlags |= Event::Middle;
-		}
-		else
-		{
-			if(btn == 1) myButtonFlags &= ~Event::Left;
-			if(btn == 2) myButtonFlags &= ~Event::Right;
-			if(btn == 3) myButtonFlags &= ~Event::Middle;
-		}
+		    if(pressed == 1)
+		    {
+			    if(btn == 1) myButtonFlags |= Event::Left;
+			    if(btn == 2) myButtonFlags |= Event::Right;
+			    if(btn == 3) myButtonFlags |= Event::Middle;
+		    }
+		    else
+		    {
+			    if(btn == 1) myButtonFlags &= ~Event::Left;
+			    if(btn == 2) myButtonFlags &= ~Event::Right;
+			    if(btn == 3) myButtonFlags &= ~Event::Middle;
+		    }
 
-		evt->setFlags(myButtonFlags);
-		myService->unlockEvents();
+		    evt->setFlags(myButtonFlags);
+		    myService->unlockEvents();
+        }
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
@@ -158,18 +168,22 @@ public:
 		myPosition[0] = x;
 		myPosition[1] = (1 - y);
 
-        myService->lockEvents();
-		Event* evt = myService->writeHead();
-		evt->reset(Event::Move, Service::Pointer, mySourceId);
-		evt->setPosition(myPosition[0], myPosition[1]);
-		evt->setFlags(myButtonFlags);
+        if(myInitialized)
+        {
+            myService->lockEvents();
+		    Event* evt = myService->writeHead();
+		    evt->reset(Event::Move, Service::Pointer, mySourceId);
+		    evt->setPosition(myPosition[0], myPosition[1]);
+		    evt->setFlags(myButtonFlags);
 
-		myService->unlockEvents();
+		    myService->unlockEvents();
+        }
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	void handleInfoMessage()
 	{
+        myInitialized = true;
 		String myAddress = getSocket().remote_endpoint().address().to_string();
 
 		// Read r
@@ -184,15 +198,16 @@ public:
 		readUntil(myBuffer, BufferSize, '\n');
 		int b = atoi(myBuffer);
 
-		int prevID = myService->doesPointerExist( myName+""+myAddress );
-		if( prevID != -1 )
+        SagePointerConnection* oldConnection = myService->doesPointerExist( myName+""+myAddress );
+		if( oldConnection != NULL )
 		{
-			mySourceId = prevID;
+            // Recycle the old connection id.
+            mySourceId = oldConnection->mySourceId;
+            oldConnection->close();
 		}
-		else
-		{
-			myService->addClient( myName+""+myAddress, mySourceId );
-		}
+
+        // Associate this connection and source id to the pointer description
+	    myService->addClient( myName+""+myAddress, this );
 
         myService->lockEvents();
 		Event* evt = myService->writeHead();
@@ -215,6 +230,7 @@ private:
 	String myName;
 	Vector2f myPosition;
 	int mySourceId;
+    bool myInitialized;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -241,8 +257,8 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-SagePointerService::SagePointerService():
-	myForcedSourceId(-1)
+SagePointerService::SagePointerService()
+	//myForcedSourceId(-1)
 {
 	myServer = new SagePointerServer(this);
 }
@@ -257,7 +273,7 @@ SagePointerService::~SagePointerService()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void SagePointerService::setup(Setting& settings)
 {
-	myForcedSourceId = Config::getIntValue("forcedSourceId", settings, -1);
+	//myForcedSourceId = Config::getIntValue("forcedSourceId", settings, -1);
 	myServer->setPort(20005);
 	myServer->initialize();
 	myServer->start();
@@ -270,14 +286,11 @@ void SagePointerService::poll()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-int SagePointerService::doesPointerExist(String pointerName) 
+SagePointerConnection* SagePointerService::doesPointerExist(String pointerName) 
 {
-	if( clientList.count(pointerName) > 0 )
+	if( clientList.find(pointerName) != clientList.end() )
 	{
 		return clientList[pointerName];
 	}
-	else
-	{
-		return -1;
-	}
+    return NULL;
 }

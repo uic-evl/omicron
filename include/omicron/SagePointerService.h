@@ -31,37 +31,40 @@
 #include "Service.h"
 
 namespace omicron {
-	class SagePointerServer;
+    class SagePointerServer;
 
-	///////////////////////////////////////////////////////////////////////////////////////////////
-	//! Implements a service able to receive pointer updates from the SAGE pointer application
-	class SagePointerService: public Service
-	{
-	friend class SagePointerConnection;
-	public:
-		//! Allocator function (will be used to register the service inside SystemManager)
-		static SagePointerService* New() { return new SagePointerService(); }
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //! Implements a service able to receive pointer updates from the SAGE pointer application
+    class SagePointerService: public Service
+    {
+    friend class SagePointerConnection;
+    public:
+        //! Allocator function (will be used to register the service inside SystemManager)
+        static SagePointerService* New() { return new SagePointerService(); }
 
-	public:
-		SagePointerService();
-		~SagePointerService();
+    public:
+        SagePointerService();
+        ~SagePointerService();
 
-		virtual void setup(Setting& settings);
-		virtual void poll();
+        virtual void setup(Setting& settings);
+        virtual void poll();
 
-		bool forceSourceId() { return myForcedSourceId != -1; }
-		int getForcedSourceId() { return myForcedSourceId; }
-		int doesPointerExist( String pointerInfo ); // Returns the existing pointer ID, -1 if does not exist
-		void addClient( String clientNameAddr, int sourceID ) { clientList[clientNameAddr] = sourceID; }
-	private:
-		// NOTE: this class is using the obsolete version of using a TcpServer.
-		// The correct way is to derive BasicPortholeService from TcpServer directly 
-		// (TcpServer derives from Service now)
-		SagePointerServer* myServer;
-		int myForcedSourceId;
+        //bool forceSourceId() { return myForcedSourceId != -1; }
+        //int getForcedSourceId() { return myForcedSourceId; }
 
-		std::map<String,int> clientList;
-	};
+        // Returns the SAGE pointer connection if a pointer with the specified
+        // name already exists. Returns NULL if pointer is not found.
+        SagePointerConnection* doesPointerExist( String pointerInfo ); 
+        void addClient( String clientNameAddr, SagePointerConnection* conn ) { clientList[clientNameAddr] = conn; }
+    private:
+        // NOTE: this class is using the obsolete version of using a TcpServer.
+        // The correct way is to derive BasicPortholeService from TcpServer directly 
+        // (TcpServer derives from Service now)
+        SagePointerServer* myServer;
+        //int myForcedSourceId;
+
+        std::map<String, SagePointerConnection*> clientList;
+    };
 }; // namespace omega
 
 #endif

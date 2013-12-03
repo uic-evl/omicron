@@ -62,7 +62,7 @@ public class Event
 	public float[] orientation;
 	public float timestamp;
 
-	Event()
+	public Event()
 	{
 		position = new float[] { 0, 0, 0 };
 		orientation = new float[] { 0, 0, 0, 0 };
@@ -124,6 +124,7 @@ public class Event
 
 	public float getFloatData(int index)
 	{
+		dataArraySize = dataArray.length;
 		if (dataArraySize > index && dataArray != null )
 			return (float) dataArray[index];
 		else
@@ -132,6 +133,7 @@ public class Event
 
 	public int getIntData(int index)
 	{
+		dataArraySize = dataArray.length;
 		if (dataArraySize > index && dataArray != null )
 			return (int) dataArray[index];
 		else
@@ -140,6 +142,7 @@ public class Event
 
 	public String getStringData(int index)
 	{
+		dataArraySize = dataArray.length;
 		if (dataArraySize > index && stringArray != null )
 			return stringArray[index];
 		else

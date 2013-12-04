@@ -136,18 +136,18 @@ public:
 		    evt->reset(pressed == 1 ? Event::Down : Event::Up, Service::Pointer, mySourceId);
 		    evt->setPosition(myPosition[0], myPosition[1]);
 
-		    if(pressed == 1)
+		    //if(pressed == 1)
 		    {
 			    if(btn == 1) myButtonFlags |= Event::Left;
 			    if(btn == 2) myButtonFlags |= Event::Right;
 			    if(btn == 3) myButtonFlags |= Event::Middle;
 		    }
-		    else
-		    {
-			    if(btn == 1) myButtonFlags &= ~Event::Left;
-			    if(btn == 2) myButtonFlags &= ~Event::Right;
-			    if(btn == 3) myButtonFlags &= ~Event::Middle;
-		    }
+		    //else
+		    //{
+			   // if(btn == 1) myButtonFlags &= ~Event::Left;
+			   // if(btn == 2) myButtonFlags &= ~Event::Right;
+			   // if(btn == 3) myButtonFlags &= ~Event::Middle;
+		    //}
 
 		    evt->setFlags(myButtonFlags);
 		    myService->unlockEvents();

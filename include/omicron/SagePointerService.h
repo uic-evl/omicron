@@ -33,6 +33,9 @@
 namespace omicron {
     class SagePointerServer;
 
+    // fwd class declaration.
+    class SagePointerConnection;
+    
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //! Implements a service able to receive pointer updates from the SAGE pointer application
     class SagePointerService: public Service

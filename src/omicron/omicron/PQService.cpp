@@ -127,7 +127,6 @@ int PQService::init()
 	if( useGestureManager ){
 		touchGestureManager = new TouchGestureManager();
 		touchGestureManager->registerPQService(mysInstance);
-		touchGestureManager->setMaxTouchIDs(maxTouches);
 	}
 
 	// set the functions on server callback

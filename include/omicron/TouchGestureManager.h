@@ -44,6 +44,11 @@ struct Touch{
 	float yWidth;
 	int timestamp;
 
+	float lastXPos;
+	float lastYPos;
+	int prevPosResetTime;
+	int prevPosTimer;
+
 	// Gestures
 	int gestureType;
 };
@@ -85,6 +90,9 @@ namespace omicron {
 			// Maybe replace these with a function call to generate on demand?
 			map<int,Touch> idleTouchList;
 			map<int,Touch> movingTouchList;
+
+			enum GroupHandedness { NONE, LEFT, RIGHT };
+			int groupHandedness;
 
 			Lock* touchListLock;
 		public:
@@ -132,13 +140,6 @@ namespace omicron {
 		map<int,Touch> touchList;
 		map<int,TouchGroup*> touchGroupList;
 		set<int> groupedIDs;
-
-		// Replaces PQService functionality if GestureManager is enabled
-		int touchID[1000]; // Max IDs assigned before resetting
-		static int maxTouches; // Should be same number as touchID array init
-		static int nextID;
-		
-		static int touchTimeout; 
 
 		bool addTouchGroup( Event::Type eventType, float xPos, float yPos, int id );
 

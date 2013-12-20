@@ -95,6 +95,9 @@ namespace omicron {
 			int groupHandedness;
 
 			Lock* touchListLock;
+
+			// Gesture flags
+			bool fiveFingerGestureTriggered;
 		public:
 			TouchGroup(TouchGestureManager*, int);
 			~TouchGroup();
@@ -107,6 +110,8 @@ namespace omicron {
 			void addLongRangeTouch( Event::Type eventType, float x, float y, int ID );
 
 			void process();
+			void generateGestures();
+
 			int getTouchCount();
 			Touch getCenterTouch();
 			int getGestureFlag();

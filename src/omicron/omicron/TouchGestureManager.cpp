@@ -47,11 +47,12 @@ float minPreviousPosDistance = 0.0001; // Min distance for touch prevPos to be u
 float zoomGestureMultiplier = 10;
 
 // User Flags: Advanced Touch Gestures Flags
-const int GESTURE_UNPROCESSED = 1 << 19; // Not yet identified (allows the first single touch to generate a down event)
-const int GESTURE_SINGLE_TOUCH = -1;
-const int GESTURE_BIG_TOUCH = 1 << 16;
-const int GESTURE_MULTI_TOUCH_HOLD = 1 << 17;
-const int GESTURE_MULTI_TOUCH_SWIPE = 1 << 18;
+const int GESTURE_UNPROCESSED = EventBase::Flags::User << 1; // Not yet identified (allows the first single touch to generate a down event)
+const int GESTURE_SINGLE_TOUCH = EventBase::Flags::User << 2;
+const int GESTURE_BIG_TOUCH = EventBase::Flags::User << 3;
+const int GESTURE_FIVE_FINGER_HOLD = EventBase::Flags::User << 4;
+const int GESTURE_FIVE_FINGER_SWIPE = EventBase::Flags::User << 5;
+const int GESTURE_THREE_FINGER_HOLD = EventBase::Flags::User << 6;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Touch Group
@@ -60,8 +61,8 @@ TouchGroup::TouchGroup(TouchGestureManager* gm, int ID){
 	gestureManager = gm;
 	//printf("TouchGroup %d created\n", ID);
 
-	initialDiameter = 0.2;
-	longRangeDiameter = 0.35;
+	initialDiameter = 0.5; // Cyber-Commons = 0.2?
+	longRangeDiameter = 0.6; // Cyber-Commons = 0.35?
 	diameter = initialDiameter;
 	this->ID = ID;
 
@@ -77,6 +78,8 @@ TouchGroup::TouchGroup(TouchGestureManager* gm, int ID){
 	lastUpdated = tb.millitm + (tb.time & 0xfffff) * 1000;
 
 	touchListLock = new Lock();
+
+	fiveFingerGestureTriggered = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -132,6 +135,7 @@ void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID 
 		if( touchList.size() == 0 ) // Initial touch group
 		{ 
 			// New touch down
+			gestureFlag = GESTURE_SINGLE_TOUCH;
 			gestureManager->generatePQServiceEvent( Event::Down, t, gestureFlag );
 
 			t.state = t.ACTIVE;
@@ -195,6 +199,7 @@ void TouchGroup::process(){
 	yPos = 0;
 
 	map<int,Touch> activeTouchList;
+	idleTouchList.clear();
 
 	// Recalculate group center by averaging current touch points
 	map<int,Touch>::iterator it;
@@ -214,6 +219,7 @@ void TouchGroup::process(){
 			if( t.prevPosTimer > idleTimeout )
 			{
 				t.state = t.IDLE;
+				idleTouchList[t.ID] = t;
 			}
 			else
 			{
@@ -250,9 +256,10 @@ void TouchGroup::process(){
 
 	// Only update the center position if group still has active touches
 	// This allows for the empty touch up event to use the last good position
-	if( touchList.size() == 0 && timeSinceLastUpdate > touchTimeout )
+	if( touchList.size() == 0 )
 	{
-		setRemove();
+		if( timeSinceLastUpdate > touchTimeout )
+			setRemove();
 		return;
 	}
 
@@ -275,13 +282,15 @@ void TouchGroup::process(){
 		}
 	}
 
+	//ofmsg("TouchGroup: %1% Touches: %2% Idle: %3%", %ID %touchList.size() %idleTouchList.size());
+
 	Touch thumbPoint = touchList[farthestTouchID];
-	if( touchList.size() == 3 && xPos < thumbPoint.xPos )
+	if( touchList.size() >= 3 && xPos < thumbPoint.xPos )
     {
 		//omsg("TouchGroup: Left-handed");
 		groupHandedness = LEFT;
     }
-	else if( touchList.size() == 3 && xPos > thumbPoint.xPos )
+	else if( touchList.size() >= 3 && xPos > thumbPoint.xPos )
     {
 		//omsg("TouchGroup: Right-handed");
 		groupHandedness = RIGHT;
@@ -291,7 +300,44 @@ void TouchGroup::process(){
 		//omsg("TouchGroup: Not-handed");
 		groupHandedness = NONE;
 	}
+
+	generateGestures();
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Gesture Tracking
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Returns the number of touches in the group
+void TouchGroup::generateGestures(){
+
+	if( touchList.size() == 1 )
+    {
+		gestureFlag = GESTURE_SINGLE_TOUCH;
+	}
+		
+
+	// 5-finger gesture
+	if( touchList.size() == 5 && idleTouchList.size() > 3 && !fiveFingerGestureTriggered )
+    {
+		gestureManager->generatePQServiceEvent( Event::Down, centerTouch, GESTURE_FIVE_FINGER_HOLD );
+		fiveFingerGestureTriggered = true;
+
+		ofmsg("TouchGroup ID: %1% 5-finger gesture triggered", %ID);
+    }
+    else if( touchList.size() == 5 && idleTouchList.size() > 3 && fiveFingerGestureTriggered )
+    {
+		gestureManager->generatePQServiceEvent( Event::Move, centerTouch, GESTURE_FIVE_FINGER_HOLD );
+		//ofmsg("TouchGroup ID: %1% 5-finger gesture hold", %ID);
+    }
+	else if( touchList.size() != 5 && fiveFingerGestureTriggered )
+    {
+		gestureManager->generatePQServiceEvent( Event::Up, centerTouch, GESTURE_FIVE_FINGER_HOLD );
+		fiveFingerGestureTriggered = false;
+
+		ofmsg("TouchGroup ID: %1% 5-finger gesture ended", %ID);
+    }
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Returns the number of touches in the group
@@ -497,12 +543,6 @@ bool TouchGestureManager::addTouchGroup( Event::Type eventType, float xPos, floa
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void TouchGestureManager::generatePQServiceEvent( Event::Type eventType, Touch touch, int gesture )
 {
-	timeb tb;
-	ftime( &tb );
-	int curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
-	int timeSinceLastSentEvent = curTime-timeLastEventSent;
-	//ofmsg("Time since last event sent %1%", %timeSinceLastSentEvent);
-
 	if( pqsInstance ){
 		pqsInstance->lockEvents();
 
@@ -525,9 +565,7 @@ void TouchGestureManager::generatePQServiceEvent( Event::Type eventType, Touch t
 		evt->setExtraDataType(Event::ExtraDataFloatArray);
 		evt->setExtraDataFloat(0, touch.xWidth);
 		evt->setExtraDataFloat(1, touch.yWidth);
-
-		if( gesture != GESTURE_SINGLE_TOUCH )
-			evt->setFlags( gesture );
+		evt->setFlags( gesture );
 
 		pqsInstance->unlockEvents();
 		

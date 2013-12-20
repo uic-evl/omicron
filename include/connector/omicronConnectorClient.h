@@ -255,6 +255,7 @@ namespace omicron
 
 			//! INTERNAL: Used to mark events that have been processed
 			Processed = 1 << 14,
+
 			//! User flags should offset this value: 16 user flags available (USER to USER << 16)
 			User = 1 << 15,
 

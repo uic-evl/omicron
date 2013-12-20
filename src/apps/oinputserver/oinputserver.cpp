@@ -249,7 +249,7 @@ public:
 		}
 
 		if( showEventStream )
-			printf("oinputserver: Event %d sent at pos %f %f\n", evt.getSourceId(), evt.getPosition().x(), evt.getPosition().y() );
+			printf("oinputserver: Event %d type: %d sent at pos %f %f\n", evt.getSourceId(), evt.getType(), evt.getPosition().x(), evt.getPosition().y() );
 		
 		std::map<char*,NetClient*> activeClients;
 

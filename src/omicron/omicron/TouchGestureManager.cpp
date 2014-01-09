@@ -1,11 +1,11 @@
 /**************************************************************************************************
  * THE OMICRON PROJECT
  *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2013		Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2014		Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto		anishimoto42@gmail.com
  *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2013, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2014, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted 
  * provided that the following conditions are met:
@@ -241,7 +241,6 @@ void TouchGroup::process(){
 				//t.lastXPos = t.xPos;
 				//t.lastYPos = t.yPos;
 			}
-
 			activeTouchList[t.ID] = t;
 		}
 	}
@@ -283,24 +282,25 @@ void TouchGroup::process(){
 	}
 
 	//ofmsg("TouchGroup: %1% Touches: %2% Idle: %3%", %ID %touchList.size() %idleTouchList.size());
-
-	Touch thumbPoint = touchList[farthestTouchID];
-	if( touchList.size() >= 3 && xPos < thumbPoint.xPos )
-    {
-		//omsg("TouchGroup: Left-handed");
-		groupHandedness = LEFT;
-    }
-	else if( touchList.size() >= 3 && xPos > thumbPoint.xPos )
-    {
-		//omsg("TouchGroup: Right-handed");
-		groupHandedness = RIGHT;
-    }
-    else
+	if( touchList.count(farthestTouchID) != 0 )
 	{
-		//omsg("TouchGroup: Not-handed");
-		groupHandedness = NONE;
+		Touch thumbPoint = touchList[farthestTouchID];
+		if( touchList.size() >= 3 && xPos < thumbPoint.xPos )
+		{
+			//omsg("TouchGroup: Left-handed");
+			groupHandedness = LEFT;
+		}
+		else if( touchList.size() >= 3 && xPos > thumbPoint.xPos )
+		{
+			//omsg("TouchGroup: Right-handed");
+			groupHandedness = RIGHT;
+		}
+		else
+		{
+			//omsg("TouchGroup: Not-handed");
+			groupHandedness = NONE;
+		}
 	}
-
 	generateGestures();
 }
 
@@ -313,6 +313,9 @@ void TouchGroup::generateGestures(){
 	if( touchList.size() == 1 )
     {
 		gestureFlag = GESTURE_SINGLE_TOUCH;
+		Touch t = touchList[ID];
+		ofmsg("TouchGroup ID: %1% single touch", %ID);
+		ofmsg("   size: %1%, %2%", %t.xWidth %t.yWidth);
 	}
 		
 
@@ -323,6 +326,10 @@ void TouchGroup::generateGestures(){
 		fiveFingerGestureTriggered = true;
 
 		ofmsg("TouchGroup ID: %1% 5-finger gesture triggered", %ID);
+		if( groupHandedness == LEFT )
+			omsg("   - Left-hand detected");
+		else if( groupHandedness == RIGHT )
+			omsg("   - Right-hand detected");
     }
     else if( touchList.size() == 5 && idleTouchList.size() > 3 && fiveFingerGestureTriggered )
     {

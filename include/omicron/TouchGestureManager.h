@@ -98,16 +98,17 @@ namespace omicron {
 
 			// Gesture flags
 			bool fiveFingerGestureTriggered;
+			bool bigTouchGestureTriggered;
 		public:
 			TouchGroup(TouchGestureManager*, int);
 			~TouchGroup();
 
 			int getID();
 
-			bool isInsideGroup( Event::Type eventType, float x, float y, int id );
+			bool isInsideGroup( Event::Type eventType, float x, float y, int id, float w, float h );
 
-			void addTouch( Event::Type eventType, float x, float y, int ID );
-			void addLongRangeTouch( Event::Type eventType, float x, float y, int ID );
+			void addTouch( Event::Type eventType, float x, float y, int ID, float w, float h );
+			void addLongRangeTouch( Event::Type eventType, float x, float y, int ID, float w, float h );
 
 			void process();
 			void generateGestures();
@@ -146,7 +147,7 @@ namespace omicron {
 		map<int,TouchGroup*> touchGroupList;
 		set<int> groupedIDs;
 
-		bool addTouchGroup( Event::Type eventType, float xPos, float yPos, int id );
+		bool addTouchGroup( Event::Type eventType, float xPos, float yPos, int id, float xWidth, float yWidth );
 
 		// Threaded
 		bool runGestureThread;

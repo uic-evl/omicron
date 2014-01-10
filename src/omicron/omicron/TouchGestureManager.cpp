@@ -80,6 +80,7 @@ TouchGroup::TouchGroup(TouchGestureManager* gm, int ID){
 	touchListLock = new Lock();
 
 	fiveFingerGestureTriggered = false;
+	bigTouchGestureTriggered = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -93,13 +94,14 @@ int TouchGroup::getID(){
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-bool TouchGroup::isInsideGroup( Event::Type eventType, float x, float y, int touchID ){
+bool TouchGroup::isInsideGroup( Event::Type eventType, float x, float y, int touchID, float w, float h )
+{
 	// Check if touch is inside radius of TouchGroup
 	if( x > xPos - diameter/2 && x < xPos + diameter/2 && y > yPos - diameter/2 && y < yPos + diameter/2 ){
-		addTouch( eventType, x, y, touchID );
+		addTouch( eventType, x, y, touchID, w, h );
 		return true;
 	} else if( x > xPos - longRangeDiameter/2 && x < xPos + longRangeDiameter/2 && y > yPos - longRangeDiameter/2 && y < yPos + longRangeDiameter/2 ){
-		addLongRangeTouch( eventType, x, y, touchID );
+		addLongRangeTouch( eventType, x, y, touchID, w, h );
 		return false;
 	} else {
 		if( longRangeTouchList.count( touchID ) > 0 )
@@ -109,7 +111,7 @@ bool TouchGroup::isInsideGroup( Event::Type eventType, float x, float y, int tou
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID ){
+void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID, float w, float h ){
 	timeb tb;
 	ftime( &tb );
 	int curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
@@ -127,6 +129,8 @@ void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID 
 		t.xPos = x;
 		t.yPos = y;
 		t.ID = touchID;
+		t.xWidth = w;
+		t.yWidth = h;
 		t.timestamp = curTime;
 
 		touchListLock->lock();
@@ -159,7 +163,7 @@ void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID 
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void TouchGroup::addLongRangeTouch( Event::Type eventType, float x, float y, int ID ){
+void TouchGroup::addLongRangeTouch( Event::Type eventType, float x, float y, int ID, float w, float h ){
 	timeb tb;
 	ftime( &tb );
 	lastUpdated = tb.millitm + (tb.time & 0xfffff) * 1000;
@@ -171,6 +175,8 @@ void TouchGroup::addLongRangeTouch( Event::Type eventType, float x, float y, int
 			Touch t;
 			t.xPos = x;
 			t.yPos = y;
+			t.xWidth = w;
+			t.yWidth = h;
 			t.ID = ID;
 			t.timestamp = lastUpdated;
 			longRangeTouchList[ID] = t;
@@ -178,6 +184,8 @@ void TouchGroup::addLongRangeTouch( Event::Type eventType, float x, float y, int
 			Touch t;
 			t.xPos = x;
 			t.yPos = y;
+			t.xWidth = w;
+			t.yWidth = h;
 			t.ID = ID;
 			t.timestamp = lastUpdated;
 			touchList[ID] = t;
@@ -307,15 +315,39 @@ void TouchGroup::process(){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Gesture Tracking
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Returns the number of touches in the group
 void TouchGroup::generateGestures(){
 
 	if( touchList.size() == 1 )
     {
-		gestureFlag = GESTURE_SINGLE_TOUCH;
+		
 		Touch t = touchList[ID];
-		ofmsg("TouchGroup ID: %1% single touch", %ID);
-		ofmsg("   size: %1%, %2%", %t.xWidth %t.yWidth);
+
+		float bigTouchMinSize = 0.05;
+		if( t.xWidth + t.yWidth > 0 )
+		{
+			if( t.xWidth > bigTouchMinSize )
+			{
+				
+				gestureFlag =  GESTURE_BIG_TOUCH;
+
+				if( !bigTouchGestureTriggered )
+				{
+					ofmsg("TouchGroup ID: %1% BIG touch", %ID);
+					gestureManager->generatePQServiceEvent( Event::Down, centerTouch, gestureFlag );
+					bigTouchGestureTriggered = true;
+				}
+				else
+				{
+					gestureManager->generatePQServiceEvent( Event::Move, centerTouch, gestureFlag );
+				}
+			}
+			else
+			{
+				ofmsg("TouchGroup ID: %1% single touch", %ID);
+				gestureFlag = GESTURE_SINGLE_TOUCH;
+			}
+			ofmsg("   size: %1%, %2%", %t.xWidth %t.yWidth);
+		}
 	}
 		
 
@@ -455,9 +487,11 @@ bool TouchGestureManager::addTouch(Event::Type eventType, Touch touch)
 	float x = touch.xPos;
 	float y = touch.yPos;
 	float ID = touch.ID;
+	float w = touch.xWidth;
+	float h = touch.yWidth;
 
 	// Let the touch groups determine if the touch is new or an update
-	addTouchGroup( Event::Down, x, y, ID );
+	addTouchGroup( Event::Down, x, y, ID, w, h );
 	touchList[ID] = touch;
 
 	// TODO: Allow for pass-though of touch points
@@ -512,7 +546,7 @@ bool TouchGestureManager::addTouch(Event::Type eventType, Touch touch)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-bool TouchGestureManager::addTouchGroup( Event::Type eventType, float xPos, float yPos, int ID )
+bool TouchGestureManager::addTouchGroup( Event::Type eventType, float xPos, float yPos, int ID, float xWidth, float yWidth )
 {
 	touchGroupListLock->lock();
 
@@ -522,7 +556,7 @@ bool TouchGestureManager::addTouchGroup( Event::Type eventType, float xPos, floa
 		TouchGroup* tg = (*it).second;
 		int groupID = (*it).first;
 
-		if( tg->isInsideGroup( eventType, xPos, yPos, ID ) )
+		if( tg->isInsideGroup( eventType, xPos, yPos, ID, xWidth, yWidth ) )
 		{
 			touchGroupListLock->unlock();
 			return true;
@@ -534,7 +568,7 @@ bool TouchGestureManager::addTouchGroup( Event::Type eventType, float xPos, floa
 	if( groupedIDs.count(ID) == 0 ){
 		ofmsg("TouchID %1% creating new TouchGroup %2%", %ID %ID);
 		TouchGroup* newGroup = new TouchGroup(this, ID);
-		newGroup->addTouch( eventType, xPos, yPos, ID );
+		newGroup->addTouch( eventType, xPos, yPos, ID, xWidth, yWidth );
 
 		touchGroupList[ID] = newGroup;
 		

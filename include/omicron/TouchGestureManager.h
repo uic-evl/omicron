@@ -84,6 +84,8 @@ namespace omicron {
 			float zoomDistance;
 			float zoomLastDistance;
 
+			float farthestTouchDistance;
+
 			map<int,Touch> touchList;
 			map<int,Touch> longRangeTouchList;
 
@@ -99,6 +101,7 @@ namespace omicron {
 			// Gesture flags
 			bool fiveFingerGestureTriggered;
 			bool bigTouchGestureTriggered;
+			bool zoomGestureTriggered;
 		public:
 			TouchGroup(TouchGestureManager*, int);
 			~TouchGroup();

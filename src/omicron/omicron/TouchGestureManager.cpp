@@ -276,7 +276,7 @@ void TouchGroup::process(){
 
 	// Determine the farthest point from the group center (thumb?)
 	int farthestTouchID = -1;
-	float farthestTouchDistance = 0;
+	farthestTouchDistance = 0;
 
 	for ( it = touchList.begin() ; it != touchList.end(); it++ )
 	{
@@ -317,11 +317,17 @@ void TouchGroup::process(){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void TouchGroup::generateGestures(){
 
+	// Single finger gestures
 	if( touchList.size() == 1 )
     {
 		
 		Touch t = touchList[ID];
 
+		// Click
+
+		// Double-Click
+
+		// Big touch
 		float bigTouchMinSize = 0.05;
 		if( t.xWidth + t.yWidth > 0 )
 		{
@@ -346,10 +352,40 @@ void TouchGroup::generateGestures(){
 				ofmsg("TouchGroup ID: %1% single touch", %ID);
 				gestureFlag = GESTURE_SINGLE_TOUCH;
 			}
-			ofmsg("   size: %1%, %2%", %t.xWidth %t.yWidth);
+			//ofmsg("   size: %1%, %2%", %t.xWidth %t.yWidth);
 		}
 	}
+	
+	// Basic 2-touch zoom
+	if( touchList.size() == 2 && idleTouchList.size() <= 1 && !zoomGestureTriggered){
+      zoomGestureTriggered = true;
+      
+      initialZoomDistance = farthestTouchDistance;
+      zoomDistance = farthestTouchDistance;
+      zoomLastDistance = initialZoomDistance;
+      
+      gestureManager->generateZoomEvent( Event::Down, centerTouch, 0 );
+	  ofmsg("TouchGroup ID: %1% zoom start", %ID);
+    } else if( touchList.size() != 2 && zoomGestureTriggered ){
+      zoomGestureTriggered = false;
+      
+       gestureManager->generateZoomEvent( Event::Up, centerTouch, 0 );
+	   ofmsg("TouchGroup ID: %1% zoom end", %ID);
+    }
+
+	if( zoomGestureTriggered )
+	{
+		zoomLastDistance = zoomDistance;
+		zoomDistance = farthestTouchDistance;
+      
+		float zoomDelta = (zoomDistance - zoomLastDistance) * zoomGestureMultiplier;
 		
+		if( zoomDelta != 0 )
+		{
+			gestureManager->generateZoomEvent( Event::Move, centerTouch, zoomDelta );
+			ofmsg("TouchGroup ID: %1% zoom delta: %2%", %ID %zoomDelta);
+		}
+	}
 
 	// 5-finger gesture
 	if( touchList.size() == 5 && idleTouchList.size() > 3 && !fiveFingerGestureTriggered )

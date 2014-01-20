@@ -49,6 +49,8 @@ struct Touch{
 	int prevPosResetTime;
 	int prevPosTimer;
 
+	int idleTime;
+
 	// Gestures
 	int gestureType;
 };
@@ -100,8 +102,10 @@ namespace omicron {
 
 			// Gesture flags
 			bool fiveFingerGestureTriggered;
+			bool threeFingerGestureTriggered;
 			bool bigTouchGestureTriggered;
 			bool zoomGestureTriggered;
+			bool doubleClickTriggered;
 		public:
 			TouchGroup(TouchGestureManager*, int);
 			~TouchGroup();

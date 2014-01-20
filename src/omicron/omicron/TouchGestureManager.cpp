@@ -32,17 +32,18 @@ using namespace omicron;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Time parameters (milliseconds)
-int touchTimeout = 150; // Time since last update until touch group is automatically removed
-int doubleClickDelay = 100; // Time between the first and second click to trigger DoubleClick event
+int touchTimeout = 150; // Time since last update until a touch is automatically removed
+int touchGroupTimeout = 250; // Time after last touch is removed when the group is automatically removed (double-click triggered if a new touch occurs in this time)
 
-int idleTimeout = 600; // Time before a non-moving touch is considered idle (should be greater than minPreviousPosTime)
-float minPreviousPosTime = 500; // Time before prevPos of a touch is updated
+int idleTimeout = 1600; // Time before a non-moving touch is considered idle (should be greater than minPreviousPosTime)
+float minPreviousPosTime = 1500; // Time before prevPos of a touch is updated
 
 // Distance parameters (ratio of screen size)
 float minimumZoomDistance = 0.1; // Minimum distance between two touches to be considered for zoom gesture (differentiates between clicks and zooms)
 float holdToSwipeThreshold = 0.02; // Minimum distance before a multi-touch hold gesture is considered a swipe
+float clickMaxDistance = 0.02; // Maximum distance a touch group can be from it's initial point to be considered for a click event
 
-float minPreviousPosDistance = 0.0001; // Min distance for touch prevPos to be updated
+float minPreviousPosDistance = 0.002; // Min distance for touch prevPos to be updated (min distance for idle touch points to become active)
 
 float zoomGestureMultiplier = 10;
 
@@ -53,6 +54,8 @@ const int GESTURE_BIG_TOUCH = EventBase::Flags::User << 3;
 const int GESTURE_FIVE_FINGER_HOLD = EventBase::Flags::User << 4;
 const int GESTURE_FIVE_FINGER_SWIPE = EventBase::Flags::User << 5;
 const int GESTURE_THREE_FINGER_HOLD = EventBase::Flags::User << 6;
+const int GESTURE_SINGLE_CLICK = EventBase::Flags::User << 7;
+const int GESTURE_DOUBLE_CLICK = EventBase::Flags::User << 8;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Touch Group
@@ -80,7 +83,10 @@ TouchGroup::TouchGroup(TouchGestureManager* gm, int ID){
 	touchListLock = new Lock();
 
 	fiveFingerGestureTriggered = false;
+	threeFingerGestureTriggered = false;
+	zoomGestureTriggered = false;
 	bigTouchGestureTriggered = false;
+	doubleClickTriggered = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -97,10 +103,10 @@ int TouchGroup::getID(){
 bool TouchGroup::isInsideGroup( Event::Type eventType, float x, float y, int touchID, float w, float h )
 {
 	// Check if touch is inside radius of TouchGroup
-	if( x > xPos - diameter/2 && x < xPos + diameter/2 && y > yPos - diameter/2 && y < yPos + diameter/2 ){
+	if( x > centerTouch.xPos - diameter/2 && x < centerTouch.xPos + diameter/2 && y > centerTouch.yPos - diameter/2 && y < centerTouch.yPos + diameter/2 ){
 		addTouch( eventType, x, y, touchID, w, h );
 		return true;
-	} else if( x > xPos - longRangeDiameter/2 && x < xPos + longRangeDiameter/2 && y > yPos - longRangeDiameter/2 && y < yPos + longRangeDiameter/2 ){
+	} else if( x > centerTouch.xPos - longRangeDiameter/2 && x < centerTouch.xPos + longRangeDiameter/2 && y > centerTouch.yPos - longRangeDiameter/2 && y < centerTouch.yPos + longRangeDiameter/2 ){
 		addLongRangeTouch( eventType, x, y, touchID, w, h );
 		return false;
 	} else {
@@ -138,15 +144,29 @@ void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID,
 
 		if( touchList.size() == 0 ) // Initial touch group
 		{ 
-			// New touch down
-			gestureFlag = GESTURE_SINGLE_TOUCH;
-			gestureManager->generatePQServiceEvent( Event::Down, t, gestureFlag );
+			if( ID != touchID )
+			{
+				ofmsg("TouchGroup %1% double click event", %ID );
+				doubleClickTriggered = true;
+				ID = touchID;
+				gestureManager->generatePQServiceEvent( Event::Down, centerTouch, GESTURE_DOUBLE_CLICK );
+			}
+			else
+			{
+				// New touch down
+				gestureFlag = GESTURE_SINGLE_TOUCH;
+				gestureManager->generatePQServiceEvent( Event::Down, t, gestureFlag );
 
-			t.state = t.ACTIVE;
-			t.prevPosResetTime = curTime;
+				init_xPos = x;
+				init_yPos = y;
 
-			touchList[touchID] = t;
-			ofmsg("TouchGroup %1% down event", %ID );
+				t.state = t.IDLE;
+				t.idleTime = curTime;
+				t.prevPosResetTime = curTime;
+
+				touchList[touchID] = t;
+				ofmsg("TouchGroup %1% down event", %ID );
+			}
 		}
 		else
 		{
@@ -226,6 +246,8 @@ void TouchGroup::process(){
 			t.prevPosTimer = curTime - t.prevPosResetTime;
 			if( t.prevPosTimer > idleTimeout )
 			{
+				if( t.state != t.IDLE )
+					t.idleTime = curTime;
 				t.state = t.IDLE;
 				idleTouchList[t.ID] = t;
 			}
@@ -265,8 +287,18 @@ void TouchGroup::process(){
 	// This allows for the empty touch up event to use the last good position
 	if( touchList.size() == 0 )
 	{
-		if( timeSinceLastUpdate > touchTimeout )
+		if( timeSinceLastUpdate > touchGroupTimeout )
+		{
+			float distFromInitPos = sqrt( abs( init_xPos - centerTouch.xPos ) * abs( init_xPos - centerTouch.xPos ) + abs(init_yPos - centerTouch.yPos ) * abs( init_yPos - centerTouch.yPos ) );
+			//ofmsg("Touchgroup %1% distance from initPos %2%", %ID %distFromInitPos);
+			
+			if( distFromInitPos <= clickMaxDistance && !doubleClickTriggered && !bigTouchGestureTriggered )
+			{
+				ofmsg("Touchgroup %1% click event", %ID);
+				gestureManager->generatePQServiceEvent( Event::Down, centerTouch, GESTURE_SINGLE_CLICK );
+			}
 			setRemove();
+		}
 		return;
 	}
 
@@ -316,16 +348,17 @@ void TouchGroup::process(){
 // Gesture Tracking
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void TouchGroup::generateGestures(){
+	timeb tb;
+	ftime( &tb );
+	int curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
 
 	// Single finger gestures
 	if( touchList.size() == 1 )
     {
 		
 		Touch t = touchList[ID];
-
-		// Click
-
-		// Double-Click
+		centerTouch.xWidth = t.xWidth;
+		centerTouch.yWidth = t.yWidth;
 
 		// Big touch
 		float bigTouchMinSize = 0.05;
@@ -349,7 +382,7 @@ void TouchGroup::generateGestures(){
 			}
 			else
 			{
-				ofmsg("TouchGroup ID: %1% single touch", %ID);
+				//ofmsg("TouchGroup ID: %1% single touch (idle count: %2% time: %3%)", %ID %idleTouchList.size() %(curTime-t.idleTime) );
 				gestureFlag = GESTURE_SINGLE_TOUCH;
 			}
 			//ofmsg("   size: %1%, %2%", %t.xWidth %t.yWidth);
@@ -410,6 +443,31 @@ void TouchGroup::generateGestures(){
 		fiveFingerGestureTriggered = false;
 
 		ofmsg("TouchGroup ID: %1% 5-finger gesture ended", %ID);
+    }
+
+	// 3-finger gesture
+	if( touchList.size() == 3 && idleTouchList.size() > 2 && !threeFingerGestureTriggered )
+    {
+		gestureManager->generatePQServiceEvent( Event::Down, centerTouch, GESTURE_THREE_FINGER_HOLD );
+		threeFingerGestureTriggered = true;
+
+		ofmsg("TouchGroup ID: %1% 3-finger gesture triggered", %ID);
+		if( groupHandedness == LEFT )
+			omsg("   - Left-hand detected");
+		else if( groupHandedness == RIGHT )
+			omsg("   - Right-hand detected");
+    }
+    else if( touchList.size() == 3 && idleTouchList.size() > 2 && threeFingerGestureTriggered )
+    {
+		gestureManager->generatePQServiceEvent( Event::Move, centerTouch, GESTURE_THREE_FINGER_HOLD );
+		//ofmsg("TouchGroup ID: %1% 5-finger gesture hold", %ID);
+    }
+	else if( touchList.size() != 3 && threeFingerGestureTriggered )
+    {
+		gestureManager->generatePQServiceEvent( Event::Up, centerTouch, GESTURE_THREE_FINGER_HOLD );
+		threeFingerGestureTriggered = false;
+
+		ofmsg("TouchGroup ID: %1% 3-finger gesture ended", %ID);
     }
 }
 

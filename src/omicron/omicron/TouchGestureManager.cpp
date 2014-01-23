@@ -146,9 +146,9 @@ void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID,
 		{ 
 			if( ID != touchID )
 			{
-				ofmsg("TouchGroup %1% double click event", %ID );
 				doubleClickTriggered = true;
-				ID = touchID;
+				//ID = touchID;
+				ofmsg("TouchGroup %1% double click event", %ID );
 				gestureManager->generatePQServiceEvent( Event::Down, centerTouch, GESTURE_DOUBLE_CLICK );
 			}
 			else
@@ -157,16 +157,17 @@ void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID,
 				gestureFlag = GESTURE_SINGLE_TOUCH;
 				gestureManager->generatePQServiceEvent( Event::Down, t, gestureFlag );
 
-				init_xPos = x;
-				init_yPos = y;
-
-				t.state = t.IDLE;
-				t.idleTime = curTime;
-				t.prevPosResetTime = curTime;
-
-				touchList[touchID] = t;
 				ofmsg("TouchGroup %1% down event", %ID );
 			}
+
+			init_xPos = x;
+			init_yPos = y;
+
+			t.state = t.IDLE;
+			t.idleTime = curTime;
+			t.prevPosResetTime = curTime;
+
+			touchList[touchID] = t;
 		}
 		else
 		{

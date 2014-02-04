@@ -1,11 +1,11 @@
 /**************************************************************************************************
  * THE OMICRON PROJECT
  *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2013		Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2014		Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto		anishimoto42@gmail.com
  *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2013, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2014, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted 
  * provided that the following conditions are met:
@@ -44,6 +44,13 @@ struct Touch{
 	float yWidth;
 	int timestamp;
 
+	float lastXPos;
+	float lastYPos;
+	int prevPosResetTime;
+	int prevPosTimer;
+
+	int idleTime;
+
 	// Gestures
 	int gestureType;
 };
@@ -79,6 +86,8 @@ namespace omicron {
 			float zoomDistance;
 			float zoomLastDistance;
 
+			float farthestTouchDistance;
+
 			map<int,Touch> touchList;
 			map<int,Touch> longRangeTouchList;
 
@@ -86,19 +95,31 @@ namespace omicron {
 			map<int,Touch> idleTouchList;
 			map<int,Touch> movingTouchList;
 
+			enum GroupHandedness { NONE, LEFT, RIGHT };
+			int groupHandedness;
+
 			Lock* touchListLock;
+
+			// Gesture flags
+			bool fiveFingerGestureTriggered;
+			bool threeFingerGestureTriggered;
+			bool bigTouchGestureTriggered;
+			bool zoomGestureTriggered;
+			bool doubleClickTriggered;
 		public:
 			TouchGroup(TouchGestureManager*, int);
 			~TouchGroup();
 
 			int getID();
 
-			bool isInsideGroup( Event::Type eventType, float x, float y, int id );
+			bool isInsideGroup( Event::Type eventType, float x, float y, int id, float w, float h );
 
-			void addTouch( Event::Type eventType, float x, float y, int ID );
-			void addLongRangeTouch( Event::Type eventType, float x, float y, int ID );
+			void addTouch( Event::Type eventType, float x, float y, int ID, float w, float h );
+			void addLongRangeTouch( Event::Type eventType, float x, float y, int ID, float w, float h );
 
 			void process();
+			void generateGestures();
+
 			int getTouchCount();
 			Touch getCenterTouch();
 			int getGestureFlag();
@@ -133,14 +154,7 @@ namespace omicron {
 		map<int,TouchGroup*> touchGroupList;
 		set<int> groupedIDs;
 
-		// Replaces PQService functionality if GestureManager is enabled
-		int touchID[1000]; // Max IDs assigned before resetting
-		static int maxTouches; // Should be same number as touchID array init
-		static int nextID;
-		
-		static int touchTimeout; 
-
-		bool addTouchGroup( Event::Type eventType, float xPos, float yPos, int id );
+		bool addTouchGroup( Event::Type eventType, float xPos, float yPos, int id, float xWidth, float yWidth );
 
 		// Threaded
 		bool runGestureThread;

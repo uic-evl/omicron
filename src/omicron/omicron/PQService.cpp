@@ -1,11 +1,11 @@
 /********************************************************************************************************************** 
 * THE OMICRON PROJECT
  *---------------------------------------------------------------------------------------------------------------------
- * Copyright 2010-2013							Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2014							Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto								anishimoto42@gmail.com
  *---------------------------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2013, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2014, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the 
  * following conditions are met:
@@ -127,7 +127,6 @@ int PQService::init()
 	if( useGestureManager ){
 		touchGestureManager = new TouchGestureManager();
 		touchGestureManager->registerPQService(mysInstance);
-		touchGestureManager->setMaxTouchIDs(maxTouches);
 	}
 
 	// set the functions on server callback
@@ -292,13 +291,10 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 	{		
 		Touch touch;
 		
-		// GestureManager needs PQ ID, otherwise PQService manages the ID
+		// PQService management of IDs
 		// Basically PQ IDs recycle after the ID is done. OmegaLib increments IDs
 		// until max ID is reached.
-		if( useGestureManager )
-			touch.ID = tp.id;
-		else
-			touch.ID = touchID[tp.id];
+		touch.ID = touchID[tp.id];
 
 		if( debugRawPQInfo )
 		{
@@ -317,13 +313,20 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 			ofmsg("PQService: New touch created ID: %1% at (%2%,%3%) size: (%4%,%5%)", %touch.ID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth );
 		}
 
-		// Process touch gestures (this is done outside above event creation
-		// during case touchGestureManager needs to create an event)
+		// Process touch gestures (this is done outside event creation
+		// for the case touchGestureManager needs to create an event)
 		if( useGestureManager ){
 
 			switch(tp.point_event)
 			{
 				case TP_DOWN:
+					touch.ID = nextID;
+					touchID[tp.id] = nextID;
+					if( nextID < maxTouches - 100 ){
+						nextID++;
+					} else {
+						nextID = 0;
+					}
 					touchGestureManager->addTouch( Event::Down, touch );
 					break;
 				case TP_MOVE:

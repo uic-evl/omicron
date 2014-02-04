@@ -253,15 +253,16 @@ namespace omicron
 			//! Generic name for digital right button
 			ButtonRight = 1 << 13,
 
+			//! Generic name for additional button 8
+			Button8 = 1 << 15,
+			//! Generic name for additional button 9
+			Button9 = 1 << 16,
+
 			//! INTERNAL: Used to mark events that have been processed
 			Processed = 1 << 14,
-			//! User flags should offset this value: 16 user flags available (USER to USER << 16)
-			User = 1 << 15,
 
-			//! Generic name for additional button 8
-			Button8 = 1 << 17,
-			//! Generic name for additional button 9
-			Button9 = 1 << 18
+			//! User flags should offset this value: 14 user flags available (USER to USER << 18)
+			User = 1 << 17	
 		};
 
 		enum ExtraDataType

@@ -26,6 +26,7 @@
 *********************************************************************************************************************/
 #include "omicron/SoundManager.h"
 #include "omicron/AssetCacheManager.h"
+#include "omicron/DataManager.h"
 #include <sys/timeb.h>
 
 using namespace omicron;
@@ -770,6 +771,15 @@ Sound* SoundEnvironment::loadSoundFromFile(const String& soundName, const String
 		acm->addFileToCacheList(filePath);
 		acm->sync();
 	}
+     // If the asset cache is disabled we are playing sounds locally: convert the
+     // relative sound path to a full sound path.
+     else
+     {
+         if(!DataManager::findFile(filePath, soundFullPath))
+         {
+             ofwarn("SoundEnvironment:loadSoundFromFile could not find sound file %1%", %filePath);
+         }
+     }
 
 	Sound* sound = createSound(soundName);
 	if(sound != NULL)

@@ -349,7 +349,8 @@ SoundInstance::SoundInstance(Sound* sound)
 
 	playState = notPlayed;
 
-	if( environment->getSoundManager()->isDebugEnabled() )
+	if( environment->getSoundManager()->isDebugEnabled() )
+
 		ofmsg("Created SoundInstance %1% with node ID %2%", %sound->getFilePath() %instanceID);
 }
 
@@ -780,6 +781,15 @@ bool SoundInstance::isDone()
 		return true;
 	else
 		return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SoundInstance::serverStopSignalReceived()
+{
+	playState = stopped;
+
+	if( environment->getSoundManager()->isDebugEnabled() )
+		ofmsg("%1%: for instanceID: %2%", %__FUNCTION__ %instanceID);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -140,6 +140,8 @@ public:
 	bool isPlaying();
 	bool isDone();
 
+	void serverStopSignalReceived();
+
 	void setPosition(Vector3f);
 	const Vector3f& getPosition();
 	void setLocalPosition(Vector3f);

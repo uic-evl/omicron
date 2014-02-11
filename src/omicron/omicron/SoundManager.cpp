@@ -322,8 +322,8 @@ void SoundManager::wait(float millis)
 		curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
 		int timeSinceLastCheck = curTime-startTime;
 
-		if( isDebugEnabled() )
-			ofmsg("SoundManager: Waiting: %1%", %timeSinceLastCheck);
+		//if( isDebugEnabled() )
+		//	ofmsg("SoundManager: Waiting: %1%", %timeSinceLastCheck);
 		if( timeSinceLastCheck > millis )
 		{
 			break;
@@ -682,6 +682,8 @@ void SoundManager::updateInstancePositions()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::removeInstanceNode(int id)
 {
+	SoundInstance* si = soundInstanceList[id];
+	si->serverStopSignalReceived();
 	soundInstanceList.erase(id);
 };
 

@@ -55,11 +55,14 @@ DataManager* DataManager::getInstance()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 bool DataManager::findFile(const String& name, String& outPath)
 {
-	DataInfo di = mysInstance->getInfo(name);
-	if(!di.isNull())
+	if( mysInstance != NULL )
 	{
-		outPath = di.path;
-		return true;
+		DataInfo di = mysInstance->getInfo(name);
+		if(!di.isNull())
+		{
+			outPath = di.path;
+			return true;
+		}
 	}
 	return false;
 }

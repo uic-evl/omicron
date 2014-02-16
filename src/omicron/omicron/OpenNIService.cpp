@@ -47,6 +47,18 @@ const char* OpenNIService::calibrationFile = NULL;
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 OpenNIService::OpenNIService()
 {
+	Colors[0][0] = 0; Colors[0][1] = 1; Colors[0][2] = 1;
+	Colors[1][0] = 0; Colors[1][1] = 0; Colors[1][2] = 1;
+	Colors[2][0] = 0; Colors[2][1] = 1; Colors[2][2] = 0;
+	Colors[3][0] = 1; Colors[3][1] = 1; Colors[3][2] = 0;
+	Colors[4][0] = 1; Colors[4][1] = 0; Colors[4][2] = 0;
+	Colors[5][0] = 1; Colors[5][1] = .5; Colors[5][2] = 0;
+	Colors[6][0] = .5; Colors[6][1] = 1; Colors[6][2] = 0;
+	Colors[7][0] = 0; Colors[7][1] = .5; Colors[7][2] = 1;
+	Colors[8][0] = .5; Colors[8][1] = 0; Colors[8][2] = 1;
+	Colors[9][0] = 1; Colors[9][1] = 1; Colors[9][2] = .5;
+	Colors[10][0] = 1; Colors[10][1] = 1; Colors[10][2] = 1;
+	
 	pDepthTexBuf = new unsigned char[640 * 480 * 4];
 
 	omg_DepthGenerator_v = new Vector<DepthGenerator>();

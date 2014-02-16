@@ -124,7 +124,9 @@ namespace omicron
 		float g_pDepthHist[OMICRON_OPENNI_MAX_DEPTH];
 
 		unsigned char* pDepthTexBuf;
-
+		static const int nColors = 10;
+		float Colors[11][3];
+		
 		static bool loadCalibrationFromFile;
 		static const char* calibrationFile;
 

@@ -228,7 +228,7 @@ void OpenNIService::setup(Setting& settings)
 
 			if(srt.exists(buffer))
 			{
-				Setting& st = srt[buffer];
+				Setting& st = srt[(const char*)buffer];
 				refTranslation.x() = (float)st[0];
 				refTranslation.y() = (float)st[1];
 				refTranslation.z() = (float)st[2];
@@ -237,7 +237,7 @@ void OpenNIService::setup(Setting& settings)
 			sprintf(buffer, "referenceLinear%d", i);
 			if(srt.exists(buffer))
 			{
-				Setting& st = srt[buffer];
+				Setting& st = srt[(const char*)buffer];
 				for(int i = 0; i < 9; i++)
 				{
 					refLinear(i) = st[i];

@@ -27,6 +27,7 @@
 
 #include "omicron/TouchGestureManager.h"
 #include "omicron/StringUtils.h"
+#include "connector/omicronConnectorClient.h"
 
 using namespace omicron;
 
@@ -48,14 +49,14 @@ float minPreviousPosDistance = 0.002; // Min distance for touch prevPos to be up
 float zoomGestureMultiplier = 10;
 
 // User Flags: Advanced Touch Gestures Flags
-const int GESTURE_UNPROCESSED = EventBase::Flags::User << 1; // Not yet identified (allows the first single touch to generate a down event)
-const int GESTURE_SINGLE_TOUCH = EventBase::Flags::User << 2;
-const int GESTURE_BIG_TOUCH = EventBase::Flags::User << 3;
-const int GESTURE_FIVE_FINGER_HOLD = EventBase::Flags::User << 4;
-const int GESTURE_FIVE_FINGER_SWIPE = EventBase::Flags::User << 5;
-const int GESTURE_THREE_FINGER_HOLD = EventBase::Flags::User << 6;
-const int GESTURE_SINGLE_CLICK = EventBase::Flags::User << 7;
-const int GESTURE_DOUBLE_CLICK = EventBase::Flags::User << 8;
+const int GESTURE_UNPROCESSED = EventBase::User << 1; // Not yet identified (allows the first single touch to generate a down event)
+const int GESTURE_SINGLE_TOUCH = EventBase::User << 2;
+const int GESTURE_BIG_TOUCH = EventBase::User << 3;
+const int GESTURE_FIVE_FINGER_HOLD = EventBase::User << 4;
+const int GESTURE_FIVE_FINGER_SWIPE = EventBase::User << 5;
+const int GESTURE_THREE_FINGER_HOLD = EventBase::User << 6;
+const int GESTURE_SINGLE_CLICK = EventBase::User << 7;
+const int GESTURE_DOUBLE_CLICK = EventBase::User << 8;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Touch Group

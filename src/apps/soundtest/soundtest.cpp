@@ -236,10 +236,11 @@ int main(int argc, char** argv)
 			{
 				app.handleEvent(evts[evtNum]);
 			}
-			app.update();
+			
 			//if( printOutput )
 			//	printf("------------------------------------------------------------------------------\n");
 		}
+		app.update();
 	}
 
 	sm->stop();

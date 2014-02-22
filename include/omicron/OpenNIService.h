@@ -98,9 +98,6 @@ namespace omicron
 		int getImageDataWidth();
 		int getImageDataHeight();
 
-		//may want to support the option to choose whether to have unicast or multicast networking
-		//for now it is hard coded to multicast
-	
 	private:
 		static OpenNIService* myOpenNI;
 
@@ -125,9 +122,10 @@ namespace omicron
 
 	private:
 		float g_pDepthHist[OMICRON_OPENNI_MAX_DEPTH];
-		static const int nColors = 10;
 
 		unsigned char* pDepthTexBuf;
+		static const int nColors = 10;
+		float Colors[11][3];
 
 		static bool loadCalibrationFromFile;
 		static const char* calibrationFile;

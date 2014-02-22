@@ -28,7 +28,6 @@
 #define __OPENNI_SERVICE_H__
 
 #include "omicron/osystem.h"
-#include "omicron/Color.h"
 #include "omicron/ServiceManager.h"
 //#include "natnet/NatNetTypes.h"
 
@@ -99,8 +98,6 @@ namespace omicron
 		int getImageDataWidth();
 		int getImageDataHeight();
 
-		//! Returns the color used to identify the specific user id on the depth image.
-		Color getUserColor(int userId);
 		//may want to support the option to choose whether to have unicast or multicast networking
 		//for now it is hard coded to multicast
 	
@@ -132,7 +129,6 @@ namespace omicron
 
 		unsigned char* pDepthTexBuf;
 
-		float Colors[11][3];
 		static bool loadCalibrationFromFile;
 		static const char* calibrationFile;
 

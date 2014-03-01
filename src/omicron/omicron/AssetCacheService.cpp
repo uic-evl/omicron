@@ -41,8 +41,8 @@ const int AssetCacheService::DefaultPort;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 AssetCacheConnection::AssetCacheConnection(ConnectionInfo ci, AssetCacheService* server): 
-	TcpConnection(ci),
-	myServer(server)
+    TcpConnection(ci),
+    myServer(server)
 {
 }
         
@@ -50,180 +50,224 @@ AssetCacheConnection::AssetCacheConnection(ConnectionInfo ci, AssetCacheService*
 void AssetCacheConnection::handleData()
 {
     // Read message header.
-	char header[4];
+    char header[4];
     read(myBuffer, 4);
-	memcpy(header, myBuffer, 4);
+    memcpy(header, myBuffer, 4);
 
-	//ofmsg("DATA: %1%%2%%3%%4%", %myBuffer[0] %myBuffer[1] %myBuffer[2] %myBuffer[3]);
+    //ofmsg("DATA: %1%%2%%3%%4%", %myBuffer[0] %myBuffer[1] %myBuffer[2] %myBuffer[3]);
 
     // Read data length.
-	int dataSize;
+    int dataSize;
     read(myBuffer, 4);
-	memcpy(&dataSize, myBuffer, 4);
+    memcpy(&dataSize, myBuffer, 4);
 
-	
+    
 
-	// CHCS - set the name of the cache we are managing
-	if(!strncmp(header, "CHCS", 4)) 
-	{
-		String command(myBuffer);
+    // CHCS - set the name of the cache we are managing
+    if(!strncmp(header, "CHCS", 4)) 
+    {
+        String command(myBuffer);
 
-		read(myBuffer, dataSize);
-		myBuffer[dataSize] = '\0';
+        read(myBuffer, dataSize);
+        myBuffer[dataSize] = '\0';
 
-		myCacheName = myBuffer;
-		ofmsg("AssetCacheConnection: cache name set to %1%", %myCacheName);
+        myCacheName = myBuffer;
+        ofmsg("AssetCacheConnection: cache name set to %1%", %myCacheName);
 
-		// Make sure the cache path exists.
-		DataManager::createPath(myServer->getCacheRoot() + myCacheName);
-	}
-	// CHCA: check if a file exists in the local cache. If not, the connection
-	// will request it from the remote cache manager.
-	if(!strncmp(header, "CHCA", 4)) 
-	{
-		// Get the file name.
-		String command(myBuffer);
-		read(myBuffer, dataSize);
-		myBuffer[dataSize] = '\0';
+        // Make sure the cache path exists.
+        DataManager::createPath(myServer->getCacheRoot() + myCacheName);
+    }
+    // CHCA: check if a file exists in the local cache. If not, the connection
+    // will request it from the remote cache manager.
+    if(!strncmp(header, "CHCA", 4)) 
+    {
+        // Get the file name.
+        String command(myBuffer);
+        read(myBuffer, dataSize);
+        myBuffer[dataSize] = '\0';
 
-		String fileName = "";
-		if(myCacheName != "") fileName = myServer->getCacheRoot() + "/" + myCacheName + "/" + myBuffer;
-		else fileName = myServer->getCacheRoot() + "/" + myBuffer;
-		String fullFilePath;
+        String fileName = "";
+        if(myCacheName != "") fileName = myServer->getCacheRoot() + "/" + myCacheName + "/" + myBuffer;
+        else fileName = myServer->getCacheRoot() + "/" + myBuffer;
+        String fullFilePath;
 
-		ofmsg("AssetCacheConnection: looking for file %1%", %fileName);
+        ofmsg("AssetCacheConnection: looking for file %1%", %fileName);
 
-		if(!DataManager::findFile(fileName, fullFilePath))
-		{
-			ofmsg("File not found sending request for %1%", %myBuffer);
-			sendMessage("CHCR", (void*)myBuffer, strlen(myBuffer));
+        // Add the file to the queued list
+        myQueuedFiles.push_back(myBuffer);
 
-			// Add the file to the queued list
-			myQueuedFiles.push_back(myBuffer);
-		}
-		else
-		{
-			ofmsg("File found sending timestamp request for %1%", %myBuffer);
-			struct stat st;
-			stat(fileName.c_str(), &st);
-			int timestamp = st.st_mtime;
-			ofmsg("   local file timestamp: %1%", %timestamp);
-		}
-	}
-	// CHCD: The client is done adding files. If we have no files in our request queue, tell the client we are done.
-	if(!strncmp(header, "CHCD", 4)) 
-	{
-		if(myQueuedFiles.size() == 0)
-		{
-			sendMessage("CHCD", NULL, 0);
-			close();
-		}
-		else
-		{
-			omsg("Waiting to finish file transfer...");
-		}
-	}
-	// CHCP: we are receiving a stream with file data.
-	if(!strncmp(header, "CHCP", 4)) 
-	{
-		// Get the file name
-		String command(myBuffer);
-		read(myBuffer, dataSize);
-		myBuffer[dataSize] = '\0';
+        if(!DataManager::findFile(fileName, fullFilePath))
+        {
+            ofmsg("File not found sending request for %1%", %myBuffer);
+            sendMessage("CHCR", (void*)myBuffer, strlen(myBuffer));
+        }
+        else
+        {
+            // File found, request timestamp
+            sendMessage("CHSR", (void*)myBuffer, strlen(myBuffer));
+            ofmsg("File found sending timestamp request for %1%", %myBuffer);
+        }
+    }
+    // CHST - Received Timestamp for an existing file. If timestamp is newer,
+    // send a file request.
+    if(!strncmp(header, "CHST", 4)) 
+    {
+        // get the file name and timestamp
+        read(myBuffer, dataSize);
+        myBuffer[dataSize] = '\0';
 
-		ofmsg("Receiving file %1%", %myBuffer);
+        Vector<String> args = StringUtils::split(myBuffer, ",");
+        String fullFilePath;
 
-		// NOTE: the file name already includes the cache name here.
-		String fileName = myServer->getCacheRoot() + "/" + myCacheName + "/" + myBuffer;
+        // NOTE: the file name already includes the cache name here.
+        String fileName = myServer->getCacheRoot() + "/" + myCacheName + "/" + args[0];
 
-		// Make sure the cache path exists.
-		String basePath;
-		String baseName;
-		StringUtils::splitFilename(fileName, baseName, basePath);
-		DataManager::createPath(basePath);
-		
-		// Get the file size
-		unsigned int fileSize = 0; 
-		read(&fileSize, sizeof(unsigned int));
+        if(DataManager::findFile(fileName , fullFilePath))
+        {
+            int remoteTimestamp = boost::lexical_cast<int>(args[1]);
+            struct stat st;
+            stat(fullFilePath.c_str(), &st);
+            int timestamp = st.st_mtime;
+            if(remoteTimestamp > timestamp)
+            {
+                ofmsg("Requesting newer version of file: %1%", %args[0]);
+                sendMessage("CHCR", (void*)args[0].c_str(), args[0].size());
+            }
+            else
+            {
+                // We have an up-to-date version of this file. 
+                // Nothing else needs to be done. remove file from the queue
+                myQueuedFiles.remove(args[0]);
+                // The client is done adding files. If we have no files in our 
+                // request queue, tell the client we are done.
+                if(myQueuedFiles.size() == 0)
+                {
+                    omsg("File transfers done, closing connection.");
+                    sendMessage("CHCD", NULL, 0);
+                    close();
+                }            
+            }
+        }
+        else
+        {
+            ofwarn("AssetCacheService: can't retrieve timestamp, file not found: ", %args[0]); 
+        }
 
-		// The size of the read buffer
-		const unsigned int buff_size = 65536; 
-		char* buff = new char[buff_size];
+    }
+    // CHCD: The client is done adding files. If we have no files in our request queue, tell the client we are done.
+    if(!strncmp(header, "CHCD", 4)) 
+    {
+        if(myQueuedFiles.size() == 0)
+        {
+            sendMessage("CHCD", NULL, 0);
+            close();
+        }
+        else
+        {
+            omsg("Waiting to finish file transfer...");
+        }
+    }
+    // CHCP: we are receiving a stream with file data.
+    if(!strncmp(header, "CHCP", 4)) 
+    {
+        // Get the file name
+        String command(myBuffer);
+        read(myBuffer, dataSize);
+        myBuffer[dataSize] = '\0';
 
-		
-		if( fileSize == 0 )
-		{
-			omsg("Incoming file size 0 bytes. Skipping file.");
-		}
-		else 
-		{
-			FILE* f = fopen(fileName.c_str(), "wb");
+        ofmsg("Receiving file %1%", %myBuffer);
 
-			if(f != NULL)
-			{
-				// Read the file in blocks.
-				unsigned int count = 0; 
-				while(count < fileSize)
-				{ 
-					unsigned int nextBlock = buff_size;
-					if(count + nextBlock > fileSize) nextBlock = fileSize - count;
-					size_t len = read(buff, nextBlock);
-					if(len == 0)
-					{
-						ofwarn("Error reading file %1%, skipping.", %fileName);
-						break;
-					}
-					count += len;
-					ofmsg("Read a total of %1% bytes ", %count);
-					fwrite(buff, 1, len, f);
-				}
+        // NOTE: the file name already includes the cache name here.
+        String fileName = myServer->getCacheRoot() + "/" + myCacheName + "/" + myBuffer;
 
-				// Done! Close the file and remove it from the request queue.
-				fclose(f);
-			}
-			else
-			{
-				ofwarn("AssetCacheService: could not open file %1% for writing", %fileName);
-			}
-		}
-		myQueuedFiles.remove(myBuffer);
+        // Make sure the cache path exists.
+        String basePath;
+        String baseName;
+        StringUtils::splitFilename(fileName, baseName, basePath);
+        DataManager::createPath(basePath);
+        
+        // Get the file size
+        unsigned int fileSize = 0; 
+        read(&fileSize, sizeof(unsigned int));
 
-		// The client is done adding files. If we have no files in our request queue, tell the client we are done.
-		if(myQueuedFiles.size() == 0)
-		{
-			omsg("File transfers done, closing connection.");
-			sendMessage("CHCD", NULL, 0);
-			close();
-		}
-	}
+        // The size of the read buffer
+        const unsigned int buff_size = 65536; 
+        char* buff = new char[buff_size];
+
+        
+        if( fileSize == 0 )
+        {
+            omsg("Incoming file size 0 bytes. Skipping file.");
+        }
+        else 
+        {
+            FILE* f = fopen(fileName.c_str(), "wb");
+
+            if(f != NULL)
+            {
+                // Read the file in blocks.
+                unsigned int count = 0; 
+                while(count < fileSize)
+                { 
+                    unsigned int nextBlock = buff_size;
+                    if(count + nextBlock > fileSize) nextBlock = fileSize - count;
+                    size_t len = read(buff, nextBlock);
+                    if(len == 0)
+                    {
+                        ofwarn("Error reading file %1%, skipping.", %fileName);
+                        break;
+                    }
+                    count += len;
+                    //ofmsg("Read a total of %1% bytes ", %count);
+                    fwrite(buff, 1, len, f);
+                }
+
+                // Done! Close the file and remove it from the request queue.
+                fclose(f);
+            }
+            else
+            {
+                ofwarn("AssetCacheService: could not open file %1% for writing", %fileName);
+            }
+        }
+        myQueuedFiles.remove(myBuffer);
+
+        // The client is done adding files. If we have no files in our request queue, tell the client we are done.
+        if(myQueuedFiles.size() == 0)
+        {
+            omsg("File transfers done, closing connection.");
+            sendMessage("CHCD", NULL, 0);
+            close();
+        }
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void AssetCacheConnection::handleClosed()
 {
-	myServer->closeConnection(this);
+    myServer->closeConnection(this);
 }
         
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void AssetCacheConnection::handleConnected()
 {
-	TcpConnection::handleConnected();
+    TcpConnection::handleConnected();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void AssetCacheConnection::sendMessage(const char* header, void* data, int size)
 {
-	//ofmsg("AssetCacheConnection sent %1%", %header);
-	write((void*)header, 4);
-	write(&size, sizeof(int));
-	write(data, size);
+    //ofmsg("AssetCacheConnection sent %1%", %header);
+    write((void*)header, 4);
+    write(&size, sizeof(int));
+    write(data, size);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 AssetCacheService::AssetCacheService():	
-	myCacheRoot("./")
+    myCacheRoot("./")
 {
-	setPort(DefaultPort);
+    setPort(DefaultPort);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -234,25 +278,25 @@ AssetCacheService::~AssetCacheService()
 ///////////////////////////////////////////////////////////////////////////////////////////
 void AssetCacheService::initialize() 
 {
-	TcpServer::initialize();
+    TcpServer::initialize();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 void AssetCacheService::dispose() 
 {
-	TcpServer::dispose();
+    TcpServer::dispose();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 TcpConnection* AssetCacheService::createConnection(const ConnectionInfo& ci)
 {
-	AssetCacheConnection* conn = new AssetCacheConnection(ci, this);
-	myConnections.push_back(conn);
-	return conn;
+    AssetCacheConnection* conn = new AssetCacheConnection(ci, this);
+    myConnections.push_back(conn);
+    return conn;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 void AssetCacheService::closeConnection(AssetCacheConnection* conn)
 {
-	myConnections.remove(conn);
+    myConnections.remove(conn);
 }

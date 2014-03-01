@@ -33,6 +33,7 @@
 #include "omicron/DataManager.h"
 
 #include <fstream>
+#include <sys/stat.h>
 
 using namespace omicron;
 
@@ -111,6 +112,24 @@ public:
 			sendMessage("CHCP", (void*)myBuffer, strlen(myBuffer));
 
 			sendFile(myBuffer);
+		}
+		if(!strncmp(header, "CHSR", 4)) 
+		{
+		    // Send file data.
+		    String fullPath;
+		    if(DataManager::findFile(myBuffer, fullPath))
+		    {
+			    struct stat st;
+			    stat(fullPath.c_str(), &st);
+			    int timestamp = st.st_mtime;
+			    // File stat request.
+                String msg = ostr("%1%,%2%", %myBuffer %timestamp);
+                sendMessage("CHST", (void*)msg.c_str(), msg.size());
+            }
+            else
+            {
+                ofwarn("AssetCacheManager: file stat request failed, fine not found: %1%", %myBuffer);
+            }
 		}
 	}
 
@@ -236,7 +255,9 @@ void AssetCacheManager::clearCacheHosts()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void AssetCacheManager::addFileToCacheList(const String& file)
 {
-	myFileList.push_back(file);
+    // Convert forward to back slashes
+    String ffile = StringUtils::replaceAll(file, "\\", "/");
+	myFileList.push_back(ffile);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

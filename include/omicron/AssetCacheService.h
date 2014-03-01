@@ -56,6 +56,7 @@ namespace omicron {
 		char myBuffer[BufferSize];
 		AssetCacheService* myServer;
 
+        // List of files that are waiting to be uploaded
 		List<String> myQueuedFiles;
 
 		String myCacheName;

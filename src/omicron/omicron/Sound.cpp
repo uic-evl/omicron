@@ -879,6 +879,11 @@ void SoundInstance::setVolume(float value)
 
 	if( isPlaying() )
 	{
+		// HACK - 2014-3-4
+		// Resolves issue where /setVol only works correctly if fade is not called
+		// if fade is called, /setVol will trigger last fade command instead
+		fade( this->volume, 0 ); // Fade to target volume instantly
+
 		Message msg("/setVol");
 		msg.pushInt32(instanceID);
 		msg.pushFloat(this->volume);
@@ -913,6 +918,9 @@ void SoundInstance::fade(float targetAmp, float envelopeDuration)
 	{
 		if( stereoSound )
 		{
+			if( environment->getSoundManager()->isDebugEnabled() )
+				ofmsg("%1%: for instanceID: %2% - /setSterVolEnv", %__FUNCTION__ %instanceID);
+
 			Message msg("/setSterVolEnv");
 			msg.pushInt32(instanceID);
 
@@ -923,6 +931,9 @@ void SoundInstance::fade(float targetAmp, float envelopeDuration)
 		}
 		else
 		{
+			if( environment->getSoundManager()->isDebugEnabled() )
+				ofmsg("%1%: for instanceID: %2% - /setVolEnv", %__FUNCTION__ %instanceID);
+
 			Message msg("/setVolEnv");
 			msg.pushInt32(instanceID);
 
@@ -931,12 +942,18 @@ void SoundInstance::fade(float targetAmp, float envelopeDuration)
 
 			environment->getSoundManager()->sendOSCMessage(msg);
 		}
+
+		// Since sounds volumes are always being updated, the target fade amplitude must be set
+		this->volume = targetAmp;
 	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::setWidth(float value)
 {
+	if( stereoSound )
+		ofmsg("%1%: not supported for for stereo sound instanceID: %2%", %__FUNCTION__ %instanceID);
+
 	this->width = value;
 	useEnvironmentParameters = false;
 }
@@ -950,6 +967,9 @@ float SoundInstance::getWidth()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::setRoomSize(float value)
 {
+	if( stereoSound )
+		ofmsg("%1%: not supported for for stereo sound instanceID: %2%", %__FUNCTION__ %instanceID);
+
 	if( isDone() )
 		return;
 
@@ -979,6 +999,9 @@ float SoundInstance::getRoomSize()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::setWetness(float value)
 {
+	if( stereoSound )
+		ofmsg("%1%: not supported for for stereo sound instanceID: %2%", %__FUNCTION__ %instanceID);
+
 	if( isDone() )
 		return;
 
@@ -1008,6 +1031,9 @@ float SoundInstance::getWetness()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundInstance::setReverb(float wetness, float roomSize)
 {
+	if( stereoSound )
+		ofmsg("%1%: not supported for for stereo sound instanceID: %2%", %__FUNCTION__ %instanceID);
+
 	if( isDone() )
 		return;
 
@@ -1041,9 +1067,14 @@ void SoundInstance::setPitch(float value)
 			msg.pushInt32(instanceID);
 			msg.pushFloat(value);
 			environment->getSoundManager()->sendOSCMessage(msg);
+
+			if( environment->getSoundManager()->isDebugEnabled() )
+				ofmsg("%1%: for instanceID: %2% - /setStereoRate", %__FUNCTION__ %instanceID);
 		}
 		else
 		{
+			if( environment->getSoundManager()->isDebugEnabled() )
+				ofmsg("%1%: for instanceID: %2% - /setMonoRate", %__FUNCTION__ %instanceID);
 			Message msg("/setMonoRate");
 			msg.pushInt32(instanceID);
 			msg.pushFloat(value);

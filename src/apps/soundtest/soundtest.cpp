@@ -1,11 +1,11 @@
 /**************************************************************************************************
 * THE OMICRON PROJECT
  *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2013		Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2014		Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto		anishimoto42@gmail.com
  *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2013, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2014, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted 
  * provided that the following conditions are met:
@@ -41,53 +41,102 @@ private:
 	SoundManager* soundManager;
 	SoundEnvironment* env;
 
-	Sound* showMenuSound;
-	Sound* hideMenuSound;
-	Sound* selectMenuSound;
-	Sound* scrollMenuSound;
-	Sound* soundLoop;
-	Ref<SoundInstance> soundLoopInstance;
-	Ref<SoundInstance> rewindingSoundInstance;
+	Sound* stereoTest;
+	Sound* monoTest;
+
+	Ref<SoundInstance> si_stereoTest;
+	Ref<SoundInstance> si_monoTest;
+
+	String soundServerIP;
+	int soundServerPort;
+	int soundServerCheckDelay;
+
+	String stereoTestSoundPath;
+	String monoTestSoundPath;
 
 public:
-
-
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	SoundTest()
+	SoundTest(Config* cfg)
 	{
+		if(!cfg->isLoaded()) cfg->load();
+
+		Setting& stRoot = cfg->getRootSetting()["config"];
+		if( stRoot.exists("sound") )
+			setup( stRoot["sound"] );
+		else
+		{
+			soundServerIP = "127.0.0.1";
+			soundServerPort = 57120;
+		}
+
 		//soundManager = new SoundManager();
-		//soundManager->connectToServer("localhost",57120);
+		//soundManager->connectToServer(soundServerIP,soundServerPort);
 		
 		// More concise method of above two lines
-		soundManager = new SoundManager("localhost",57120);
+		soundManager = new SoundManager(soundServerIP,soundServerPort);
 
-		soundManager->showDebugInfo(true);
+		// Delay for loadSoundFromFile()
+		// Necessary if creating a new SoundInstance immediatly after calling loadSoundFromFile()
+		// Default is 500, although may need to be adjusted depending on sound server
+		soundManager->setSoundLoadWaitTime(500);
 
+		//soundManager->showDebugInfo(true);
+
+		// Start the sound server (if not already started)
+		soundManager->startSoundServer();
+		
 		// Get default sound environment
 		env = soundManager->getSoundEnvironment();
 
 		
+		ofmsg("SoundTest: Checking if sound server is ready at %1% on port %2%... (Waiting for %3% seconds)", %soundServerIP %soundServerPort %(soundServerCheckDelay/1000));
+
+		bool serverReady = true;
+		timeb tb;
+		ftime( &tb );
+		int curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
+		int lastSoundServerCheck = curTime;
+
 		while( !soundManager->isSoundServerRunning() )
 		{
-			soundManager->startSoundServer();
-		}
+			timeb tb;
+			ftime( &tb );
+			curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
+			int timeSinceLastCheck = curTime-lastSoundServerCheck;
 
+			if( timeSinceLastCheck > soundServerCheckDelay )
+			{
+				omsg("SoundTest: Failed to start sound server. Sound disabled.");
+				serverReady = false;
+				break;
+			}
+		}
+		omsg("SoundTest: SoundServer reports ready.");
+		
 		// Load sound assets
 		//env->setAssetDirectory("menu_sounds");
 
-		showMenuSound = env->loadSoundFromFile("showMenuSound","menu_sounds/menu_load.wav");
-		hideMenuSound = env->loadSoundFromFile("hideMenuSound","menu_sounds/menu_closed.wav");
-		scrollMenuSound = env->loadSoundFromFile("scrollMenuSound","menu_sounds/menu_scroll.wav");
-		selectMenuSound = env->loadSoundFromFile("selectMenuSound","menu_sounds/menu_select.wav");
-		soundLoop = env->loadSoundFromFile("mus","Omega4Relay.wav");
+		stereoTest = env->loadSoundFromFile("mus",stereoTestSoundPath);
 
-		SoundInstance* soundInstance = new SoundInstance(showMenuSound);
-		soundInstance->setReverb( 1.0, 1.0 );
-		soundInstance->setVolume(1.0);
-		soundInstance->setPosition( Vector3f(0,1,0) );
-		soundInstance->play();
+		si_stereoTest = new SoundInstance(stereoTest);
+		si_stereoTest->setPitch(3);
+		si_stereoTest->setLoop(true);
 
-		rewindingSoundInstance = new SoundInstance(showMenuSound);
+		si_stereoTest->playStereo();
+		
+	}
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	void setup(Setting& syscfg)
+	{
+		soundServerIP = Config::getStringValue("soundServerIP", syscfg, "localhost");
+        soundServerPort = Config::getIntValue("soundServerPort", syscfg, 57120);
+
+        // Config in seconds, function below in milliseconds
+        soundServerCheckDelay = Config::getFloatValue("soundServerReconnectDelay", syscfg, 5) * 1000;
+
+		stereoTestSoundPath = Config::getStringValue("stereoTestSound", syscfg, "stereoTestSound.wav");
+		monoTestSoundPath = Config::getStringValue("monoTestSound", syscfg, "monoTestSound.wav");
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -109,52 +158,32 @@ public:
 				upDownAnalog = evt.getExtraDataFloat(1);
 
 				volume = evt.getExtraDataFloat(4);
-				
-				if( soundLoopInstance != NULL )
-				{
-					soundLoopInstance->setVolume(volume);
-				}
+
 
 				if( evt.getType() == Event::Down ){
 
 					if( evt.getFlags() & Event::Button3){ // Cross
-						
-						soundLoopInstance->setEnvironmentSound( true );
-						soundLoopInstance->setLoop( true );
-						
-						soundLoopInstance->playStereo();
+	
 					}
 					if( evt.getFlags() & Event::Button2){ // Circle
-						soundLoopInstance->stop();
+						si_stereoTest->stop();
 					}
 					
 					if( evt.getFlags() & Event::Button5){ // L1
-						soundLoopInstance = new SoundInstance(soundLoop);
+				
 					}
 
 					if( evt.getFlags() & Event::ButtonRight){
-						
-						rewindingSoundInstance->setPosition( Vector3f(leftRightAnalog,1,0) );
-						rewindingSoundInstance->setReverb( upDownAnalog, upDownAnalog );
-						rewindingSoundInstance->play();
+
 					}
 					if( evt.getFlags() & Event::ButtonLeft){
-						SoundInstance* soundInstance = new SoundInstance(hideMenuSound);
-						soundInstance->setPosition( Vector3f(leftRightAnalog,1,0) );
-						soundInstance->setReverb( upDownAnalog, upDownAnalog );
-						soundInstance->play();
+
 					}
 					if( evt.getFlags() & Event::ButtonUp){
-						SoundInstance* soundInstance = new SoundInstance(selectMenuSound);
-						soundInstance->setPosition( Vector3f(leftRightAnalog,1,0) );
-						soundInstance->setReverb( upDownAnalog, upDownAnalog );
-						soundInstance->play();
+
 					}
 					if( evt.getFlags() & Event::ButtonDown){
-						SoundInstance* soundInstance = new SoundInstance(scrollMenuSound);
-						soundInstance->setPosition( Vector3f(leftRightAnalog,1,0) );
-						soundInstance->setReverb( upDownAnalog, upDownAnalog );
-						soundInstance->play();
+
 					}
 					//printf("%d \n", evt.getFlags() );
 				}
@@ -198,12 +227,11 @@ private:
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char** argv)
 {
-	SoundTest app;
-
 	// Read config file name from command line or use default one.
 	const char* cfgName = "soundTest.cfg";
 	if(argc == 2) cfgName = argv[1];
 
+	// Load the config file
 	Config* cfg = new Config(cfgName);
 
 	DataManager* dm = DataManager::getInstance();
@@ -213,6 +241,15 @@ int main(int argc, char** argv)
 
 	ServiceManager* sm = new ServiceManager();
 	sm->setupAndStart(cfg);
+
+	// Configure app
+	if( !cfg->exists("config/sound") )
+	{
+		printf("Config/Sound section missing from config file: Aborting.\n");
+		return 0;
+	}
+
+	SoundTest app = SoundTest(cfg);
 
 	float delay = -0.01f; // Seconds to delay sending events (<= 0 disables delay)
 #ifdef _DEBUG

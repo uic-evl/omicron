@@ -48,7 +48,7 @@ float SoundManager::peakCPU = -1;
 double SoundManager::nominalSampleRate = -1;
 double SoundManager::actualSampleRate = -1;
 int SoundManager::soundServerVolume = -16;
-int SoundManager::soundLoadWaitTime = 500;
+int SoundManager::soundLoadWaitTime = 200;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 SoundManager::SoundManager():
@@ -687,7 +687,10 @@ void SoundManager::updateInstancePositions()
 void SoundManager::removeInstanceNode(int id)
 {
 	SoundInstance* si = soundInstanceList[id];
-	si->serverStopSignalReceived();
+	if( si != NULL )
+	{
+		si->serverStopSignalReceived();
+	}
 	soundInstanceList.erase(id);
 };
 
@@ -901,6 +904,18 @@ void SoundEnvironment::setVolumeScale(float value)
 {
 	environmentVolumeScale = value;
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SoundEnvironment::setSoundLoadWaitTime(int time)
+{ 
+	soundManager->setSoundLoadWaitTime(time);
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+int SoundEnvironment::getSoundLoadWaitTime()
+{
+	return soundManager->getSoundLoadWaitTime();
+};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 float SoundEnvironment::getVolumeScale()

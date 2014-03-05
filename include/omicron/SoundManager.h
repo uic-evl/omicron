@@ -85,6 +85,9 @@ public:
 	void setForceCacheOverwrite(bool value);
 	bool isForceCacheOverwriteEnabled();
 
+	void setSoundLoadWaitTime(int time);
+	int getSoundLoadWaitTime();
+
 	//void addInstanceID(int);
 	//void addBufferID(int);
 	//void addInstance( Ref<SoundInstance> );

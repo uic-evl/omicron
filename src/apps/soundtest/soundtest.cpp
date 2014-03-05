@@ -43,9 +43,11 @@ private:
 
 	Sound* stereoTest;
 	Sound* monoTest;
+	Sound* monoTestShort;
 
 	Ref<SoundInstance> si_stereoTest;
 	Ref<SoundInstance> si_monoTest;
+	Ref<SoundInstance> si_monoTestShort;
 
 	String soundServerIP;
 	int soundServerPort;
@@ -53,10 +55,13 @@ private:
 
 	String stereoTestSoundPath;
 	String monoTestSoundPath;
+	String monoTestShortSoundPath;
 
 	int initTime;
 	int nextTime;
 	int currentState;
+	float azimuth;
+	
 public:
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	SoundTest(Config* cfg)
@@ -117,10 +122,15 @@ public:
 		omsg("SoundTest: SoundServer reports ready.");
 		
 		// Load sound assets
-		//env->setAssetDirectory("menu_sounds");
+		env->setAssetDirectory("soundTest");
+		
 		monoTest = env->loadSoundFromFile("mono",monoTestSoundPath);
 		si_monoTest = new SoundInstance(monoTest);
 		si_monoTest->setLoop(true);
+
+		monoTestShort = env->loadSoundFromFile("monoS",monoTestShortSoundPath);
+		//si_monoTestShort = new SoundInstance(monoTestShort);
+		//si_monoTestShort->setLoop(false);
 
 		stereoTest = env->loadSoundFromFile("mus",stereoTestSoundPath);
 
@@ -131,6 +141,7 @@ public:
 		
 		initTime = tb.millitm + (tb.time & 0xfffff) * 1000;
 		currentState = 0;
+		azimuth = 0;
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -143,7 +154,8 @@ public:
         soundServerCheckDelay = Config::getFloatValue("soundServerReconnectDelay", syscfg, 5) * 1000;
 
 		stereoTestSoundPath = Config::getStringValue("stereoTestSound", syscfg, "stereoTestSound.wav");
-		monoTestSoundPath = Config::getStringValue("monoTestSound", syscfg, "monoTestSound.wav");
+		monoTestSoundPath = Config::getStringValue("monoTestSoundLoop", syscfg, "monoTestSound.wav");
+		monoTestShortSoundPath = Config::getStringValue("monoTestSoundShort", syscfg, "monoTestSoundShort.wav");
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -339,6 +351,14 @@ public:
 
 			currentState++;
 			nextTime += 5;
+		}
+		else if( currentState == 13 && curTime >= nextTime)
+		{
+			//printf("[%d%] : setServerVolume(-20)\n",currentState);
+			//env->setServerVolume(-20);
+
+			currentState++;
+			nextTime += 5;
 
 			currentState = 100;
 		}
@@ -439,11 +459,96 @@ public:
 		}
 		else if( currentState == 111 && curTime >= nextTime)
 		{
-			printf("[%d%] : Mono sound - stop()\n",currentState);
-			si_monoTest->stop();
+			printf("[%d%] : Mono sound - setReverb( 0.7, 0.7 )\n",currentState);
+			si_monoTest->setReverb( 0.7, 0.7 );
 
 			currentState++;
 			nextTime += 5;
+		}
+		else if( currentState == 112 && curTime >= nextTime)
+		{
+			printf("[%d%] : Mono sound - setReverb( 0.0, 0.0 ) - normal\n",currentState);
+			si_monoTest->setReverb( 0.0, 0.0 );
+
+			currentState++;
+			nextTime += 5;
+		}
+		else if( currentState == 113 && curTime >= nextTime)
+		{
+			printf("[%d%] : Mono sound - stop()\n",currentState);
+			si_monoTest->stop();
+			
+			//printf("[%d%] : Sound cleanup\n",currentState);
+			
+			//env->getSoundManager()->stopAllSounds();
+			//env->getSoundManager()->cleanupAllSounds();
+			
+			currentState++;
+			nextTime += 5;
+		}
+		else if( currentState == 114 && curTime >= nextTime)
+		{
+			printf("[%d%] : Mono short sound - play()\n",currentState);
+			si_monoTestShort = new SoundInstance(monoTestShort);
+			si_monoTestShort->play();
+			//printf("[%d%] : Sound cleanup\n",currentState);
+			
+			//env->getSoundManager()->stopAllSounds();
+			//env->getSoundManager()->cleanupAllSounds();
+			
+			currentState++;
+			nextTime += 1;
+		}
+		else if( currentState >= 115 && currentState < 125 && curTime >= nextTime)
+		{
+			//printf("%s", x ? "true" : "false");
+			printf("[%d%] : Mono short sound - isPlaying() - %s%\n",currentState, si_monoTestShort->isPlaying() ? "true" : "false");
+			printf("[%d%] : Mono short sound - isDone() - %s%\n",currentState, si_monoTestShort->isDone() ? "true" : "false");
+			
+			currentState++;
+			nextTime += 1;
+		}
+		else if( currentState == 125 && curTime >= nextTime)
+		{
+			printf("[%d%] : Mono short sound - play() - round 2\n",currentState);
+			si_monoTestShort = new SoundInstance(monoTestShort);
+			si_monoTestShort->play();
+
+			currentState++;
+			nextTime += 1;
+		}
+		else if( currentState >= 125 && currentState < 135 && curTime >= nextTime)
+		{
+			//printf("%s", x ? "true" : "false");
+			printf("[%d%] : Mono short sound - isPlaying() - %s%\n",currentState, si_monoTestShort->isPlaying() ? "true" : "false");
+			printf("[%d%] : Mono short sound - isDone() - %s%\n",currentState, si_monoTestShort->isDone() ? "true" : "false");
+			
+			currentState++;
+			nextTime += 1;
+		}
+		else if( currentState == 135 && curTime >= nextTime)
+		{
+			printf("[%d%] : Sound cleanup\n",currentState);
+			env->getSoundManager()->stopAllSounds();
+			env->getSoundManager()->cleanupAllSounds();
+			
+			currentState++;
+			nextTime += 1;
+		}
+
+		if( currentState > 100 && currentState < 113 )
+		{
+			si_monoTest->setWidth(1);
+			
+			azimuth += 0.001;
+			float radius = 2;
+			float inclination = 0;
+			
+			float xPos = radius * cos(azimuth) * cos(inclination);
+			float zPos = radius * sin(azimuth);
+			float yPos = radius * sin(inclination) * cos(azimuth);
+			
+			si_monoTest->setPosition( Vector3f(xPos, yPos, zPos) );
 		}
 	}
 private:

@@ -205,7 +205,7 @@ bool SoundManager::isSoundServerRunning()
 							nodeID = i;
 					}
 				} else if (arg.isInt64()) {
-					int64_t h; arg.popInt64(h);
+					oscpkt::int64_t h; arg.popInt64(h);
 					//ofmsg( "  received %1%", %h );
 				} else if (arg.isFloat()) {
 					float f; arg.popFloat(f);
@@ -368,7 +368,7 @@ void SoundManager::poll()
 					if( nodeID == -1 )
 						nodeID = i;
 				} else if (arg.isInt64()) {
-					int64_t h; arg.popInt64(h);
+					oscpkt::int64_t h; arg.popInt64(h);
 					//if( isDebugEnabled() ) 
 					//	ofmsg( "  received %1%", %h );
 				} else if (arg.isFloat()) {

@@ -35,6 +35,8 @@ int PQService::maxTouches = 1000; // Number of IDs assigned before resetting. Sh
 int PQService::move_threshold = 1; // pixels
 bool PQService::normalizeData = true;
 bool PQService::useGestureManager = false;
+bool PQService::showGestureInfo = true;
+bool PQService::showGestureSpeedInfo = false;
 bool PQService::showStreamSpeed = false;
 int PQService::lastIncomingEventTime = 0;
 int PQService::eventCount = 0;
@@ -75,6 +77,7 @@ void PQService::setup(Setting& settings)
 	}
 
 	debugRawPQInfo = Config::getBoolValue("debugRawPQInfo", settings, false);
+	showGestureInfo = Config::getBoolValue("showGestureInfo", settings, true);
 	showStreamSpeed = Config::getBoolValue("showStreamSpeed", settings, false);
 
 	screenOffset = Config::getVector2iValue("screenOffset", settings, Vector2i(0,0) );
@@ -127,6 +130,8 @@ int PQService::init()
 	if( useGestureManager ){
 		touchGestureManager = new TouchGestureManager();
 		touchGestureManager->registerPQService(mysInstance);
+		touchGestureManager->showGestureInfo(showGestureInfo);
+		touchGestureManager->showGestureSpeedInfo(showGestureSpeedInfo);
 	}
 
 	// set the functions on server callback
@@ -199,7 +204,7 @@ void PQService::OnReceivePointFrame(int frame_id, int time_stamp, int moving_poi
 		if( (time_stamp - lastIncomingEventTime) >= 100 )
 		{
 			lastIncomingEventTime = time_stamp;
-			ofmsg("PQService: Incoming event stream %1% event(s)/sec", %eventCount );
+			ofmsg("PQService: [%2%] Incoming event stream %1% event(s)/sec", %eventCount %time_stamp );
 			eventCount = 0;
 		}
 		else
@@ -298,7 +303,8 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 
 		if( debugRawPQInfo )
 		{
-			ofmsg("PQService: Incoming touch point ID: %1% at (%2%,%3%) size: (%4%,%5%)", %touch.ID %tp.x %tp.y %tp.dx %tp.dx );
+			//ofmsg("[%6%] PQService: Incoming touch point ID: %1% at (%2%,%3%) size: (%4%,%5%)", %touch.ID %tp.x %tp.y %tp.dx %tp.dx %timestamp );
+			
 		}
 
 		touch.xPos = tp.x / (float)serverResolution[0] + screenOffset[0];
@@ -327,7 +333,10 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 					} else {
 						nextID = 0;
 					}
+					if( debugRawPQInfo )
+						printf("%d,PQ-in,%d\n", touch.ID, timestamp);
 					touchGestureManager->addTouch( Event::Down, touch );
+					
 					break;
 				case TP_MOVE:
 					touchGestureManager->addTouch( Event::Move, touch );
@@ -351,6 +360,8 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 					} else {
 						nextID = 0;
 					}
+					if( debugRawPQInfo )
+						printf("%d,PQ-in,%d\n", touchID[tp.id], timestamp);
 					break;
 				case TP_MOVE:
 					evt->reset(Event::Move, Service::Pointer, touch.ID);

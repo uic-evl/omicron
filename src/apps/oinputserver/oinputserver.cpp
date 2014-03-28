@@ -249,8 +249,11 @@ public:
 		}
 
 		if( showEventStream )
-			printf("oinputserver: Event %d type: %d sent at pos %f %f\n", evt.getSourceId(), evt.getType(), evt.getPosition().x(), evt.getPosition().y() );
-		
+		{
+			if( evt.getType() == Event::Down )
+				printf("%d,oinput-out,%d\n", evt.getSourceId(), timestamp);
+			//printf("[%d] oinputserver: Event %d type: %d sent at pos %f %f\n", timestamp, evt.getSourceId(), evt.getType(), evt.getPosition().x(), evt.getPosition().y() );
+		}
 		std::map<char*,NetClient*> activeClients;
 
 		std::map<char*,NetClient*>::iterator itr = netClients.begin();

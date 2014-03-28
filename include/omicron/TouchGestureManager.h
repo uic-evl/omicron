@@ -146,6 +146,9 @@ namespace omicron {
 
 		void generatePQServiceEvent(Event::Type eventType, Touch touch, int advancedGesture);
 		void generateZoomEvent(Event::Type eventType, Touch touch, float deltaDistance);
+
+		void showGestureInfo(bool);
+		void showGestureSpeedInfo(bool);
 	private:
 		Service* pqsInstance;
 		Lock* touchListLock;
@@ -160,6 +163,9 @@ namespace omicron {
 		bool runGestureThread;
 		
 		int timeLastEventSent; // Milliseconds
+
+		bool showConsoleGestureInfo;
+		bool showConsoleGestureSpeedInfo;
 	};
 }
 

@@ -505,7 +505,7 @@ namespace omicron
     ///////////////////////////////////////////////////////////////////////////
     inline bool Event::getChar(char* c) const
     {
-        if(myServiceType == ServiceTypeKeyboard && myType == Down)
+        if(myServiceType == Service::Keyboard && myType == Down)
         {
             if(isascii(mySourceId))
             {

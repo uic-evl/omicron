@@ -243,7 +243,7 @@ namespace omicron
 			//! Generic name for additional button 5
 			Button5 = 1 << 7,
             //! Used for backspace button presses or equivalent events
-            Backspace = 1 << 6,
+            Backspace = 1 << 7,
 
 			//! Generic name for additional button 6
 			Button6 = 1 << 8,

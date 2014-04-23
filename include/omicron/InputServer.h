@@ -29,6 +29,7 @@
 #define __OMICRON_INPUT_SERVER__
 
 #include "omicron/osystem.h"
+#include "omicron/DataManager.h"
 #include "omicron/Event.h"
 #include "omicron/Config.h"
 

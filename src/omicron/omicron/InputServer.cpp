@@ -26,6 +26,7 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *************************************************************************************************/
 #include "omicron/InputServer.h"
+#include "omicron/StringUtils.h"
 #include <vector>
 
 #include <time.h>

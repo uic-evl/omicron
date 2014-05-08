@@ -84,13 +84,15 @@ float timeLastEventSent = 0;
 class SAGEInputServer: public InputServer{
 public:
 	void connectToSage();
-	void handleSAGEEvent(Event*);
+	void handleEvent(Event*);
 
 	void pointerToSAGEEvent(Event*);
 	void wandToSAGEEvent(Event*);
 
 	void queueMessage(char*);
 	void sendToSage();
+
+	bool isSAGEConnected();
 }; //class
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -149,14 +151,29 @@ void SAGEInputServer::connectToSage(){
 	
     Sleep(1000);
     printf("\nConnected to sage on: %s\n", sageHost);
+
+	createClient( sageHost, DIM_PORT, false, sock );
     sageConnected = true;
 }
 int triggerFlag = 0;
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void SAGEInputServer::handleSAGEEvent(Event* evt){
+void SAGEInputServer::handleEvent(Event* evt){
 
 	if( evt->getServiceType() == Service::Pointer ){
-		pointerToSAGEEvent( evt );
+		// SAGE
+		//pointerToSAGEEvent( evt );
+
+		// SAGE2
+		char* eventPacket = createOmicronEventPacket(evt);
+		if( isSAGEConnected() )
+		{
+			sendToClients(eventPacket);
+		}
+		else
+		{
+			// Remove client
+
+		}
 	}
 
 }
@@ -274,6 +291,21 @@ void SAGEInputServer::sendToSage()
 	memset( msg, 0, 1024 );
 }
 
+bool SAGEInputServer::isSAGEConnected()
+{
+    if( !USE_SAGE )
+		return false;
+    
+    if (send(sock, msg, strlen(msg), 0) == SOCKET_ERROR)
+    {
+		printf("\nDisconnected from sage... reconnecting\n");
+		connectToSage();
+		return false;
+    }
+
+	memset( msg, 0, 1024 );
+	return true;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void main(int argc, char** argv)
@@ -339,7 +371,7 @@ void main(int argc, char** argv)
 		{
 			Event* evt = sm->getEvent(i);
 			
-			app.handleSAGEEvent(evt);
+			app.handleEvent(evt);
 			
 			evt->setProcessed();
 		}

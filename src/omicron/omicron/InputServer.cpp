@@ -145,8 +145,7 @@ public:
 char* InputServer::createOmicronEventPacket(Event* evt)
 {
 	int offset = 0;
-    char eventPacket[DEFAULT_BUFLEN];
-
+    
     OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getTimestamp()); 
     OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getSourceId()); 
     OI_WRITEBUF(int, eventPacket, offset, evt->getServiceId()); 
@@ -192,8 +191,8 @@ void InputServer::sendToClients(char* eventPacket)
         else
         {
             // Send an empty message to check if the client is still here.
-            client->sendMsg("",1);
-            client->sendEvent(eventPacket, 1);
+            //client->sendMsg("",1);
+            client->sendEvent(eventPacket, DEFAULT_BUFLEN);
         }
             
         if( checkForDisconnectedClients )
@@ -223,7 +222,7 @@ void InputServer::handleEvent(Event* evt)
     // If the event has been processed locally (i.e. by a filter event service)
     if(evt->isProcessed()) return;
 
-    timeb tb;
+	timeb tb;
     ftime( &tb );
     int timestamp = tb.millitm + (tb.time & 0xfffff) * 1000;
 
@@ -705,12 +704,6 @@ void InputServer::loop()
     // VRPN connection
     connection->mainloop();
 #endif
-}
-
-///////////////////////////////////////////////////////////////////////////////
-void InputServer::addClient(const char* clientAddress, int dataPort, bool legacy)
-{
-	createClient( clientAddress, dataPort, legacy, NULL );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

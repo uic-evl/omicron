@@ -97,18 +97,19 @@ public:
     // VRPN Server (for CalVR)
     void loop();
 
-	void addClient(const char*, int, bool);
-private:
+protected:
 	char* createOmicronEventPacket(Event*);
 	void sendToClients(char*);
-
+	void createClient(const char*,int, bool, SOCKET);
+private:
     enum dataMode { omicron, omicron_legacy };
-    void createClient(const char*,int,bool, SOCKET);
+    
 
     const char* serverPort;
     SOCKET listenSocket;    
     
     #define DEFAULT_BUFLEN 512
+	char eventPacket[DEFAULT_BUFLEN];
 
     char recvbuf[DEFAULT_BUFLEN];
     int iResult, iSendResult;

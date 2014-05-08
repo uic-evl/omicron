@@ -66,6 +66,19 @@ int main(int argc, char** argv)
         // Start listening for clients (non-blocking)
         app.startListening();
 
+
+		sm->poll();
+		sm->lockEvents();
+		int numEvts = sm->getAvailableEvents();
+		for(int i = 0; i < numEvts; i++)
+		{
+			Event* evt = sm->getEvent(i);
+			
+			app.handleEvent(evt);
+			
+			evt->setProcessed();
+		}
+		/*
         // Get events
         int av = sm->getAvailableEvents();
         //ofmsg("------------------------loop %1%  av %2%", %i++ %av);
@@ -79,6 +92,7 @@ int main(int argc, char** argv)
                 app.handleEvent(evts[evtNum]);
             }
         }
+		*/
 #ifdef WIN32
         Sleep(1);
 #else

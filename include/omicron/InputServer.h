@@ -90,14 +90,18 @@ namespace omicron {
 class OMICRON_API InputServer
 {
 public:
-    virtual void handleEvent(const Event& evt);
+    virtual void handleEvent(Event* evt);
     virtual bool handleLegacyEvent(const Event& evt);
     void startConnection(Config* cfg);
     SOCKET startListening();
     // VRPN Server (for CalVR)
     void loop();
 
+	void addClient(const char*, int, bool);
 private:
+	char* createOmicronEventPacket(Event*);
+	void sendToClients(char*);
+
     enum dataMode { omicron, omicron_legacy };
     void createClient(const char*,int,bool, SOCKET);
 
@@ -105,9 +109,7 @@ private:
     SOCKET listenSocket;    
     
     #define DEFAULT_BUFLEN 512
-    char eventPacket[DEFAULT_BUFLEN];
-    char legacyPacket[DEFAULT_BUFLEN];
-    
+
     char recvbuf[DEFAULT_BUFLEN];
     int iResult, iSendResult;
     int recvbuflen;

@@ -141,66 +141,44 @@ public:
 #define OI_WRITEBUF(type, buf, offset, val) *((type*)&buf[offset]) = val; offset += sizeof(type);
 
 ///////////////////////////////////////////////////////////////////////////////
-// Checks the type of event. If a valid event, creates an event packet and returns true. Else return false.
-void InputServer::handleEvent(const Event& evt)
+// Creates an event packet from an Omicron event. Returns the buffer offset.
+char* InputServer::createOmicronEventPacket(Event* evt)
 {
-    // If the event has been processed locally (i.e. by a filter event service)
-    if(evt.isProcessed()) return;
+	int offset = 0;
+    char eventPacket[DEFAULT_BUFLEN];
 
-    timeb tb;
-    ftime( &tb );
-    int timestamp = tb.millitm + (tb.time & 0xfffff) * 1000;
-
-#ifdef OMICRON_USE_VRPN
-    vrpnDevice->update(evt);
-#endif
-            
-    int offset = 0;
-            
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getTimestamp()); 
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getSourceId()); 
-    OI_WRITEBUF(int, eventPacket, offset, evt.getServiceId()); 
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getServiceType()); 
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getType()); 
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getFlags()); 
-    OI_WRITEBUF(float, eventPacket, offset, evt.getPosition().x()); 
-    OI_WRITEBUF(float, eventPacket, offset, evt.getPosition().y()); 
-    OI_WRITEBUF(float, eventPacket, offset, evt.getPosition().z()); 
-    OI_WRITEBUF(float, eventPacket, offset, evt.getOrientation().w()); 
-    OI_WRITEBUF(float, eventPacket, offset, evt.getOrientation().x()); 
-    OI_WRITEBUF(float, eventPacket, offset, evt.getOrientation().y()); 
-    OI_WRITEBUF(float, eventPacket, offset, evt.getOrientation().z()); 
+    OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getTimestamp()); 
+    OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getSourceId()); 
+    OI_WRITEBUF(int, eventPacket, offset, evt->getServiceId()); 
+    OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getServiceType()); 
+    OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getType()); 
+    OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getFlags()); 
+    OI_WRITEBUF(float, eventPacket, offset, evt->getPosition().x()); 
+    OI_WRITEBUF(float, eventPacket, offset, evt->getPosition().y()); 
+    OI_WRITEBUF(float, eventPacket, offset, evt->getPosition().z()); 
+    OI_WRITEBUF(float, eventPacket, offset, evt->getOrientation().w()); 
+    OI_WRITEBUF(float, eventPacket, offset, evt->getOrientation().x()); 
+    OI_WRITEBUF(float, eventPacket, offset, evt->getOrientation().y()); 
+    OI_WRITEBUF(float, eventPacket, offset, evt->getOrientation().z()); 
         
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getExtraDataType()); 
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getExtraDataItems()); 
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getExtraDataMask());
+    OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getExtraDataType()); 
+    OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getExtraDataItems()); 
+    OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getExtraDataMask());
         
-    if(evt.getExtraDataType() != Event::ExtraDataNull)
+    if(evt->getExtraDataType() != Event::ExtraDataNull)
     {
-        memcpy(&eventPacket[offset], evt.getExtraDataBuffer(), evt.getExtraDataSize());
+        memcpy(&eventPacket[offset], evt->getExtraDataBuffer(), evt->getExtraDataSize());
     }
-    offset += evt.getExtraDataSize();
-        
-    //handleLegacyEvent(evt);
-        
-    if( showStreamSpeed )
-    {
-        if( (timestamp - lastOutgoingEventTime) >= 1000 )
-        {
-            lastOutgoingEventTime = timestamp;
-            ofmsg("oinputserver: Outgoing event stream %1% event(s)/sec", %eventCount );
-            eventCount = 0;
-        }
-        else
-        {
-            eventCount++;
-        }
-    }
+    offset += evt->getExtraDataSize();
 
-    if( showEventStream )
-        printf("oinputserver: Event %d type: %d sent at pos %f %f\n", evt.getSourceId(), evt.getType(), evt.getPosition().x(), evt.getPosition().y() );
-        
-    std::map<char*,NetClient*> activeClients;
+	return eventPacket;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+void InputServer::sendToClients(char* eventPacket)
+{
+	std::map<char*,NetClient*> activeClients;
 
     std::map<char*,NetClient*>::iterator itr = netClients.begin();
     while( itr != netClients.end() )
@@ -215,7 +193,7 @@ void InputServer::handleEvent(const Event& evt)
         {
             // Send an empty message to check if the client is still here.
             client->sendMsg("",1);
-            client->sendEvent(eventPacket, offset);
+            client->sendEvent(eventPacket, 1);
         }
             
         if( checkForDisconnectedClients )
@@ -237,10 +215,50 @@ void InputServer::handleEvent(const Event& evt)
     if( checkForDisconnectedClients )
         netClients = activeClients;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Checks the type of event. If a valid event, creates an event packet and sends to clients.
+void InputServer::handleEvent(Event* evt)
+{
+    // If the event has been processed locally (i.e. by a filter event service)
+    if(evt->isProcessed()) return;
+
+    timeb tb;
+    ftime( &tb );
+    int timestamp = tb.millitm + (tb.time & 0xfffff) * 1000;
+
+#ifdef OMICRON_USE_VRPN
+    vrpnDevice->update(evt);
+#endif
+
+    char* eventPacket = createOmicronEventPacket(evt);
+    //handleLegacyEvent(evt);
+        
+    if( showStreamSpeed )
+    {
+        if( (timestamp - lastOutgoingEventTime) >= 1000 )
+        {
+            lastOutgoingEventTime = timestamp;
+            ofmsg("oinputserver: Outgoing event stream %1% event(s)/sec", %eventCount );
+            eventCount = 0;
+        }
+        else
+        {
+            eventCount++;
+        }
+    }
+
+    if( showEventStream )
+        printf("oinputserver: Event %d type: %d sent at pos %f %f\n", evt->getSourceId(), evt->getType(), evt->getPosition().x(), evt->getPosition().y() );
+
+	sendToClients(eventPacket);
+}
     
 ///////////////////////////////////////////////////////////////////////////////
 bool InputServer::handleLegacyEvent(const Event& evt)
 {
+	char legacyPacket[DEFAULT_BUFLEN];
+
     //itoa(evt.getServiceType(), eventPacket, 10); // Append input type
     sprintf(legacyPacket, "%d", evt.getServiceType());
 
@@ -687,6 +705,12 @@ void InputServer::loop()
     // VRPN connection
     connection->mainloop();
 #endif
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void InputServer::addClient(const char* clientAddress, int dataPort, bool legacy)
+{
+	createClient( clientAddress, dataPort, legacy, NULL );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

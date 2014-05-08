@@ -89,7 +89,7 @@ void vrpn_XInputGamepad::mainloop() {
 	report_changes();
 }
 
-void vrpn_XInputGamepad::update(const Event& evt) {
+void vrpn_XInputGamepad::update(Event* evt) {
 
 	server_mainloop();
 	/*if ((rv = XInputGetState(_controllerIndex, &state)) != ERROR_SUCCESS) {
@@ -135,25 +135,25 @@ void vrpn_XInputGamepad::update(const Event& evt) {
 	// Right mouse = Circle
 	// Middle mouse = Analog button
 	// Mouse wheel = Analog up/down
-	if( evt.getServiceType() == Event::ServiceTypeController || evt.getServiceType() == Event::ServiceTypeWand ){
-		buttons[0] = (evt.getFlags() & Event::Button3) == Event::Button3;
-		buttons[1] = (evt.getFlags() & Event::Button2) == Event::Button2;
-		buttons[2] = (evt.getFlags() & Event::Button6) == Event::Button6;
-		buttons[3] = (evt.getFlags() & Event::ButtonUp) == Event::ButtonUp;
-		buttons[4] = (evt.getFlags() & Event::ButtonDown) == Event::ButtonDown;
-		buttons[5] = (evt.getFlags() & Event::ButtonLeft) == Event::ButtonLeft;
-		buttons[6] = (evt.getFlags() & Event::ButtonRight) == Event::ButtonRight;
+	if( evt->getServiceType() == Event::ServiceTypeController || evt->getServiceType() == Event::ServiceTypeWand ){
+		buttons[0] = (evt->getFlags() & Event::Button3) == Event::Button3;
+		buttons[1] = (evt->getFlags() & Event::Button2) == Event::Button2;
+		buttons[2] = (evt->getFlags() & Event::Button6) == Event::Button6;
+		buttons[3] = (evt->getFlags() & Event::ButtonUp) == Event::ButtonUp;
+		buttons[4] = (evt->getFlags() & Event::ButtonDown) == Event::ButtonDown;
+		buttons[5] = (evt->getFlags() & Event::ButtonLeft) == Event::ButtonLeft;
+		buttons[6] = (evt->getFlags() & Event::ButtonRight) == Event::ButtonRight;
 		
 		// Analog 4 (Wand L2)
-		if( !evt.isExtraDataNull(4) && evt.getExtraDataFloat(4) > 0.5 )
+		if( !evt->isExtraDataNull(4) && evt->getExtraDataFloat(4) > 0.5 )
 			buttons[2] = 1;
 		else if( buttons[2] != 1 )
 			buttons[2] = 0;
 			
-		if( !evt.isExtraDataNull(0) )
-			channel[0] = evt.getExtraDataFloat(0);
-		if( !evt.isExtraDataNull(1) )
-			channel[1] = evt.getExtraDataFloat(1);
+		if( !evt->isExtraDataNull(0) )
+			channel[0] = evt->getExtraDataFloat(0);
+		if( !evt->isExtraDataNull(1) )
+			channel[1] = evt->getExtraDataFloat(1);
 	}
 
 	vrpn_gettimeofday(&_timestamp, NULL);

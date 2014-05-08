@@ -26,6 +26,7 @@
  *************************************************************************************************/
 #include <omicron.h>
 #include <vector>
+#include "omicron/InputServer.h"
 
 #include <time.h>
 #include <iostream>
@@ -80,10 +81,10 @@ bool sageConnected = false;
 
 float timeLastEventSent = 0;
 
-class SAGEInputServer{
+class SAGEInputServer: public InputServer{
 public:
 	void connectToSage();
-	void handleEvent(Event*);
+	void handleSAGEEvent(Event*);
 
 	void pointerToSAGEEvent(Event*);
 	void wandToSAGEEvent(Event*);
@@ -152,7 +153,7 @@ void SAGEInputServer::connectToSage(){
 }
 int triggerFlag = 0;
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void SAGEInputServer::handleEvent(Event* evt){
+void SAGEInputServer::handleSAGEEvent(Event* evt){
 
 	if( evt->getServiceType() == Service::Pointer ){
 		pointerToSAGEEvent( evt );
@@ -338,7 +339,8 @@ void main(int argc, char** argv)
 		{
 			Event* evt = sm->getEvent(i);
 			
-			app.handleEvent(evt);
+			app.handleSAGEEvent(evt);
+			
 			evt->setProcessed();
 		}
 		sm->clearEvents();

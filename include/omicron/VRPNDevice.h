@@ -21,7 +21,7 @@ namespace omicron{
 		~vrpn_XInputGamepad();
 
 		virtual void mainloop();
-		void update(const Event&);
+		void update(Event*);
 	protected:
 		// Handle requests to change rumble magnitude
 		static int VRPN_CALLBACK handle_request_message(void *selfPtr, vrpn_HANDLERPARAM data);

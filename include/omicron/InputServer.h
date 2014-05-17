@@ -90,7 +90,7 @@ namespace omicron {
 class OMICRON_API InputServer
 {
 public:
-    virtual void handleEvent(Event* evt);
+    virtual void handleEvent(const Event* evt);
     virtual bool handleLegacyEvent(const Event& evt);
     void startConnection(Config* cfg);
     SOCKET startListening();
@@ -98,7 +98,7 @@ public:
     void loop();
 
 protected:
-	char* createOmicronEventPacket(Event*);
+	char* createOmicronEventPacket(const Event*);
 	void sendToClients(char*);
 	void createClient(const char*,int, bool, SOCKET);
 private:

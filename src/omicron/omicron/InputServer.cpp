@@ -142,7 +142,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 // Creates an event packet from an Omicron event. Returns the buffer offset.
-char* InputServer::createOmicronEventPacket(Event* evt)
+char* InputServer::createOmicronEventPacket(const Event* evt)
 {
 	int offset = 0;
     
@@ -217,7 +217,7 @@ void InputServer::sendToClients(char* eventPacket)
 
 ///////////////////////////////////////////////////////////////////////////////
 // Checks the type of event. If a valid event, creates an event packet and sends to clients.
-void InputServer::handleEvent(Event* evt)
+void InputServer::handleEvent(const Event* evt)
 {
     // If the event has been processed locally (i.e. by a filter event service)
     if(evt->isProcessed()) return;

@@ -132,7 +132,7 @@ endif()
 # Visual studio specific options.
 if(MSVC)
 	# Exclude libcmt when linking in visual studio
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /NODEFAULTLIB:libcmt.lib")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /SAFESEH:NO /NODEFAULTLIB:libcmt.lib")
     set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} /NODEFAULTLIB:libcmt.lib")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} /NODEFAULTLIB:libcmt.lib")
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS /wd4244 /wd4018)

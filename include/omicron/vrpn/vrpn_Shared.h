@@ -138,8 +138,10 @@ extern VRPN_API	void vrpn_SleepMsecs( double dMsecs );
 // definitions and functions.
 
 // xform a double to/from network order -- like htonl and htons
+#ifndef _WIN32
 extern VRPN_API	vrpn_float64 htond( vrpn_float64 d );
 extern VRPN_API	vrpn_float64 ntohd( vrpn_float64 d );
+#endif
 
 extern VRPN_API	int vrpn_buffer (char ** insertPt, vrpn_int32 * buflen, const vrpn_int8 value);
 extern VRPN_API	int vrpn_buffer (char ** insertPt, vrpn_int32 * buflen, const vrpn_int16 value);

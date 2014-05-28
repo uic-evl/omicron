@@ -93,6 +93,17 @@ SoundManager::SoundManager(const String& serverIP, int serverPort):
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SoundManager::setup(Setting& settings)
+{
+	Setting& dispCfg = settings["display"];
+	if(dispCfg.exists("radius"))
+	{
+		float radius = dispCfg["radius"];
+		ofmsg("SoundManager::setup: Display radius: %1%", %radius );
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::connectToServer(const String& serverIP, int serverPort)
 {
 	soundMsgSocket.connectTo(serverIP, 57110);
@@ -634,7 +645,7 @@ void SoundManager::updateInstancePositions()
 		if( inst->isPlaying() )
 		{
 			int flow;
-			float radius = 3.2245f;
+			float radius = 3.4;
 
 			Message msg("/setObjectLoc");
 			msg.pushInt32(inst->getID());

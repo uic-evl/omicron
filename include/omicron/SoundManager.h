@@ -114,6 +114,8 @@ public:
 	~SoundManager();
 
 	SoundManager(const String& host, int port);
+	void setup (Setting& settings);
+
 	void connectToServer(const String& host, int port);
 	bool isSoundServerRunning();
 	SoundEnvironment* getSoundEnvironment();

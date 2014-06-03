@@ -15,13 +15,13 @@
 // rumble magnitude using an Analog_Output (channel 0 controls the left motor,
 // channel 1 controls the right motor).
 namespace omicron{
-	class OMICRON_API vrpn_XInputGamepad: public vrpn_Analog, public vrpn_Button, public vrpn_Analog_Output {
+	class vrpn_XInputGamepad: public vrpn_Analog, public vrpn_Button, public vrpn_Analog_Output {
 	public:
 		vrpn_XInputGamepad(const char *name, vrpn_Connection *c = NULL, unsigned int controllerIndex = 0);
 		~vrpn_XInputGamepad();
 
 		virtual void mainloop();
-		void update(const Event&);
+		void update(const Event*);
 	protected:
 		// Handle requests to change rumble magnitude
 		static int VRPN_CALLBACK handle_request_message(void *selfPtr, vrpn_HANDLERPARAM data);

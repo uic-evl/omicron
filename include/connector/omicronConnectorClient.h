@@ -237,8 +237,14 @@ namespace omicron
 
 			//! Generic name for additional button 4
 			Button4 = 1 << 6,
+            //! Used for confirm button prsses or equivalent events
+            Enter = 1 << 6,
+
 			//! Generic name for additional button 5
 			Button5 = 1 << 7,
+            //! Used for backspace button presses or equivalent events
+            Backspace = 1 << 7,
+
 			//! Generic name for additional button 6
 			Button6 = 1 << 8,
 			//! Generic name for additional button 7

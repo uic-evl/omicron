@@ -98,9 +98,13 @@ void SoundManager::setup(Setting& settings)
 	Setting& dispCfg = settings["display"];
 	if(dispCfg.exists("radius"))
 	{
-		float radius = dispCfg["radius"];
-		ofmsg("SoundManager::setup: Display radius: %1%", %radius );
+		radius = dispCfg["radius"];
 	}
+	else
+	{
+		radius = 10000;
+	}
+	ofmsg("SoundManager::setup: Display radius: %1%", %radius );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -709,7 +713,6 @@ void SoundManager::updateInstancePositions()
 void SoundManager::updateAudioImage(Vector3f soundLocalPosition, Vector3f userPosition, int instID)
 {
 	int flow;
-	float radius = 3.4;
 	float m, intercept;
 	float coeff1, coeff2, coeff3;
 	float wallx1, wallx2, wallz1, wallz2; 

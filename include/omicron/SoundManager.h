@@ -193,6 +193,10 @@ private:
 	static bool startingSoundServer;
 	static bool soundServerRunning;
 
+	// This is set in .cfg. If 'radius' does not exist
+	// in .cfg, a large value is used.
+	float radius;
+
 	// This is assumed to be the navigative position
 	// of the listener in world coordinates
 	Vector3f listenerPosition;

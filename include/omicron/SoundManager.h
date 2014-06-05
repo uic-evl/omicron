@@ -180,6 +180,7 @@ public:
 	int getSoundLoadWaitTime() { return soundLoadWaitTime; };
 private:
 	void updateInstancePositions();
+	void updateAudioImage(Vector3f soundLocalPosition, Vector3f userPosition, int instID);
 	void removeInstanceNode(int);
 private:
 	Ref<SoundEnvironment> environment;
@@ -197,7 +198,7 @@ private:
 	Vector3f listenerPosition;
 	Quaternion listenerOrientation;
 
-	// This is the user/listener position reletive to the speakers
+	// This is the user/listener position relative to the speakers
 	// Used for user tracked applications
 	Vector3f userPosition;
 	Quaternion userOrientation;

@@ -367,7 +367,7 @@ void main(int argc, char** argv)
 
 	float xPos = 0;
 	float yPos = 0.5;
-	float increment = 0.00001;
+    float increment = 0.00001f;
 
 	while(runServer)
 	{

@@ -89,7 +89,7 @@ void vrpn_XInputGamepad::mainloop() {
 	report_changes();
 }
 
-void vrpn_XInputGamepad::update(Event* evt) {
+void vrpn_XInputGamepad::update(const Event* evt) {
 
 	server_mainloop();
 	/*if ((rv = XInputGetState(_controllerIndex, &state)) != ERROR_SUCCESS) {

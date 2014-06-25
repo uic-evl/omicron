@@ -1,11 +1,11 @@
 /**************************************************************************************************
 * THE OMICRON PROJECT
  *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2013		Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2014		Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto		anishimoto42@gmail.com
  *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2013, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2014, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted 
  * provided that the following conditions are met:
@@ -311,7 +311,7 @@ bool SAGEInputServer::isSAGEConnected()
 void main(int argc, char** argv)
 {
 	omsg("OmicronSDK - SAGEInputServer");
-	omsg("Copyright (C) 2010-2013 Electronic Visualization Laboratory\nUniversity of Illinois at Chicago");
+	omsg("Copyright (C) 2010-2014 Electronic Visualization Laboratory\nUniversity of Illinois at Chicago");
 	omsg("======================================================");
 	omsg("");
 

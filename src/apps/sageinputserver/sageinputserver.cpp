@@ -63,7 +63,7 @@ enum GESTURE_TYPE
 
 
 /////////  sage communication stuff  /////////
-#define DIM_PORT 20005
+int DIM_PORT = 20005;
 char sageHost[100];
 char pqServer[100];
 char myIP[16];
@@ -335,6 +335,13 @@ void main(int argc, char** argv)
 	Sleep(1000);
 
 	Setting& stRoot = cfg->getRootSetting()["config"];
+
+	if( stRoot.exists("sagePort") )
+	{
+		DIM_PORT = cfg->getIntValue("sagePort", stRoot, 20005);
+		ofmsg("SAGE port set to %1%", %DIM_PORT);
+	}
+
 	bool sageIPSet = false;
 	if( stRoot.exists("sageHostIP") )
 	{

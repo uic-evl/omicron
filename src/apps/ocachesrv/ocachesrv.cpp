@@ -67,7 +67,7 @@ int main(int argc, char** argv)
 			{
 				if(cfg->exists("config/cacheRoot"))
 				{
-					String cacheRoot = (String)(cfg->lookup("config/cacheRoot"));
+					const char* cacheRoot = cfg->lookup("config/cacheRoot");
 					cacheService->setCacheRoot(cacheRoot);
 					ofmsg("Cache root set to: %1%", %cacheRoot);
 				}

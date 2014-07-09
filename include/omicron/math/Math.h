@@ -60,17 +60,33 @@ namespace omicron {
 		int width() const { return max(0) - min(0); }
 		int height() const { return max(1) - min(1); }
 
+        Vector2i size() const { return Vector2i(width(), height()); }
+
 		int x() const { return min(0); }
 		int y() const { return min(1); }
 
 		bool intersects(const Rect& other)
 		{
 			// Check overlap
-			bool xOverlap = valueInRange(other.min[0], min[0], max[0]) || valueInRange(min[0], other.min[0], other.max[0]);
-			bool yOverlap = valueInRange(other.min[1], min[1], max[1]) || valueInRange(min[1], other.min[1], other.max[1]);
+			bool xOverlap = valueInRange(other.min[0], min[0], max[0]) || 
+                valueInRange(min[0], other.min[0], other.max[0]);
+			bool yOverlap = valueInRange(other.min[1], min[1], max[1]) || 
+                valueInRange(min[1], other.min[1], other.max[1]);
 	
 			return xOverlap && yOverlap;
 		}
+
+        std::pair<bool, Rect> getIntersection(const Rect& other)
+        {
+            if(!intersects(other))
+            {
+                return std::pair<bool, Rect>(false, Rect(0,0,0,0));
+            }
+            Vector2i m = min.cwiseMax(other.min);
+            Vector2i M = max.cwiseMin(other.max);
+
+            return std::pair<bool, Rect>(true, Rect(m, M));
+        }
 
 	private:
 		// Used by intersects.

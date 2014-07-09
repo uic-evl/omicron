@@ -97,7 +97,7 @@ namespace omicron
 	typedef unsigned int uint;
 	#endif
 	typedef unsigned long long uint64;
-	typedef unsigned long long int64;
+	typedef long long int64;
 	typedef std::string String;
 
 	///////////////////////////////////////////////////////////////////////////////////////////////

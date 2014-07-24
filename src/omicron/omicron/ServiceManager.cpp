@@ -77,8 +77,11 @@
 #ifdef OMICRON_USE_OPENNI
 	#include "omicron/OpenNIService.h"
 #endif
-#ifdef OMICRON_USE_KINECT_FOR_WINDOWS
+#ifdef OMICRON_USE_KINECT_FOR_WINDOWS_v1
 	#include "omicron/MSKinectService.h"
+#endif
+#ifdef OMICRON_USE_KINECT_FOR_WINDOWS_v2
+	#include "omicron/MSKinect2Service.h"
 #endif
 #ifdef OMICRON_USE_VRPN
 	#include "omicron/VRPNService.h"

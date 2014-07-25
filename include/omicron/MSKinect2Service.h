@@ -152,8 +152,8 @@ private:
 	void UnInitializeKinect( const OLECHAR* );
 
 	void ProcessBody(INT64, int, IBody**);
-	void GenerateMocapEvent( IBody*, IKinectSensor* );
-	void SkeletonPositionToEvent( const Joint&, Event*, Event::OmicronSkeletonJoint, JointType );
+	void GenerateMocapEvent( IBody*, Joint* );
+	void SkeletonPositionToEvent( Joint*, Event*, Event::OmicronSkeletonJoint, JointType );
 
 	void UpdateTrackedSkeletonSelection( int mode );
 	void UpdateTrackingMode( int mode );
@@ -214,6 +214,7 @@ private:
 
 	// Body Tracking
 	IBodyFrameReader*		bodyFrameReader;
+	ICoordinateMapper*		m_pCoordinateMapper;
 	DWORD					m_SkeletonTrackingFlags;
 	int						m_TrackedSkeletons;
 	int						skeletonEngineKinectID;

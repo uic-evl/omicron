@@ -110,7 +110,6 @@ void MSKinectService::initialize()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void MSKinectService::poll()
 {
-	omsg(" MSKinectService::poll");
 	if ( bodyFrameReader == NULL )
 	{
 		return;
@@ -145,7 +144,6 @@ void MSKinectService::poll()
 	}
 
 	SafeRelease(pBodyFrame);
-	omsg(" MSKinectService::poll end");
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -190,10 +188,10 @@ HRESULT MSKinectService::InitializeDefaultKinect()
 
 		hr = kinectSensor->Open();
 
-		//if (SUCCEEDED(hr))
-		//{
-		//    hr = kinectSensor->get_CoordinateMapper(&m_pCoordinateMapper);
-		//}
+		if (SUCCEEDED(hr))
+		{
+		    hr = kinectSensor->get_CoordinateMapper(&m_pCoordinateMapper);
+		}
 
 		if (SUCCEEDED(hr))
 		{
@@ -295,6 +293,7 @@ void MSKinectService::ProcessBody(INT64 nTime, int nBodyCount, IBody** ppBodies)
 {
 	HRESULT hr;
 
+	
 	for (int i = 0; i < nBodyCount; ++i)
 	{
 		IBody* pBody = ppBodies[i];
@@ -302,27 +301,15 @@ void MSKinectService::ProcessBody(INT64 nTime, int nBodyCount, IBody** ppBodies)
 		{
 			BOOLEAN bTracked = false;
 			hr = pBody->get_IsTracked(&bTracked);
-
+			
 			if (SUCCEEDED(hr) && bTracked)
 			{
 				Joint joints[JointType_Count]; 
-				D2D1_POINT_2F jointPoints[JointType_Count];
-				HandState leftHandState = HandState_Unknown;
-				HandState rightHandState = HandState_Unknown;
-
-				pBody->get_HandLeftState(&leftHandState);
-				pBody->get_HandRightState(&rightHandState);
-
 				hr = pBody->GetJoints(_countof(joints), joints);
-
 
 				if (SUCCEEDED(hr))
 				{
-					GenerateMocapEvent( pBody, kinectSensor );
-					//for (int j = 0; j < _countof(joints); ++j)
-					//{
-					//jointPoints[j] = BodyToScreen(joints[j].Position, width, height);
-					//}
+					GenerateMocapEvent( pBody, joints );
 				}
 			}
 		}
@@ -330,33 +317,27 @@ void MSKinectService::ProcessBody(INT64 nTime, int nBodyCount, IBody** ppBodies)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void MSKinectService::GenerateMocapEvent( IBody* body, IKinectSensor* currentSensor)
+void MSKinectService::GenerateMocapEvent( IBody* body, Joint* joints )
 {      
-	HRESULT hr;
-
 	UINT64 skeletonID;
 	body->get_TrackingId(&skeletonID);
 
-	Joint joints[JointType_Count]; 
-
 	Vector3f headPos;
 
-	hr = body->GetJoints(_countof(joints), joints);
-	if (SUCCEEDED(hr))
-	{
-		Joint head = joints[JointType_Head];
-		headPos = Vector3f( head.Position.X, head.Position.Y, head.Position.Z );
+	Joint head = joints[JointType_Head];
+	headPos = Vector3f( head.Position.X, head.Position.Y, head.Position.Z );
 
-		if( debugInfo )
-			ofmsg( "Kinect Head %1% (%2%,%3%,%4%)",  %skeletonID %headPos.x() %headPos.y() %headPos.z() );
-	}
+	if( debugInfo )
+		ofmsg( "Kinect Head %1% (%2%,%3%,%4%)",  %skeletonID %(headPos.x()) %(headPos.y()) %(headPos.z()) );
+
 	/*
 	if( caveSimulator )
 	{
 	Event* evt = mysInstance->writeHead();
 	evt->reset(Event::Update, Service::Mocap, caveSimulatorHeadID);
 
-	Vector4 jointPos = skel.SkeletonPositions[NUI_SKELETON_POSITION_HEAD];
+	Joint curJoint = joints[JointType_Head];
+	Vector3f jointPos = Vector3f( curJoint.Position.X, curJoint.Position.Y, curJoint.Position.Z );
 	Vector3f pos;
 	pos[0] = jointPos.x;
 	pos[1] = jointPos.y + 1.8f;
@@ -393,56 +374,76 @@ void MSKinectService::GenerateMocapEvent( IBody* body, IKinectSensor* currentSen
 	mysInstance->unlockEvents();
 
 	}
+	*/
+
+	HandState leftHandState = HandState_Unknown;
+	HandState rightHandState = HandState_Unknown;
+	body->get_HandLeftState(&leftHandState);
+	body->get_HandRightState(&rightHandState);
 
 	Event* evt = mysInstance->writeHead();
-	evt->reset(Event::Update, Service::Mocap, skeletonID, kinectID);
-
-	Vector4 jointPos = skel.SkeletonPositions[NUI_SKELETON_POSITION_HEAD];
+	evt->reset(Event::Update, Service::Mocap, skeletonID, 0);
+	
+	Joint joint = joints[JointType_Head];
+	Vector3f jointPos = Vector3f( head.Position.X, head.Position.Y, head.Position.Z );
 	Vector3f pos;
-	pos[0] = jointPos.x;
-	pos[1] = jointPos.y;
-	pos[2] = jointPos.z;
+	pos[0] = jointPos.x();
+	pos[1] = jointPos.y();
+	pos[2] = jointPos.z();
 	evt->setPosition( pos );
 
+	// Hand state
+	evt->setOrientation(leftHandState, rightHandState, 0, 0);
+
+	uint flags = 0;
+	
 	evt->setExtraDataType(Event::ExtraDataVector3Array);
 
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_SPINE, NUI_SKELETON_POSITION_SPINE );
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_SHOULDER_CENTER, NUI_SKELETON_POSITION_SHOULDER_CENTER );
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_HEAD, NUI_SKELETON_POSITION_HEAD );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_HIP_CENTER, JointType_SpineBase );
+	
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_HEAD, JointType_Head );
 
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_LEFT_SHOULDER, NUI_SKELETON_POSITION_SHOULDER_LEFT );
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_LEFT_ELBOW, NUI_SKELETON_POSITION_ELBOW_LEFT );
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_LEFT_WRIST, NUI_SKELETON_POSITION_WRIST_LEFT );
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_LEFT_HAND, NUI_SKELETON_POSITION_HAND_LEFT );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_SHOULDER, JointType_ShoulderLeft );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_ELBOW, JointType_ShoulderRight );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_WRIST, JointType_WristLeft );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_HAND, JointType_HandLeft );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_FINGERTIP, JointType_HandTipLeft );
+	
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_HIP, JointType_HipLeft );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_KNEE, JointType_KneeLeft );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_ANKLE, JointType_AnkleLeft );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_FOOT, JointType_FootLeft );
 
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_RIGHT_SHOULDER, NUI_SKELETON_POSITION_SHOULDER_RIGHT );
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_RIGHT_ELBOW, NUI_SKELETON_POSITION_ELBOW_RIGHT );
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_RIGHT_WRIST, NUI_SKELETON_POSITION_WRIST_RIGHT );
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_RIGHT_HAND, NUI_SKELETON_POSITION_HAND_RIGHT );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_RIGHT_SHOULDER, JointType_ShoulderRight );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_RIGHT_ELBOW, JointType_ElbowRight );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_RIGHT_WRIST, JointType_WristRight );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_RIGHT_HAND, JointType_HandRight );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_RIGHT_FINGERTIP, JointType_HandTipRight );
 
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_LEFT_HIP, NUI_SKELETON_POSITION_HIP_LEFT );
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_LEFT_KNEE, NUI_SKELETON_POSITION_KNEE_LEFT );
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_LEFT_ANKLE, NUI_SKELETON_POSITION_ANKLE_LEFT );
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_LEFT_FOOT, NUI_SKELETON_POSITION_FOOT_LEFT );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_RIGHT_HIP, JointType_HipRight );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_RIGHT_KNEE, JointType_KneeRight );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_RIGHT_ANKLE, JointType_AnkleRight );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_RIGHT_FOOT, JointType_FootRight );
 
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_RIGHT_HIP, NUI_SKELETON_POSITION_HIP_RIGHT );
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_RIGHT_KNEE, NUI_SKELETON_POSITION_KNEE_RIGHT );
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_RIGHT_ANKLE, NUI_SKELETON_POSITION_ANKLE_RIGHT );
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_RIGHT_FOOT, NUI_SKELETON_POSITION_FOOT_RIGHT );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_SPINE, JointType_SpineMid );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_SHOULDER_CENTER, JointType_SpineShoulder );
+
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_THUMB, JointType_ThumbLeft );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_RIGHT_THUMB, JointType_ThumbRight );
 
 	mysInstance->unlockEvents();
-	*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void MSKinectService::SkeletonPositionToEvent( const Joint & skel, Event* evt, Event::OmicronSkeletonJoint joint, JointType posIndex )
+void MSKinectService::SkeletonPositionToEvent( Joint* joints, Event* evt, Event::OmicronSkeletonJoint omicronIndex, JointType kinectIndex )
 {
-	//Vector4 jointPos = skel.SkeletonPositions[posIndex];
-	//Vector3f pos;
-	//pos[0] = jointPos.x;
-	//pos[1] = jointPos.y;
-	//pos[2] = jointPos.z;
-	//evt->setExtraDataVector3(joint, pos);
+	Joint joint = joints[kinectIndex];
+	Vector3f jointPos = Vector3f( joint.Position.X, joint.Position.Y, joint.Position.Z );
+	Vector3f pos;
+	pos[0] = jointPos.x();
+	pos[1] = jointPos.y();
+	pos[2] = jointPos.z();
+	evt->setExtraDataVector3(omicronIndex, pos);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

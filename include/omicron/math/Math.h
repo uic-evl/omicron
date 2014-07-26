@@ -34,47 +34,47 @@
 #include "EigenWrappers.h"
 
 namespace omicron { 
-	class Ray;
-	class Plane;
-	class Sphere;
-	class AlignedBox3;
+    class Ray;
+    class Plane;
+    class Sphere;
+    class AlignedBox3;
 
-	///////////////////////////////////////////////////////////////////////////////////////////////
-	//! Stores a rectangular region in integer units. Useful for storing viewports and other 
-	//! pixel-space regions.
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //! Stores a rectangular region in integer units. Useful for storing viewports and other 
+    //! pixel-space regions.
     struct Rect
     {
-	public:
+    public:
 
-		Vector2i min;
-		Vector2i max;
+        Vector2i min;
+        Vector2i max;
 
-		Rect(): min(0, 0), max(0, 0) {}
+        Rect(): min(0, 0), max(0, 0) {}
 
-		Rect(const Vector2i& vmin, const Vector2i& vmax):
-		min(vmin), max(vmax) {}
+        Rect(const Vector2i& vmin, const Vector2i& vmax):
+        min(vmin), max(vmax) {}
 
-		Rect(int x, int y, int width, int height):
-		min(x, y), max(x + width, y + height) {}
+        Rect(int x, int y, int width, int height):
+        min(x, y), max(x + width, y + height) {}
 
-		int width() const { return max(0) - min(0); }
-		int height() const { return max(1) - min(1); }
+        int width() const { return max(0) - min(0); }
+        int height() const { return max(1) - min(1); }
 
         Vector2i size() const { return Vector2i(width(), height()); }
 
-		int x() const { return min(0); }
-		int y() const { return min(1); }
+        int x() const { return min(0); }
+        int y() const { return min(1); }
 
-		bool intersects(const Rect& other)
-		{
-			// Check overlap
-			bool xOverlap = valueInRange(other.min[0], min[0], max[0]) || 
+        bool intersects(const Rect& other)
+        {
+            // Check overlap
+            bool xOverlap = valueInRange(other.min[0], min[0], max[0]) || 
                 valueInRange(min[0], other.min[0], other.max[0]);
-			bool yOverlap = valueInRange(other.min[1], min[1], max[1]) || 
+            bool yOverlap = valueInRange(other.min[1], min[1], max[1]) || 
                 valueInRange(min[1], other.min[1], other.max[1]);
-	
-			return xOverlap && yOverlap;
-		}
+    
+            return xOverlap && yOverlap;
+        }
 
         std::pair<bool, Rect> getIntersection(const Rect& other)
         {
@@ -88,13 +88,13 @@ namespace omicron {
             return std::pair<bool, Rect>(true, Rect(m, M));
         }
 
-	private:
-		// Used by intersects.
-		bool valueInRange(int value, int vmin, int vmax)
-		{ return (value >= vmin) && (value <= vmax); }
+    private:
+        // Used by intersects.
+        bool valueInRange(int value, int vmin, int vmax)
+        { return (value >= vmin) && (value <= vmax); }
     };
 
-	///////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////
     /** Class to provide access to common mathematical functions.
         @remarks
             Most of the maths functions are aliased versions of the C runtime
@@ -120,8 +120,8 @@ namespace omicron {
         */
         void buildTrigTables();
 
-		static real SinTable (real fValue);
-		static real TanTable (real fValue);
+        static real SinTable (real fValue);
+        static real TanTable (real fValue);
     public:
         /** Default constructor.
             @param
@@ -134,23 +134,23 @@ namespace omicron {
         */
         ~Math();
 
-		static int iabs (int iValue) { return ( iValue >= 0 ? iValue : -iValue ); }
-		static int iceil (real fValue) { return int(std::ceil(fValue)); }
-		static int ifloor (real fValue) { return int(std::floor(fValue)); }
+        static int iabs (int iValue) { return ( iValue >= 0 ? iValue : -iValue ); }
+        static int iceil (real fValue) { return int(std::ceil(fValue)); }
+        static int ifloor (real fValue) { return int(std::floor(fValue)); }
         static int isign (int iValue);
 
-		static real abs (real fValue) { return real(fabs(fValue)); }
-		static real acos (real fValue);
-		static real asin (real fValue);
-		static real atan (real fValue) { return std::atan(fValue); }
-		static real atan2 (real fY, real fX) { return std::atan2(fY,fX); }
-		static real ceil (real fValue) { return real(std::ceil(fValue)); }
-		static bool isNaN(real f)
-		{
-			// std::isnan() is C99, not supported by all compilers
-			// However NaN always fails this next test, no other number does.
-			return f != f;
-		}
+        static real abs (real fValue) { return real(fabs(fValue)); }
+        static real acos (real fValue);
+        static real asin (real fValue);
+        static real atan (real fValue) { return std::atan(fValue); }
+        static real atan2 (real fY, real fX) { return std::atan2(fY,fX); }
+        static real ceil (real fValue) { return real(std::ceil(fValue)); }
+        static bool isNaN(real f)
+        {
+            // std::isnan() is C99, not supported by all compilers
+            // However NaN always fails this next test, no other number does.
+            return f != f;
+        }
 
         /** Cosine function.
             @param
@@ -160,23 +160,23 @@ namespace omicron {
                 calculation - faster but less accurate.
         */
         static real cos (real fValue, bool useTables = false) {
-			return (!useTables) ? real(std::cos(fValue)) : SinTable(fValue + HalfPi);
-		}
+            return (!useTables) ? real(std::cos(fValue)) : SinTable(fValue + HalfPi);
+        }
 
-		static real exp (real fValue) { return real(std::exp(fValue)); }
+        static real exp (real fValue) { return real(std::exp(fValue)); }
 
-		static real floor (real fValue) { return real(std::floor(fValue)); }
+        static real floor (real fValue) { return real(std::floor(fValue)); }
 
-		static real log (real fValue) { return real(std::log(fValue)); }
+        static real log (real fValue) { return real(std::log(fValue)); }
 
-		/// Stored value of log(2) for frequent use
-		static const real Log2Base;
+        /// Stored value of log(2) for frequent use
+        static const real Log2Base;
 
-		static real log2 (real fValue) { return real(log(fValue)/Log2Base); }
+        static real log2 (real fValue) { return real(log(fValue)/Log2Base); }
 
-		static real logN (real base, real fValue) { return real(log(fValue)/log(base)); }
+        static real logN (real base, real fValue) { return real(log(fValue)/log(base)); }
 
-		static real pow (real fBase, real fExponent) { return real(std::pow(fBase,fExponent)); }
+        static real pow (real fBase, real fExponent) { return real(std::pow(fBase,fExponent)); }
 
         static real sign (real fValue);
 
@@ -188,12 +188,12 @@ namespace omicron {
                 calculation - faster but less accurate.
         */
         static real sin (real fValue, bool useTables = false) {
-			return (!useTables) ? real(std::sin(fValue)) : SinTable(fValue);
-		}
+            return (!useTables) ? real(std::sin(fValue)) : SinTable(fValue);
+        }
 
-		static real sqr (real fValue) { return fValue*fValue; }
+        static real sqr (real fValue) { return fValue*fValue; }
 
-		static real sqrt (real fValue) { return real(std::sqrt(fValue)); }
+        static real sqrt (real fValue) { return real(std::sqrt(fValue)); }
 
         static real unitRandom ();  // in [0,1]
 
@@ -208,11 +208,11 @@ namespace omicron {
                 useTables If true, uses lookup tables rather than
                 calculation - faster but less accurate.
         */
-		static real tan (real fValue, bool useTables = false) {
-			return (!useTables) ? real(std::tan(fValue)) : TanTable(fValue);
-		}
+        static real tan (real fValue, bool useTables = false) {
+            return (!useTables) ? real(std::tan(fValue)) : TanTable(fValue);
+        }
 
-		static real degreesToRadians(real degrees) { return degrees * DegToRad; }
+        static real degreesToRadians(real degrees) { return degrees * DegToRad; }
         static real radiansToDegrees(real radians) { return radians * RadToDeg; }
 
        /** Checks whether a given point is inside a triangle, in a
@@ -237,14 +237,14 @@ namespace omicron {
                 returned.
         */
         static bool pointInTri2D(const Vector2f& p, const Vector2f& a, 
-			const Vector2f& b, const Vector2f& c);
+            const Vector2f& b, const Vector2f& c);
 
        /** Checks whether a given 3D point is inside a triangle.
        @remarks
             The vertices of the triangle must be given in either
             trigonometrical (anticlockwise) or inverse trigonometrical
             (clockwise) order, and the point must be guaranteed to be in the
-			same plane as the triangle
+            same plane as the triangle
         @param
             p The point.
         @param
@@ -253,9 +253,9 @@ namespace omicron {
             b The triangle's second vertex.
         @param
             c The triangle's third vertex.
-		@param 
-			normal The triangle plane's normal (passed in rather than calculated
-				on demand since the caller may already have it)
+        @param 
+            normal The triangle plane's normal (passed in rather than calculated
+                on demand since the caller may already have it)
         @returns
             If the point resides in the triangle, <b>true</b> is
             returned.
@@ -264,7 +264,7 @@ namespace omicron {
             returned.
         */
         static bool pointInTri3D(const Vector3f& p, const Vector3f& a, 
-			const Vector3f& b, const Vector3f& c, const Vector3f& normal);
+            const Vector3f& b, const Vector3f& c, const Vector3f& normal);
         /** Ray / plane intersection, returns boolean result and distance. */
         static std::pair<bool, real> intersects(const Ray& ray, const Plane& plane);
 
@@ -309,9 +309,9 @@ namespace omicron {
             b The triangle's second vertex.
         @param
             c The triangle's third vertex.
-		@param 
-			normal The triangle plane's normal (passed in rather than calculated
-				on demand since the caller may already have it), doesn't need
+        @param 
+            normal The triangle plane's normal (passed in rather than calculated
+                on demand since the caller may already have it), doesn't need
                 normalised since we don't care.
         @param
             positiveSide Intersect with "positive side" of the triangle
@@ -401,51 +401,51 @@ namespace omicron {
         /** Calculate a face normal without normalize, no w-information. */
         static Vector3f calculateBasicFaceNormalWithoutNormalize(const Vector3f& v1, const Vector3f& v2, const Vector3f& v3);
 
-		/** Generates a value based on the Gaussian (normal) distribution function
-			with the given offset and scale parameters.
-		*/
-		static real gaussianDistribution(real x, real offset = 0.0f, real scale = 1.0f);
+        /** Generates a value based on the Gaussian (normal) distribution function
+            with the given offset and scale parameters.
+        */
+        static real gaussianDistribution(real x, real offset = 0.0f, real scale = 1.0f);
 
-		/** Clamp a value within an inclusive range. */
-		static real Clamp(real val, real minval, real maxval)
-		{
-			assert (minval < maxval && "Invalid clamp range");
-			return std::max(std::min(val, maxval), minval);
-		}
+        /** Clamp a value within an inclusive range. */
+        static real Clamp(real val, real minval, real maxval)
+        {
+            assert (minval < maxval && "Invalid clamp range");
+            return std::max(std::min(val, maxval), minval);
+        }
 
-		static AffineTransform3 makeViewMatrix(const Vector3f& position, const Quaternion& orientation);
-		static Matrix4f makePerspectiveMatrix(float fov, float aspect, float nearZ, float farZ);
+        static AffineTransform3 makeViewMatrix(const Vector3f& position, const Quaternion& orientation);
+        static Matrix4f makePerspectiveMatrix(float fov, float aspect, float nearZ, float farZ);
 
-		/** Get a bounding radius value from a bounding box. */
-		static real boundingRadiusFromAABB(const AlignedBox3& aabb);
+        /** Get a bounding radius value from a bounding box. */
+        static real boundingRadiusFromAABB(const AlignedBox3& aabb);
 
-		/** Compute a quaternion rotation transforming vector a to vector b **/
-		static Quaternion buildRotation(const Vector3f& a, const Vector3f& b, const Vector3f& fallbackAxis );//= Vector3f::Zero());
+        /** Compute a quaternion rotation transforming vector a to vector b **/
+        static Quaternion buildRotation(const Vector3f& a, const Vector3f& b, const Vector3f& fallbackAxis );//= Vector3f::Zero());
 
-		//! Converts a quaternion to euler angles (pitch, yaw, roll)
-		static Vector3f quaternionToEuler(const Quaternion& quat);
-		static Quaternion quaternionFromEuler(const Vector3f& pitchYawRoll);
+        //! Converts a quaternion to euler angles (pitch, yaw, roll)
+        static Vector3f quaternionToEuler(const Quaternion& quat);
+        static Quaternion quaternionFromEuler(const Vector3f& pitchYawRoll);
 
-		static 
-		Ray unproject(const Vector2f& point, const AffineTransform3& modelview, const Transform3& projection, const Rect& viewport);
-		static 
-		Ray unprojectNormalized(const Vector2f& point, const AffineTransform3& modelview, const Transform3& projection);
-		static 
-		Vector3f project(const Vector3f& point, const AffineTransform3& modelview, const Transform3& projection, const Rect& viewport);
+        static 
+        Ray unproject(const Vector2f& point, const AffineTransform3& modelview, const Transform3& projection, const Rect& viewport);
+        static 
+        Ray unprojectNormalized(const Vector2f& point, const AffineTransform3& modelview, const Transform3& projection);
+        static 
+        Vector3f project(const Vector3f& point, const AffineTransform3& modelview, const Transform3& projection, const Rect& viewport);
 
-		static Vector3f normal(const Vector3f& aa, const Vector3f& bb, const Vector3f& cc);
+        static Vector3f normal(const Vector3f& aa, const Vector3f& bb, const Vector3f& cc);
 
-		static AffineTransform3 computeMatchingPointsTransform(const Vectors3f& src, const Vectors3f& dst);
+        static AffineTransform3 computeMatchingPointsTransform(const Vectors3f& src, const Vectors3f& dst);
 
-		static void swapMinMax(real& min, real& max);
+        static void swapMinMax(real& min, real& max);
 
         static const real PositiveInfinity;
         static const real NegativeInfinity;
         static const float Pi;
         static const real TwoPi;
         static const real HalfPi;
-		static const real DegToRad;
-		static const real RadToDeg;
+        static const real DegToRad;
+        static const real RadToDeg;
     };
 
     

@@ -8,7 +8,9 @@
 
 #pragma once
 
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
+#endif
 
 // Windows Header Files
 #include <windows.h>
@@ -18,7 +20,10 @@
 // Direct2D Header Files
 #include <d2d1.h>
 
-#pragma comment ( lib, "d2d1.lib" )
+// Kinect Header files
+#include <Kinect.h>
+
+#pragma comment (lib, "d2d1.lib")
 
 #ifdef _UNICODE
 #if defined _M_IX86
@@ -32,9 +37,9 @@
 
 // Safe release for interfaces
 template<class Interface>
-inline void SafeRelease( Interface *& pInterfaceToRelease )
+inline void SafeRelease(Interface *& pInterfaceToRelease)
 {
-    if ( pInterfaceToRelease != NULL )
+    if (pInterfaceToRelease != NULL)
     {
         pInterfaceToRelease->Release();
         pInterfaceToRelease = NULL;

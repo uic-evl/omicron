@@ -317,6 +317,9 @@ namespace omicron
 			OMICRON_SKEL_SPINE,  // MSKinect only - merge with torso?
 			OMICRON_SKEL_SHOULDER_CENTER,  // MSKinect only - midpoint of left & right shoulders for OpenNI?
 
+			OMICRON_SKEL_LEFT_THUMB,
+			OMICRON_SKEL_RIGHT_THUMB,
+
 			OMICRON_SKEL_COUNT
 		};
 	};

@@ -166,12 +166,15 @@ private:
 	// Conversion from String to LPCWSTR for grammar file
 	std::wstring StringToWString(const std::string& s);
 
+#ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
 	// Kinect Speech
 	HRESULT                 InitializeAudioStream();
     HRESULT                 CreateSpeechRecognizer();
     HRESULT                 LoadSpeechGrammar();
 	HRESULT                 StartSpeechRecognition();
     void                    ProcessSpeech();
+	void					GenerateSpeechEvent( String, float );
+#endif
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	inline void MSKinectService::setUpdateInterval(float value) 

@@ -710,8 +710,6 @@ HRESULT MSKinectService::StartSpeechRecognition()
 /// </summary>
 void MSKinectService::ProcessSpeech()
 {
-	const float ConfidenceThreshold = 0.3f;
-
     SPEVENT curEvent = {SPEI_UNDEFINED, SPET_LPARAM_IS_UNDEFINED, 0, 0, 0, 0};
     ULONG fetched = 0;
     HRESULT hr = S_OK;
@@ -745,7 +743,10 @@ void MSKinectService::ProcessSpeech()
 
 						float speechStringConfidence = pSemanticTag->SREngineConfidence;
 
-						ofmsg("MSKinect2Service: Speech recognized '%1%' confidence: %2%", %speechString %speechStringConfidence);
+						if( debugInfo )
+							ofmsg("MSKinect2Service: Speech recognized '%1%' confidence: %2%", %speechString %speechStringConfidence);
+
+						GenerateSpeechEvent( speechString, speechStringConfidence );
                     }
                     ::CoTaskMemFree(pPhrase);
                 }
@@ -757,6 +758,19 @@ void MSKinectService::ProcessSpeech()
     }
 
     return;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void MSKinectService::GenerateSpeechEvent( String speechString, float speechConfidence )
+{
+	Event* evt = mysInstance->writeHead();
+	evt->reset(Event::Update, Service::Speech, 0, 0);
+
+	evt->setPosition( speechConfidence, 0 );
+	evt->setExtraDataType(Event::ExtraDataString);
+	evt->setExtraDataString(speechString);
+
+	mysInstance->unlockEvents();
 }
 
 #endif

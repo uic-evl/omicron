@@ -148,8 +148,11 @@ private:
 	void CALLBACK KinectStatusCallback( HRESULT hrStatus, const OLECHAR* instanceName, const OLECHAR* uniqueDeviceName );
 
 	HRESULT InitializeDefaultKinect();
-	HRESULT InitializeKinect();
+	//HRESULT InitializeKinect();
 	void UnInitializeKinect( const OLECHAR* );
+
+	void pollBody();
+	void pollSpeech();
 
 	void ProcessBody(INT64, int, IBody**);
 	void GenerateMocapEvent( IBody*, Joint* );
@@ -159,6 +162,9 @@ private:
 	void UpdateTrackingMode( int mode );
 	void UpdateRange( int mode );
 	void UpdateSkeletonTrackingFlag( DWORD flag, bool value );
+
+	// Conversion from String to LPCWSTR for grammar file
+	std::wstring StringToWString(const std::string& s);
 
 	// Kinect Speech
 	HRESULT                 InitializeAudioStream();
@@ -228,10 +234,16 @@ private:
 	int caveSimulatorWandID;
 
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
-	static LPCWSTR          GrammarFileName;
+    String          speechGrammerFilePath;
 
-	// Audio stream captured from Kinect.
-    KinectAudioStream*      m_pKinectAudioStream;
+    // A single audio beam off the Kinect sensor.
+    IAudioBeam*             m_pAudioBeam;
+
+    // An IStream derived from the audio beam, used to read audio samples
+    IStream*                m_pAudioStream;
+
+    // Stream for converting 32bit Audio provided by Kinect to 16bit required by speeck
+    KinectAudioStream*     m_p16BitAudioStream;
 
     // Stream given to speech recognition engine
     ISpStream*              m_pSpeechStream;
@@ -247,6 +259,11 @@ private:
 
     // Event triggered when we detect speech recognition
     HANDLE                  m_hSpeechEvent;
+
+    //controll when speech processing occurs
+    bool m_bSpeechActive;
+
+	float confidenceThreshold;
 #endif
 };
 

@@ -131,7 +131,7 @@ if(WIN32)
 	
 	if( KINECTSDK10 OR KINECTSDK20 )
 		set(OMICRON_USE_KINECT_FOR_WINDOWS "DISABLED" CACHE STRING "Enable/disable Kinect for Windows support (Requires Kinect for Windows SDK Redistributable - Xbox 360 Kinect requires full SDK (v1.x only)")
-		SET_PROPERTY(CACHE OMICRON_USE_KINECT_FOR_WINDOWS PROPERTY STRINGS "v2.0" "v1.x (Xbox 360 Kinect support)" "DISABLED") 
+		SET_PROPERTY(CACHE OMICRON_USE_KINECT_FOR_WINDOWS PROPERTY STRINGS "v2.0" "v1.x" "DISABLED") 
 		
 		if( KINECTSDK10 )
 			message("Kinect for Windows SDK v1.x found")
@@ -144,10 +144,10 @@ if(WIN32)
 			message("Kinect for Windows SDK v2.x found")
 			#set(OMICRON_USE_KINECT_FOR_WINDOWS_v2 false CACHE BOOL "Enable/disable Kinect for Windows v2.0 support (Kinect for Windows SDK Redistributable must be installed)")
 		else( KINECTSDK20 )
-			SET_PROPERTY(CACHE OMICRON_USE_KINECT_FOR_WINDOWS PROPERTY STRINGS "v1.x (Xbox 360 Kinect support)" "DISABLED") 
+			SET_PROPERTY(CACHE OMICRON_USE_KINECT_FOR_WINDOWS PROPERTY STRINGS "v1.x" "DISABLED") 
 		endif()
 		
-		if(${OMICRON_USE_KINECT_FOR_WINDOWS} MATCHES "v1.x (Xbox 360 Kinect support)")
+		if(${OMICRON_USE_KINECT_FOR_WINDOWS} MATCHES "v1.x")
 			message("Using Kinect for Windows SDK v1.x")
 			
 			set( srcs	 ${srcs} omicron/MSKinectService.cpp
@@ -344,7 +344,7 @@ ENDIF(OMICRON_USE_OPENNI)
 
 if(NOT ${OMICRON_USE_KINECT_FOR_WINDOWS} MATCHES "DISABLED")
 	if(WIN32)
-		if(${OMICRON_USE_KINECT_FOR_WINDOWS} MATCHES "v1.x (Xbox 360 Kinect support)")
+		if(${OMICRON_USE_KINECT_FOR_WINDOWS} MATCHES "v1.x")
 			target_link_libraries( omicron ${EXT_LIB_DIR}/Kinect10.lib)
 			#if(OMICRON_ARCH_32)
 			#	target_link_libraries( omicron $ENV{KINECTSDK10_DIR}/lib/x86/Kinect10.lib)

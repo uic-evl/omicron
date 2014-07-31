@@ -21,7 +21,12 @@
 #include <d2d1.h>
 
 // Kinect Header files
+#ifdef OMICRON_USE_KINECT_FOR_WINDOWS_v1
+#include <NuiApi.h>
+#endif
+#ifdef OMICRON_USE_KINECT_FOR_WINDOWS_v2
 #include <Kinect.h>
+#endif
 
 #pragma comment (lib, "d2d1.lib")
 

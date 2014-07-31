@@ -237,7 +237,7 @@ private:
 	int caveSimulatorWandID;
 
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
-    String          speechGrammerFilePath;
+    String                  speechGrammerFilePath;
 
     // A single audio beam off the Kinect sensor.
     IAudioBeam*             m_pAudioBeam;

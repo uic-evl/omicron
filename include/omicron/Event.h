@@ -72,7 +72,7 @@ namespace omicron
 
         void copyFrom(const Event& e);
 
-        void reset(Type type, Service::ServiceType serviceType, uint sourceId = 0, int serviceId = -1);
+        void reset(Type type, Service::ServiceType serviceType, uint sourceId = 0, unsigned short serviceId = 0, unsigned short userId = 0);
 
         //! id of the source of this event. Input services associate unique ids to each of their event sources.
         unsigned int getSourceId() const;
@@ -86,8 +86,19 @@ namespace omicron
         const Vector3f& getPosition() const;
         void setServiceType(Service::ServiceType type);
 
-        //! Unique id of the service and / or hardware device that generated this event.
-        int getServiceId() const;
+        //! Gets the unique id of the event service that generated this event.
+        //! This value is part of the device tag.
+        unsigned int getServiceId() const;
+        //! Numeric id of the user associated to this event. This value is part 
+        //! of the device tag.
+        unsigned int getUserId() const;
+
+        //! Gets the event device tag. The device tag identifies the service and
+        //! the user associated with this event. The lower two bytes contain
+        //! the service id, while the top two bytes contain the user id. Both
+        //! can be accessed using the getServiceId and getUserId utility
+        //! functions.
+        unsigned int getDeviceTag() const;
 
         //! The event type.
         Type getType() const;
@@ -160,7 +171,7 @@ namespace omicron
     private:
         unsigned int mySourceId;
         enum Service::ServiceType myServiceType;
-        int myServiceId;
+        unsigned int myDeviceTag;
         enum Type myType;
 
         Vector3f myPosition;
@@ -201,7 +212,7 @@ namespace omicron
     {}
 
     ///////////////////////////////////////////////////////////////////////////
-    inline void Event::reset(Type type, Service::ServiceType serviceType, uint sourceId, int serviceId)
+    inline void Event::reset(Type type, Service::ServiceType serviceType, uint sourceId, unsigned short serviceId, unsigned short userId)
     {
         myType = type;
         mySourceId = sourceId;
@@ -210,7 +221,8 @@ namespace omicron
         myExtraDataItems = 0;
         myExtraDataValidMask = 0;
         myExtraDataType = ExtraDataNull;
-        if(serviceId != -1) myServiceId = serviceId;
+        if(serviceId != 0) myDeviceTag = (serviceId << DTServiceIdOffset);
+        myDeviceTag |= (userId << DTUserIdOffset);
 
         timeb tb;
         ftime( &tb );
@@ -239,8 +251,16 @@ namespace omicron
     { myServiceType = value;	}
 
     ///////////////////////////////////////////////////////////////////////////
-    inline int Event::getServiceId() const
-    { return myServiceId; }
+    inline unsigned int Event::getServiceId() const
+    { return (myDeviceTag & DTServiceIdMask) >> DTServiceIdOffset; }
+
+    ///////////////////////////////////////////////////////////////////////////
+    inline unsigned int Event::getUserId() const
+    { return (myDeviceTag & DTUserIdMask) >> DTUserIdOffset; }
+
+    ///////////////////////////////////////////////////////////////////////////
+    inline unsigned int Event::getDeviceTag() const
+    { return myDeviceTag; }
 
     ///////////////////////////////////////////////////////////////////////////
     inline Event::Type Event::getType() const
@@ -341,7 +361,7 @@ namespace omicron
     ///////////////////////////////////////////////////////////////////////////
     inline bool Event::isFrom(Service* svc, int sourceId) const
     {
-        return (myServiceId == svc->getServiceId() && mySourceId == sourceId);
+        return (getServiceId() == svc->getServiceId() && mySourceId == sourceId);
     }
 
     ///////////////////////////////////////////////////////////////////////////

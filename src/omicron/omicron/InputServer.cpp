@@ -144,7 +144,7 @@ public:
 // Creates an event packet from an Omicron event. Returns the buffer offset.
 char* InputServer::createOmicronEventPacket(const Event* evt)
 {
-	int offset = 0;
+    int offset = 0;
     
     OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getTimestamp()); 
     OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getSourceId()); 
@@ -170,14 +170,14 @@ char* InputServer::createOmicronEventPacket(const Event* evt)
     }
     offset += evt->getExtraDataSize();
 
-	return eventPacket;
+    return eventPacket;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 //
 void InputServer::sendToClients(char* eventPacket)
 {
-	std::map<char*,NetClient*> activeClients;
+    std::map<char*,NetClient*> activeClients;
 
     std::map<char*,NetClient*>::iterator itr = netClients.begin();
     while( itr != netClients.end() )
@@ -222,7 +222,7 @@ void InputServer::handleEvent(const Event* evt)
     // If the event has been processed locally (i.e. by a filter event service)
     if(evt->isProcessed()) return;
 
-	timeb tb;
+    timeb tb;
     ftime( &tb );
     int timestamp = tb.millitm + (tb.time & 0xfffff) * 1000;
 
@@ -250,13 +250,13 @@ void InputServer::handleEvent(const Event* evt)
     if( showEventStream )
         printf("oinputserver: Event %d type: %d sent at pos %f %f\n", evt->getSourceId(), evt->getType(), evt->getPosition().x(), evt->getPosition().y() );
 
-	sendToClients(eventPacket);
+    sendToClients(eventPacket);
 }
     
 ///////////////////////////////////////////////////////////////////////////////
 bool InputServer::handleLegacyEvent(const Event& evt)
 {
-	char legacyPacket[DEFAULT_BUFLEN];
+    char legacyPacket[DEFAULT_BUFLEN];
 
     //itoa(evt.getServiceType(), eventPacket, 10); // Append input type
     sprintf(legacyPacket, "%d", evt.getServiceType());

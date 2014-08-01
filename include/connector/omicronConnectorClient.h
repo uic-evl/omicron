@@ -338,8 +338,8 @@ namespace omicron
         {
             DTServiceIdMask = 0x0000ffff,
             DTUserIdMask = 0xffff0000,
-            DTUserIdOffset = 0,
-            DTServiceIdOffset = 16
+            DTUserIdOffset = 16,
+            DTServiceIdOffset = 0
         };
     };
 }

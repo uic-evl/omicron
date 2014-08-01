@@ -48,6 +48,14 @@ enum RANGE
     RANGE_NEAR,
 } RANGE;
 
+#define INITGUID
+#include <guiddef.h>
+
+// This is the class ID we expect for the Microsoft Speech recognizer.
+// Other values indicate that we're using a version of sapi.h that is
+// incompatible with this sample.
+DEFINE_GUID(CLSID_ExpectedRecognizer, 0x495648e7, 0xf7ab, 0x4267, 0x8e, 0x0f, 0xca, 0xfb, 0x7a, 0x33, 0xc1, 0x60);
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 MSKinectService::MSKinectService(){
 	m_pNuiSensor = NULL;
@@ -64,6 +72,7 @@ MSKinectService::MSKinectService(){
 	m_pSpeechContext = NULL;
 	m_pSpeechGrammar = NULL;
 	m_hSpeechEvent = NULL;
+	speechRunning = false;
 #endif
 }
 
@@ -110,7 +119,7 @@ std::wstring MSKinectService::StringToWString(const std::string& s)
 void MSKinectService::initialize() 
 {
 	mysInstance = this;
-	
+
 	NuiSetDeviceStatusCallback( &MSKinectService::Nui_StatusProcThunk, mysInstance );
 	
 	int iSensorCount = 0;
@@ -122,10 +131,16 @@ void MSKinectService::initialize()
 
 	//omsg("MSKinectService: %1% Kinect(s) detected.", %iSensorCount );
 
+#ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
+	if (CLSID_ExpectedRecognizer != CLSID_SpInprocRecognizer)
+    {
+        omsg("This was compiled against an incompatible version of sapi.h.\nPlease ensure that Microsoft Speech SDK and other requirements are installed and then rebuild application.");
+        ofmsg("Missing requirements %1%", %(MB_OK | MB_ICONERROR));
+
+       // return;
+    }
 	CoInitializeEx(NULL, COINIT_MULTITHREADED);
-
-	InitializeKinect();
-
+#endif
 	/*
 	// Look at each Kinect sensor
     for (int i = 0; i < iSensorCount; ++i)
@@ -150,6 +165,7 @@ void MSKinectService::initialize()
 		}
     }
 	*/
+	InitializeKinect();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -168,7 +184,8 @@ void MSKinectService::poll()
 	}
 
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
-	ProcessSpeech();
+	if( speechRunning )
+		ProcessSpeech();
 #endif
 }
 
@@ -738,7 +755,6 @@ void MSKinectService::UpdateSkeletonTrackingFlag( DWORD flag, bool value )
 /// </returns>
 HRESULT MSKinectService::InitializeAudioStream()
 {
-	speechRunning = false;
     INuiAudioBeam*      pNuiAudioSource = NULL;
     IMediaObject*       pDMO = NULL;
     IPropertyStore*     pPropertyStore = NULL;
@@ -933,7 +949,22 @@ void MSKinectService::ProcessSpeech()
                     {
                         if ((pPhrase->pProperties != NULL) && (pPhrase->pProperties->pFirstChild != NULL))
                         {
+							const SPPHRASEPROPERTY* pSemanticTag = pPhrase->pProperties->pFirstChild;
 
+							LPCWSTR speechWString = pSemanticTag->pszValue;
+
+							// Convert from LPCWSTR to String
+							std::wstring wstr = speechWString; 
+							String speechString; 
+							speechString.resize( wstr.size() ); //make enough room in copy for the string 
+							std::copy(wstr.begin(),wstr.end(), speechString.begin()); //copy it
+
+							float speechStringConfidence = pSemanticTag->SREngineConfidence;
+
+							if( debugInfo )
+								ofmsg("MSKinect2Service: Speech recognized '%1%' confidence: %2%", %speechString %speechStringConfidence);
+
+							GenerateSpeechEvent( speechString, speechStringConfidence );
                         }
                         ::CoTaskMemFree(pPhrase);
                     }

@@ -375,6 +375,8 @@ endif(NOT ${OMICRON_USE_KINECT_FOR_WINDOWS} MATCHES "DISABLED")
 
 if(OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO)
 	if(WIN32)
+		target_link_libraries( omicron ${EXT_LIB_DIR}/sapi.lib)
+		configure_file(${EXT_LIB_DIR}/Microsoft.Speech.dll ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG} COPYONLY)
 		target_link_libraries( omicron Msdmo.lib )
 		target_link_libraries( omicron dmoguids.lib )
 		target_link_libraries( omicron amstrmid.lib )

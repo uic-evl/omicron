@@ -71,6 +71,11 @@ namespace omicron
         Event();
 
         void copyFrom(const Event& e);
+        //! Serializes this event to a streamable event data packet. Returns the
+        //! size of data to stream.
+        size_t serialize(omicronConnector::EventData* ed) const;
+        //! Deserializes from an event data packet
+        void deserialize(omicronConnector::EventData* ed);
 
         void reset(Type type, Service::ServiceType serviceType, uint sourceId = 0, unsigned short serviceId = 0, unsigned short userId = 0);
 
@@ -79,8 +84,15 @@ namespace omicron
 
         //! Type of the service that generated this event.
         Service::ServiceType getServiceType() const;
+
+        //! Used to mark events that have been processed.
         void setProcessed() const;
         bool isProcessed() const;
+
+        // ! Used to mark events that are sent to a single endpoint instead of 
+        //! being broadcast.
+        void setExclusive() const;
+        bool isExclusive() const;
 
         //! Get the event position 
         const Vector3f& getPosition() const;
@@ -187,6 +199,50 @@ namespace omicron
     };
 
     ///////////////////////////////////////////////////////////////////////////
+    inline
+    size_t Event::serialize(omicronConnector::EventData* ed) const
+    {
+        // Serialize event.
+        ed->timestamp = getTimestamp();
+        ed->sourceId = getSourceId();
+        ed->deviceTag = getDeviceTag();
+        ed->serviceType = getServiceType();
+        ed->type = getType();
+        ed->flags = getFlags();
+        ed->posx = getPosition().x();
+        ed->posy = getPosition().y();
+        ed->posz = getPosition().z();
+        ed->orx = getOrientation().x();
+        ed->ory = getOrientation().y();
+        ed->orz = getOrientation().z();
+        ed->orw = getOrientation().w();
+        ed->extraDataType = getExtraDataType();
+        ed->extraDataItems = getExtraDataItems();
+        ed->extraDataMask = getExtraDataMask();
+        memcpy(ed->extraData, getExtraDataBuffer(), getExtraDataSize());
+
+        // Message size = total event data size - number of unused extra data bytes
+        size_t freextrabytes = omicronConnector::EventData::ExtraDataSize - getExtraDataSize();
+        size_t msgsize = sizeof(*ed) - freextrabytes;
+
+        return msgsize;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    inline 
+    void Event::deserialize(omicronConnector::EventData* ed)
+    {
+        reset((Event::Type)ed->type,
+            (Service::ServiceType)ed->serviceType,
+            ed->sourceId,
+            ed->deviceTag);
+        setPosition(ed->posx, ed->posy, ed->posz);
+        setOrientation(ed->orw, ed->orx, ed->ory, ed->orz);
+        setFlags(ed->flags);
+        setExtraData((Event::ExtraDataType)ed->extraDataType, ed->extraDataItems, ed->extraDataMask, (void*)ed->extraData);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
     inline 
     Event::Flags Event::parseButtonName(const String& name)
     {
@@ -273,6 +329,14 @@ namespace omicron
     ///////////////////////////////////////////////////////////////////////////
     inline bool Event::isProcessed() const
     { return ((myFlags & Processed) == Processed); }
+
+    ///////////////////////////////////////////////////////////////////////////
+    inline void Event::setExclusive() const
+    { myFlags |= Exclusive; }
+
+    ///////////////////////////////////////////////////////////////////////////
+    inline bool Event::isExclusive() const
+    { return ((myFlags & Exclusive) == Exclusive); }
 
     ///////////////////////////////////////////////////////////////////////////
     inline const Vector3f& Event::getPosition() const

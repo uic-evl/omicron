@@ -235,7 +235,8 @@ namespace omicron
         reset((Event::Type)ed->type,
             (Service::ServiceType)ed->serviceType,
             ed->sourceId,
-            ed->deviceTag);
+            (ed->deviceTag & DTServiceIdMask) >> DTServiceIdOffset,
+            (ed->deviceTag & DTUserIdMask) >> DTUserIdOffset);
         setPosition(ed->posx, ed->posy, ed->posz);
         setOrientation(ed->orw, ed->orx, ed->ory, ed->orz);
         setFlags(ed->flags);

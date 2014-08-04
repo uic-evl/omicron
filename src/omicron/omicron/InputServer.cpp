@@ -611,8 +611,9 @@ SOCKET InputServer::startListening()
     // sent, resulting in the 'recv failed' error that is commented out.
     bool gotData = false;
     float timer = 0.0f;
-    float timeout = 500.0f; // milliseconds
-    time_t startTime = time (NULL);
+    int timeout = 1; // seconds
+    int startTime = time (NULL);
+	int timeoutTime = startTime + timeout;
 
     printf("OInputServer: Waiting for client handshake\n");
     do 
@@ -689,12 +690,13 @@ SOCKET InputServer::startListening()
         } 
         else if (iResult == 0)
         {
-            printf("OInputServer: Connection closing...\n");
+            printf("OInputServer: Closing client connection...\n");
+			break;
         }
         else 
         {
-            timer = time (NULL);
-            if( timer > startTime + timeout )
+			int curTime = time (NULL);
+            if( timeoutTime <= curTime )
             {
                 printf("OInputServer: Handshake timed out\n");
                 break;

@@ -275,9 +275,12 @@ namespace omicron
 
             //! INTERNAL: Used to mark events that have been processed
             Processed = 1 << 14,
+            //! INTERNAL: Used to mark events that are sent to a single endpoint
+            //! instead of being broadcast
+            Exclusive = 1 << 17,
 
             //! User flags should offset this value: 14 user flags available (USER to USER << 18)
-            User = 1 << 17	
+            User = 1 << 18
         };
 
         enum ExtraDataType

@@ -582,6 +582,11 @@ namespace omicronConnector
     //template<typename ListenerType>
     inline void OmicronConnectorClient::dispose() 
     {
+		char sendbuf[50];
+        sprintf(sendbuf, "data_off");
+        printf("NetService: Sending disconnect signal: '%s'\n", sendbuf);
+        iResult = send(ConnectSocket, sendbuf, (int) strlen(sendbuf), 0);
+
         // Close the socket when finished receiving datagrams
         printf("NetService: Finished receiving. Closing socket.\n");
         iResult = SOCKET_CLOSE(RecvSocket);

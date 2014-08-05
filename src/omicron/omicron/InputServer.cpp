@@ -59,9 +59,14 @@ private:
     bool legacyMode;
     bool connected;
 
+	const char* clientAddress;
+	int clientPort;
 public:
     NetClient( const char* address, int port, SOCKET clientSocket )
     {
+		clientAddress = address;
+		clientPort = port;
+
         legacyMode = false;
         connected = true;
 
@@ -80,6 +85,9 @@ public:
 
     NetClient( const char* address, int port, int legacy, SOCKET clientSocket )
     {
+		clientAddress = address;
+		clientPort = port;
+
         legacyMode = legacy;
         connected = true;
 
@@ -125,10 +133,10 @@ public:
             (const struct sockaddr*)&recvAddr,
             sizeof(recvAddr));
 
-        if( result == SOCKET_ERROR )
-        {
-            connected = false;
-        }
+        //if( result == SOCKET_ERROR )
+        //{
+        ///    connected = false;
+        //}
     }// SendMsg
 
     void setLegacy(bool value)
@@ -143,7 +151,26 @@ public:
 
     bool isConnected()
     {
-        return connected;
+        char recvbuf[DEFAULT_BUFLEN];
+		int iResult;
+		int recvbuflen = DEFAULT_BUFLEN;
+
+		iResult = recv(msgSocket, recvbuf, recvbuflen, 0);
+        if (iResult > 0)
+        {
+            //printf("Service: Bytes received: %d\n", iResult);
+            char* inMessage;
+            char* portCStr;
+            inMessage = new char[iResult];
+			
+
+			if( strcmp(inMessage, "data_off") == 1 )
+            {
+				//ofmsg("InputServer: Received disconnect from %1%:%2%", %clientAddress %clientPort);
+				connected = false;
+			}
+		}
+		return connected;
     }// isConnected
 };
 

@@ -743,8 +743,7 @@ void MSKinectService::ProcessSpeech()
 
 						float speechStringConfidence = pSemanticTag->SREngineConfidence;
 
-						if( debugInfo )
-							ofmsg("MSKinect2Service: Speech recognized '%1%' confidence: %2%", %speechString %speechStringConfidence);
+						ofmsg("MSKinect2Service: Speech recognized '%1%' confidence: %2%", %speechString %speechStringConfidence);
 
 						GenerateSpeechEvent( speechString, speechStringConfidence );
                     }
@@ -768,6 +767,7 @@ void MSKinectService::GenerateSpeechEvent( String speechString, float speechConf
 
 	evt->setPosition( speechConfidence, 0 );
 	evt->setExtraDataType(Event::ExtraDataString);
+
 	evt->setExtraDataString(speechString);
 
 	mysInstance->unlockEvents();

@@ -78,6 +78,8 @@ int main(int argc, char** argv)
 			
 			evt->setProcessed();
 		}
+		sm->unlockEvents();
+
 #ifdef WIN32
         Sleep(1);
 #else

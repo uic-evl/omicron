@@ -1,30 +1,39 @@
-/**************************************************************************************************
-* THE OMICRON PROJECT
- *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2014		Electronic Visualization Laboratory, University of Illinois at Chicago
+/******************************************************************************
+ * THE OMICRON SDK
+ *-----------------------------------------------------------------------------
+ * Copyright 2010-2014		Electronic Visualization Laboratory, 
+ *							University of Illinois at Chicago
  * Authors:										
- *  Alessandro Febretti		febret@gmail.com
  *  Arthur Nishimoto		anishimoto42@gmail.com
- *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2014, Electronic Visualization Laboratory, University of Illinois at Chicago
+ *  Alessandro Febretti		febret@gmail.com
+ *-----------------------------------------------------------------------------
+ * Copyright (c) 2010-2014, Electronic Visualization Laboratory,  
+ * University of Illinois at Chicago
  * All rights reserved.
- * Redistribution and use in source and binary forms, with or without modification, are permitted 
- * provided that the following conditions are met:
+ * Redistribution and use in source and binary forms, with or without modification, 
+ * are permitted provided that the following conditions are met:
  * 
- * Redistributions of source code must retain the above copyright notice, this list of conditions 
- * and the following disclaimer. Redistributions in binary form must reproduce the above copyright 
- * notice, this list of conditions and the following disclaimer in the documentation and/or other 
- * materials provided with the distribution. 
+ * Redistributions of source code must retain the above copyright notice, this 
+ * list of conditions and the following disclaimer. Redistributions in binary 
+ * form must reproduce the above copyright notice, this list of conditions and 
+ * the following disclaimer in the documentation and/or other materials provided 
+ * with the distribution. 
  * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR 
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
- * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR 
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE  GOODS OR SERVICES; LOSS OF 
- * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *************************************************************************************************/
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO THE 
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE 
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE  GOODS OR 
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *-----------------------------------------------------------------------------
+ * What's in this file:
+ *	The omicron input server. It can be used to stream event data to remote
+ *  clients using NetService or the omicronConnector client.
+ ******************************************************************************/
 #include "omicron/InputServer.h"
 #include "omicron/StringUtils.h"
 #include <vector>
@@ -144,11 +153,11 @@ public:
 // Creates an event packet from an Omicron event. Returns the buffer offset.
 char* InputServer::createOmicronEventPacket(const Event* evt)
 {
-	int offset = 0;
+    int offset = 0;
     
     OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getTimestamp()); 
     OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getSourceId()); 
-    OI_WRITEBUF(int, eventPacket, offset, evt->getServiceId()); 
+    OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getDeviceTag()); 
     OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getServiceType()); 
     OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getType()); 
     OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getFlags()); 
@@ -170,14 +179,14 @@ char* InputServer::createOmicronEventPacket(const Event* evt)
     }
     offset += evt->getExtraDataSize();
 
-	return eventPacket;
+    return eventPacket;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 //
 void InputServer::sendToClients(char* eventPacket)
 {
-	std::map<char*,NetClient*> activeClients;
+    std::map<char*,NetClient*> activeClients;
 
     std::map<char*,NetClient*>::iterator itr = netClients.begin();
     while( itr != netClients.end() )
@@ -222,7 +231,7 @@ void InputServer::handleEvent(const Event* evt)
     // If the event has been processed locally (i.e. by a filter event service)
     if(evt->isProcessed()) return;
 
-	timeb tb;
+    timeb tb;
     ftime( &tb );
     int timestamp = tb.millitm + (tb.time & 0xfffff) * 1000;
 
@@ -250,13 +259,13 @@ void InputServer::handleEvent(const Event* evt)
     if( showEventStream )
         printf("oinputserver: Event %d type: %d sent at pos %f %f\n", evt->getSourceId(), evt->getType(), evt->getPosition().x(), evt->getPosition().y() );
 
-	sendToClients(eventPacket);
+    sendToClients(eventPacket);
 }
     
 ///////////////////////////////////////////////////////////////////////////////
 bool InputServer::handleLegacyEvent(const Event& evt)
 {
-	char legacyPacket[DEFAULT_BUFLEN];
+    char legacyPacket[DEFAULT_BUFLEN];
 
     //itoa(evt.getServiceType(), eventPacket, 10); // Append input type
     sprintf(legacyPacket, "%d", evt.getServiceType());
@@ -602,8 +611,9 @@ SOCKET InputServer::startListening()
     // sent, resulting in the 'recv failed' error that is commented out.
     bool gotData = false;
     float timer = 0.0f;
-    float timeout = 500.0f; // milliseconds
-    time_t startTime = time (NULL);
+    int timeout = 1; // seconds
+    int startTime = time (NULL);
+	int timeoutTime = startTime + timeout;
 
     printf("OInputServer: Waiting for client handshake\n");
     do 
@@ -680,12 +690,13 @@ SOCKET InputServer::startListening()
         } 
         else if (iResult == 0)
         {
-            printf("OInputServer: Connection closing...\n");
+            printf("OInputServer: Closing client connection...\n");
+			break;
         }
         else 
         {
-            timer = time (NULL);
-            if( timer > startTime + timeout )
+			int curTime = time (NULL);
+            if( timeoutTime <= curTime )
             {
                 printf("OInputServer: Handshake timed out\n");
                 break;

@@ -159,12 +159,16 @@ private:
 	void UpdateRange( int mode );
 	void UpdateSkeletonTrackingFlag( DWORD flag, bool value );
 
+	// Conversion from String to LPCWSTR for grammar file
+	std::wstring StringToWString(const std::string& s);
+
 	// Kinect Speech
 	HRESULT                 InitializeAudioStream();
     HRESULT                 CreateSpeechRecognizer();
     HRESULT                 LoadSpeechGrammar();
 	HRESULT                 StartSpeechRecognition();
     void                    ProcessSpeech();
+	void					GenerateSpeechEvent( String, float );
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	inline void MSKinectService::setUpdateInterval(float value) 
@@ -224,7 +228,7 @@ private:
 	int caveSimulatorWandID;
 
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
-	static LPCWSTR          GrammarFileName;
+	String                  speechGrammerFilePath;
 
 	// Audio stream captured from Kinect.
     KinectAudioStream*      m_pKinectAudioStream;
@@ -243,6 +247,9 @@ private:
 
     // Event triggered when we detect speech recognition
     HANDLE                  m_hSpeechEvent;
+
+	bool speechRunning;
+	float confidenceThreshold;
 #endif
 };
 

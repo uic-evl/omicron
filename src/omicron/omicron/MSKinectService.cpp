@@ -27,11 +27,6 @@
 #include "omicron/MSKinectService.h"
 using namespace omicron;
 
-// Static initializers
-#ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
-LPCWSTR MSKinectService::GrammarFileName = L"S:/EVL/OmegaLib/omegalib/omegalib/external/omicron/data/kinectSpeech.grxml";
-#endif
-
 enum TRACKED_SKELETONS
 {
     SV_TRACKED_SKELETONS_DEFAULT = 0,
@@ -53,6 +48,14 @@ enum RANGE
     RANGE_NEAR,
 } RANGE;
 
+#define INITGUID
+#include <guiddef.h>
+
+// This is the class ID we expect for the Microsoft Speech recognizer.
+// Other values indicate that we're using a version of sapi.h that is
+// incompatible with this sample.
+DEFINE_GUID(CLSID_ExpectedRecognizer, 0x495648e7, 0xf7ab, 0x4267, 0x8e, 0x0f, 0xca, 0xfb, 0x7a, 0x33, 0xc1, 0x60);
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 MSKinectService::MSKinectService(){
 	m_pNuiSensor = NULL;
@@ -69,6 +72,7 @@ MSKinectService::MSKinectService(){
 	m_pSpeechContext = NULL;
 	m_pSpeechGrammar = NULL;
 	m_hSpeechEvent = NULL;
+	speechRunning = false;
 #endif
 }
 
@@ -94,15 +98,28 @@ void MSKinectService::setup(Setting& settings)
 	}
 
 	
-	//GrammarFileName = (LPCWSTR)Config::getStringValue("speechGrammerFileName", settings, "kinectSpeech.grxml").c_str();
+	speechGrammerFilePath = Config::getStringValue("speechGrammerFilePath", settings, "kinectSpeech.grxml");
 
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+std::wstring MSKinectService::StringToWString(const std::string& s)
+{
+    int len;
+    int slength = (int)s.length() + 1;
+    len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0); 
+    wchar_t* buf = new wchar_t[len];
+    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
+    std::wstring r(buf);
+    delete[] buf;
+    return r;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void MSKinectService::initialize() 
 {
 	mysInstance = this;
-	
+
 	NuiSetDeviceStatusCallback( &MSKinectService::Nui_StatusProcThunk, mysInstance );
 	
 	int iSensorCount = 0;
@@ -114,6 +131,17 @@ void MSKinectService::initialize()
 
 	//omsg("MSKinectService: %1% Kinect(s) detected.", %iSensorCount );
 
+#ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
+	if (CLSID_ExpectedRecognizer != CLSID_SpInprocRecognizer)
+    {
+        omsg("This was compiled against an incompatible version of sapi.h.\nPlease ensure that Microsoft Speech SDK and other requirements are installed and then rebuild application.");
+        ofmsg("Missing requirements %1%", %(MB_OK | MB_ICONERROR));
+
+       // return;
+    }
+	CoInitializeEx(NULL, COINIT_MULTITHREADED);
+#endif
+	/*
 	// Look at each Kinect sensor
     for (int i = 0; i < iSensorCount; ++i)
     {
@@ -136,6 +164,8 @@ void MSKinectService::initialize()
 			sensor->Release();
 		}
     }
+	*/
+	InitializeKinect();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -152,6 +182,11 @@ void MSKinectService::poll()
 			ProcessSkeleton(sensor);
 		}
 	}
+
+#ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
+	if( speechRunning )
+		ProcessSpeech();
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -168,7 +203,6 @@ void MSKinectService::dispose()
     {
         CloseHandle(m_hNextSkeletonEvent);
     }
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -267,7 +301,13 @@ HRESULT MSKinectService::InitializeKinect()
     }
     */
     //DWORD nuiFlags = NUI_INITIALIZE_FLAG_USES_DEPTH_AND_PLAYER_INDEX | NUI_INITIALIZE_FLAG_USES_SKELETON |  NUI_INITIALIZE_FLAG_USES_COLOR;
+#ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
+	DWORD nuiFlags =  NUI_INITIALIZE_FLAG_USES_SKELETON | NUI_INITIALIZE_FLAG_USES_AUDIO;
+
+	//
+#else
 	DWORD nuiFlags = NUI_INITIALIZE_FLAG_USES_SKELETON; // | NUI_INITIALIZE_FLAG_USES_AUDIO;
+#endif
 
     hr = m_pNuiSensor->NuiInitialize(nuiFlags);
     if ( E_NUI_SKELETAL_ENGINE_BUSY == hr )
@@ -372,6 +412,10 @@ HRESULT MSKinectService::InitializeKinect()
         printf("MSKinectService: Kinect %d could not start recognizing speech. \n", sensorID );
         return hr;
     }
+	else
+	{
+		speechRunning = true;
+	}
 #endif
     return hr;
 }
@@ -703,9 +747,6 @@ void MSKinectService::UpdateSkeletonTrackingFlag( DWORD flag, bool value )
 }
 
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Kinect Speech Recognition
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// <summary>
 /// Initialize Kinect audio stream object.
 /// </summary>
@@ -765,9 +806,6 @@ HRESULT MSKinectService::InitializeAudioStream()
 
                 if (SUCCEEDED(hr))
                 {
-					if (FAILED(::CoInitialize(NULL)))
-						return FALSE;
-
                     hr = CoCreateInstance(CLSID_SpStream, NULL, CLSCTX_INPROC_SERVER, __uuidof(ISpStream), (void**)&m_pSpeechStream);
 
                     if (SUCCEEDED(hr))
@@ -789,7 +827,6 @@ HRESULT MSKinectService::InitializeAudioStream()
     return hr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// <summary>
 /// Create speech recognizer that will read Kinect audio stream data.
 /// </summary>
@@ -811,6 +848,13 @@ HRESULT MSKinectService::CreateSpeechRecognizer()
         {
             m_pSpeechRecognizer->SetRecognizer(pEngineToken);
             hr = m_pSpeechRecognizer->CreateRecoContext(&m_pSpeechContext);
+
+            // For long recognition sessions (a few hours or more), it may be beneficial to turn off adaptation of the acoustic model. 
+            // This will prevent recognition accuracy from degrading over time.
+            //if (SUCCEEDED(hr))
+            //{
+            //    hr = m_pSpeechRecognizer->SetPropertyNum(L"AdaptationOn", 0);                
+            //}
         }
     }
 
@@ -819,7 +863,6 @@ HRESULT MSKinectService::CreateSpeechRecognizer()
     return hr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// <summary>
 /// Load speech recognition grammar into recognizer.
 /// </summary>
@@ -832,13 +875,17 @@ HRESULT MSKinectService::LoadSpeechGrammar()
 
     if (SUCCEEDED(hr))
     {
+		std::wstring wstr = StringToWString(speechGrammerFilePath);
+		LPCWSTR grammarStr = wstr.c_str();
+
+		ofmsg("MSKinectService: Loading grammar file '%1%'", %speechGrammerFilePath);
         // Populate recognition grammar from file
-		hr = m_pSpeechGrammar->LoadCmdFromFile(GrammarFileName, SPLO_STATIC);
+        hr = m_pSpeechGrammar->LoadCmdFromFile(grammarStr, SPLO_STATIC);
     }
+
     return hr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// <summary>
 /// Start recognizing speech asynchronously.
 /// </summary>
@@ -848,6 +895,7 @@ HRESULT MSKinectService::LoadSpeechGrammar()
 HRESULT MSKinectService::StartSpeechRecognition()
 {
     HRESULT hr = m_pKinectAudioStream->StartCapture();
+
 
     if (SUCCEEDED(hr))
     {
@@ -871,13 +919,13 @@ HRESULT MSKinectService::StartSpeechRecognition()
     return hr;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// <summary>
 /// Process recently triggered speech recognition events.
 /// </summary>
 void MSKinectService::ProcessSpeech()
 {
-    const float ConfidenceThreshold = 0.3f;
+	if(!speechRunning)
+		return;
 
     SPEVENT curEvent;
     ULONG fetched = 0;
@@ -901,12 +949,22 @@ void MSKinectService::ProcessSpeech()
                     {
                         if ((pPhrase->pProperties != NULL) && (pPhrase->pProperties->pFirstChild != NULL))
                         {
-                            const SPPHRASEPROPERTY* pSemanticTag = pPhrase->pProperties->pFirstChild;
-                            if (pSemanticTag->SREngineConfidence > ConfidenceThreshold)
-                            {
-                                //TurtleAction action = MapSpeechTagToAction(pSemanticTag->pszValue);
-                                //m_pTurtleController->DoAction(action);
-                            }
+							const SPPHRASEPROPERTY* pSemanticTag = pPhrase->pProperties->pFirstChild;
+
+							LPCWSTR speechWString = pSemanticTag->pszValue;
+
+							// Convert from LPCWSTR to String
+							std::wstring wstr = speechWString; 
+							String speechString; 
+							speechString.resize( wstr.size() ); //make enough room in copy for the string 
+							std::copy(wstr.begin(),wstr.end(), speechString.begin()); //copy it
+
+							float speechStringConfidence = pSemanticTag->SREngineConfidence;
+
+							if( debugInfo )
+								ofmsg("MSKinect2Service: Speech recognized '%1%' confidence: %2%", %speechString %speechStringConfidence);
+
+							GenerateSpeechEvent( speechString, speechStringConfidence );
                         }
                         ::CoTaskMemFree(pPhrase);
                     }
@@ -920,4 +978,16 @@ void MSKinectService::ProcessSpeech()
     return;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void MSKinectService::GenerateSpeechEvent( String speechString, float speechConfidence )
+{
+	Event* evt = mysInstance->writeHead();
+	evt->reset(Event::Update, Service::Speech, 0, 0);
+
+	evt->setPosition( speechConfidence, 0 );
+	evt->setExtraDataType(Event::ExtraDataString);
+	evt->setExtraDataString(speechString);
+
+	mysInstance->unlockEvents();
+}
 #endif

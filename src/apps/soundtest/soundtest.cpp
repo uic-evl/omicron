@@ -166,9 +166,9 @@ public:
 		float leftRightAnalog;
 		float upDownAnalog;
 		float zeroTolerence = 0.008f;
-		float xPos;
-		float yPos;
-		float zPos;
+		//float xPos;
+		//float yPos;
+		//float zPos;
 
 		switch(evt.getServiceType())
 		{
@@ -314,7 +314,7 @@ public:
 		else if( currentState == 8 && curTime >= nextTime)
 		{
 			printf("[%d%] : Stereo sound - fade(0.8,5) - fade to volume 0.8 over 5 seconds\n",currentState);
-			si_stereoTest->fade(0.8,5);
+			si_stereoTest->fade(0.8f,5);
 			//si_stereoTest->setVolume(0.8);
 
 			currentState++;
@@ -436,7 +436,7 @@ public:
 		else if( currentState == 108 && curTime >= nextTime)
 		{
 			printf("[%d%] : Mono sound - fade(0.8,1) - fade to volume 0.8 over 1 second\n",currentState);
-			si_monoTest->fade(0.8,1);
+			si_monoTest->fade(0.8f,1);
 
 			currentState++;
 			nextTime += 5;
@@ -460,7 +460,7 @@ public:
 		else if( currentState == 111 && curTime >= nextTime)
 		{
 			printf("[%d%] : Mono sound - setReverb( 0.7, 0.7 )\n",currentState);
-			si_monoTest->setReverb( 0.7, 0.7 );
+			si_monoTest->setReverb( 0.7f, 0.7f );
 
 			currentState++;
 			nextTime += 5;
@@ -468,7 +468,7 @@ public:
 		else if( currentState == 112 && curTime >= nextTime)
 		{
 			printf("[%d%] : Mono sound - setReverb( 0.0, 0.0 ) - normal\n",currentState);
-			si_monoTest->setReverb( 0.0, 0.0 );
+			si_monoTest->setReverb( 0.0f, 0.0f );
 
 			currentState++;
 			nextTime += 5;
@@ -540,7 +540,7 @@ public:
 		{
 			si_monoTest->setWidth(1);
 			
-			azimuth += 0.001;
+			azimuth += 0.001f;
 			float radius = 2;
 			float inclination = 0;
 			

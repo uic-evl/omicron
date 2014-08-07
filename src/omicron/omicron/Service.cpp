@@ -96,8 +96,10 @@ void Service::unlockEvents()
 Event* Service::writeHead()
 { 
 	Event* evt = myManager->writeHead();
-	// Before returning the event, set its service Id.
-	evt->myServiceId = myId;
+	
+    // By default, set the device tag to the service id. Service code can then
+    // change this to a custom service id and/or attach a user id using event::reset.
+	evt->myDeviceTag = myId;
 	return evt;
 }
 

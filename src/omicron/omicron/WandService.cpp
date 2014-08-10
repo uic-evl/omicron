@@ -39,16 +39,18 @@
 
 using namespace omicron;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 WandService::WandService():
     myDebug(false),
     myRaySourceId(-1),
     myControllerService(NULL),
-    myControllerSourceId(0)
+    myControllerSourceId(0),
+    myPointerXAxisId(2),
+    myPointerYAxisId(3)
 {
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 void WandService::setup(Setting& settings)
 {
     String inputType;
@@ -66,15 +68,25 @@ void WandService::setup(Setting& settings)
     
     myControllerSourceId = Config::getIntValue("controllerSourceId", settings);
     ofmsg("WandService::setup RayID: %1%  ControllerID %2%", %myRaySourceId %myControllerSourceId);
+
+    // If we have a ray pointer mapper section, use it to setup a ray to 
+    // point mapper.
+    if(settings.exists("pointer"))
+    {
+        Setting& sptr = settings["pointer"];
+        myPointerXAxisId = Config::getIntValue("xAxisId", sptr, myPointerXAxisId);
+        myPointerYAxisId = Config::getIntValue("xAxisId", sptr, myPointerYAxisId);
+        myRayPointMapper = RayPointMapper::create(sptr);
+    }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 void WandService::initialize()
 {
     setPollPriority(Service::PollLast);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 void WandService::poll()
 {
     lockEvents();
@@ -119,13 +131,21 @@ void WandService::poll()
             evt->setFlags(myFlags);
             evt->setExtraData( myExtraDataType, myExtraDataItems, myExtraDataValidMask, myExtraData );
             
+            // If we have a ray to point mapper, save 2D point data in the event.
+            if(myRayPointMapper != NULL)
+            {
+                Ray r(myWandPosition, myWandOrientation * -Vector3f::UnitZ());
+                Vector2f pt = myRayPointMapper->getPointFromRay(r);
+                evt->setExtraDataFloat(myPointerXAxisId, pt[0]);
+                evt->setExtraDataFloat(myPointerYAxisId, pt[1]);
+            }
         }
     }
 
     unlockEvents();
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 void WandService::dispose()
 {
 }

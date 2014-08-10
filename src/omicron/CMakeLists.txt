@@ -27,6 +27,7 @@ SET( srcs
 		omicron/TouchGestureManager.cpp
 		omicron/MocapGestureManager.cpp
 		omicron/GestureService.cpp
+		omicron/RayPointMapper.cpp
 		
 		#omega::xml
 		omicron/xml/tinystr.cpp

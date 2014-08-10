@@ -38,45 +38,50 @@
 #include "osystem.h"
 #include "Timer.h"
 #include "Service.h"
+#include "RayPointMapper.h"
 
 namespace omicron
 {
-	///////////////////////////////////////////////////////////////////////////////////////////////
-	class WandService: public Service
-	{
-	public:
-		// Allocator function
-		static WandService* New() { return new WandService(); }
+    ///////////////////////////////////////////////////////////////////////////
+    class WandService: public Service
+    {
+    public:
+        // Allocator function
+        static WandService* New() { return new WandService(); }
 
-	public:
-		WandService();
+    public:
+        WandService();
 
-		virtual void setup(Setting& settings);
-		virtual void initialize();
-		virtual void poll();
-		virtual void dispose();
+        virtual void setup(Setting& settings);
+        virtual void initialize();
+        virtual void poll();
+        virtual void dispose();
 
-	private:
-		float myUpdateInterval;
-		Timer myUpdateTimer;
+    private:
+        float myUpdateInterval;
+        Timer myUpdateTimer;
 
-		int myRaySourceId;
+        int myRaySourceId;
 
-		Service* myControllerService;
-		int myControllerSourceId;
+        Service* myControllerService;
+        int myControllerSourceId;
 
-		Vector3f myWandPosition;
-		Quaternion myWandOrientation;
+        Vector3f myWandPosition;
+        Quaternion myWandOrientation;
         unsigned short myWandUserId;
 
-		enum EventBase::Type myType;
-		uint myFlags;
-		EventBase::ExtraDataType myExtraDataType;
-		int myExtraDataItems;
-		int myExtraDataValidMask;
+        enum EventBase::Type myType;
+        uint myFlags;
+        EventBase::ExtraDataType myExtraDataType;
+        int myExtraDataItems;
+        int myExtraDataValidMask;
 
-		bool myDebug;
-	};
+        bool myDebug;
+
+        Ref<RayPointMapper> myRayPointMapper;
+        int myPointerXAxisId;
+        int myPointerYAxisId;
+    };
 
 }; // namespace omega
 

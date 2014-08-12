@@ -258,6 +258,9 @@ namespace omicron
         if(name == "ButtonRight") return ButtonRight;
         if(name == "ButtonUp") return ButtonUp;
         if(name == "ButtonDown") return ButtonDown;
+        if(name == "Ctrl") return Ctrl;
+        if(name == "Alt") return Alt;
+        if(name == "Shift") return Shift;
         return (Event::Flags)0;
     }
 

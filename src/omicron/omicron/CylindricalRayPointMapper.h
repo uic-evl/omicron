@@ -34,7 +34,7 @@
  ******************************************************************************/
 #ifndef CYLINDRICAL_RAY_POINT_MAPPER
 #define CYLINDRICAL_RAY_POINT_MAPPER
-#include "RayPointMapper.h"
+#include "omicron/RayPointMapper.h"
 #include "omicron/Config.h"
 
 namespace omicron

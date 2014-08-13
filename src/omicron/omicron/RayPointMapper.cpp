@@ -35,7 +35,7 @@
 #include "omicron/Config.h"
 #include "omicron/StringUtils.h"
 
-#include "RayPointMapper.h"
+#include "omicron/RayPointMapper.h"
 #include "CylindricalRayPointMapper.h"
 
 using namespace omicron;

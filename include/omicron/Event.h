@@ -66,6 +66,7 @@ namespace omicron
         static const int ExtraDataSize = 1024;
         static const int MaxExtraDataItems = 32;
         static Event::Flags parseButtonName(const String& name);
+        static int parseJointName(const String& name);
 
     public:
         Event();
@@ -266,6 +267,19 @@ namespace omicron
         if(name == "Alt") return Alt;
         if(name == "Shift") return Shift;
         return (Event::Flags)0;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    inline 
+    int Event::parseJointName(const String& name)
+    {
+        if(name == "head") return OMICRON_SKEL_HEAD;
+        if(name == "torso") return OMICRON_SKEL_TORSO;
+        if(name == "leftHand") return OMICRON_SKEL_LEFT_HAND;
+        if(name == "rightHand") return OMICRON_SKEL_RIGHT_HAND;
+        if(name == "leftFoot") return OMICRON_SKEL_LEFT_FOOT;
+        if(name == "rightFoot") return OMICRON_SKEL_RIGHT_FOOT;
+        return -1;
     }
 
     ///////////////////////////////////////////////////////////////////////////

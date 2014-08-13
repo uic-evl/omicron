@@ -58,7 +58,7 @@ public:
     virtual void poll();
     virtual void dispose();
 
-    void generateEvent(vrpn_TRACKERCB, int, unsigned short userId);
+    void generateEvent(vrpn_TRACKERCB, int, unsigned short userId, int jointId);
 
     //! Sets the data update interval, in seconds. This is the interval at which this service will generate events
     //! If set to zero, the service will generate events as fast as possible.
@@ -77,6 +77,7 @@ private:
         const char* object_name;
         int trackableId;
         unsigned short userId;
+        int jointId;
     };
 
     Vector<TrackerInfo> trackerNames; // Vector of the TrackerInfo struct
@@ -91,6 +92,7 @@ struct VRPNStruct
     const char* object_name;
     int object_id;
     unsigned short userId;
+    int jointId;
     VRPNService* vrnpService;
 };
 

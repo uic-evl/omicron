@@ -58,10 +58,10 @@ namespace omicron
         {
             myRadius = Config::getFloatValue("radius", s, myRadius);
 
-            myDoorWidth = Config::getFloatValue("radius", s, 1.0f);
+            myDoorWidth = Config::getFloatValue("doorWidth", s, 1.0f);
             myDoorWidth *= Math::DegToRad;
 
-            myXBias = Config::getFloatValue("radius", s, myXBias);
+            myXBias = Config::getFloatValue("xBias", s, myXBias);
             myMinY = Config::getFloatValue("minY", s, myMinY);
             myMaxY = Config::getFloatValue("maxY", s, myMaxY);
         }
@@ -114,6 +114,11 @@ namespace omicron
                 x += myXBias;
                 y -= myMinY;
                 y /= (myMaxY - myMinY);
+				
+				if(x < 0) x = 0;
+				if(x > 1) x = 1;
+				if(y < 0) y = 0;
+				if(y > 1) y = 1; 
 
                 return Vector2f(x, y);
             }

@@ -106,7 +106,7 @@ namespace omicron
                 float y = oy*t + y0;
                 float z = oz*t + z0;
 
-                float angle = Math::atan2(x, y);
+                float angle = Math::atan2(x, z);
                 if(angle < 0) angle += Math::TwoPi;
                 angle = Math::TwoPi - angle;
                 angle -= myDoorWidth / 2;
@@ -114,13 +114,13 @@ namespace omicron
                 x += myXBias;
                 y -= myMinY;
                 y /= (myMaxY - myMinY);
-				
-				if(x < 0) x = 0;
-				if(x > 1) x = 1;
-				if(y < 0) y = 0;
-				if(y > 1) y = 1; 
+                
+                if(x < 0) x = 0;
+                if(x > 1) x = 1;
+                if(y < 0) y = 0;
+                if(y > 1) y = 1; 
 
-                return Vector2f(x, y);
+                return Vector2f(x, (1.0f - y));
             }
 
             return InvalidValue;

@@ -30,59 +30,30 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *-----------------------------------------------------------------------------
  * What's in this file:
- *  A service merges mocap and gamepad data to generate 6DOF wand events.
+ *  The interface mappers that convert 3D ray data into a 2D point
  ******************************************************************************/
-#ifndef __WAND_SERVICE_H__
-#define __WAND_SERVICE_H__
+#include "omicron/Config.h"
+#include "omicron/StringUtils.h"
 
-#include "osystem.h"
-#include "Timer.h"
-#include "Service.h"
-#include "RayPointMapper.h"
+#include "omicron/RayPointMapper.h"
+#include "CylindricalRayPointMapper.h"
 
-namespace omicron
+using namespace omicron;
+
+///////////////////////////////////////////////////////////////////////////////
+RayPointMapper* RayPointMapper::create(const Setting& s)
 {
-    ///////////////////////////////////////////////////////////////////////////
-    class WandService: public Service
+    RayPointMapper* rpm = NULL;
+    String type = Config::getStringValue("type", s, "");
+    StringUtils::toLowerCase(type);
+    if(type == "cylindrical")
     {
-    public:
-        // Allocator function
-        static WandService* New() { return new WandService(); }
-
-    public:
-        WandService();
-
-        virtual void setup(Setting& settings);
-        virtual void initialize();
-        virtual void poll();
-        virtual void dispose();
-
-    private:
-        float myUpdateInterval;
-        Timer myUpdateTimer;
-
-        int myRaySourceId;
-
-        Service* myControllerService;
-        int myControllerSourceId;
-
-        Vector3f myWandPosition;
-        Quaternion myWandOrientation;
-        unsigned short myWandUserId;
-
-        enum EventBase::Type myType;
-        uint myFlags;
-        EventBase::ExtraDataType myExtraDataType;
-        int myExtraDataItems;
-        int myExtraDataValidMask;
-
-        bool myDebug;
-
-        Ref<RayPointMapper> myRayPointMapper;
-        int myPointerXAxisId;
-        int myPointerYAxisId;
-    };
-
-}; // namespace omega
-
-#endif
+        rpm = new CylindricalRayPointMapper();
+        rpm->setup(s);
+    }
+    else
+    {
+        ofwarn("RayPointMapper::create: unknown ray point mapper type '%1%'", %type);
+    }
+    return rpm;
+}

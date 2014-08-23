@@ -66,6 +66,7 @@ namespace omicron
         static const int ExtraDataSize = 1024;
         static const int MaxExtraDataItems = 32;
         static Event::Flags parseButtonName(const String& name);
+        static int parseJointName(const String& name);
 
     public:
         Event();
@@ -78,6 +79,10 @@ namespace omicron
         void deserialize(omicronConnector::EventData* ed);
 
         void reset(Type type, Service::ServiceType serviceType, uint sourceId = 0, unsigned short serviceId = 0, unsigned short userId = 0);
+        //! Only resets the event sourc eid, keeping the rest of the event data intact.
+        //! Useful when dynamically re-routing events (i.e. to transparently re-associate 
+        //! head tracking sources to applications)
+        void resetSourceId(uint newSourceId);
 
         //! id of the source of this event. Input services associate unique ids to each of their event sources.
         unsigned int getSourceId() const;
@@ -258,7 +263,23 @@ namespace omicron
         if(name == "ButtonRight") return ButtonRight;
         if(name == "ButtonUp") return ButtonUp;
         if(name == "ButtonDown") return ButtonDown;
+        if(name == "Ctrl") return Ctrl;
+        if(name == "Alt") return Alt;
+        if(name == "Shift") return Shift;
         return (Event::Flags)0;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    inline 
+    int Event::parseJointName(const String& name)
+    {
+        if(name == "head") return OMICRON_SKEL_HEAD;
+        if(name == "torso") return OMICRON_SKEL_TORSO;
+        if(name == "leftHand") return OMICRON_SKEL_LEFT_HAND;
+        if(name == "rightHand") return OMICRON_SKEL_RIGHT_HAND;
+        if(name == "leftFoot") return OMICRON_SKEL_LEFT_FOOT;
+        if(name == "rightFoot") return OMICRON_SKEL_RIGHT_FOOT;
+        return -1;
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -285,6 +306,13 @@ namespace omicron
         ftime( &tb );
         int curTime = tb.millitm + (tb.time & 0xfffff) * 1000; // Millisecond timer
         myTimestamp = curTime;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    inline 
+    void Event::resetSourceId(uint newSourceId)
+    {
+        mySourceId = newSourceId;
     }
 
     ///////////////////////////////////////////////////////////////////////////

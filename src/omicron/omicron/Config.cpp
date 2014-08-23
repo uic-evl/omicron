@@ -1,36 +1,45 @@
-/**************************************************************************************************
-* THE OMICRON PROJECT
- *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2012		Electronic Visualization Laboratory, University of Illinois at Chicago
+/******************************************************************************
+ * THE OMICRON PROJECT
+ *-----------------------------------------------------------------------------
+ * Copyright 2010-2014		Electronic Visualization Laboratory, 
+ *							University of Illinois at Chicago
  * Authors:										
  *  Alessandro Febretti		febret@gmail.com
- *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2011, Electronic Visualization Laboratory, University of Illinois at Chicago
+ *-----------------------------------------------------------------------------
+ * Copyright (c) 2010-2014, Electronic Visualization Laboratory,  
+ * University of Illinois at Chicago
  * All rights reserved.
- * Redistribution and use in source and binary forms, with or without modification, are permitted 
- * provided that the following conditions are met:
+ * Redistribution and use in source and binary forms, with or without modification, 
+ * are permitted provided that the following conditions are met:
  * 
- * Redistributions of source code must retain the above copyright notice, this list of conditions 
- * and the following disclaimer. Redistributions in binary form must reproduce the above copyright 
- * notice, this list of conditions and the following disclaimer in the documentation and/or other 
- * materials provided with the distribution. 
+ * Redistributions of source code must retain the above copyright notice, this 
+ * list of conditions and the following disclaimer. Redistributions in binary 
+ * form must reproduce the above copyright notice, this list of conditions and 
+ * the following disclaimer in the documentation and/or other materials provided 
+ * with the distribution. 
  * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR 
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
- * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR 
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE  GOODS OR SERVICES; LOSS OF 
- * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *************************************************************************************************/
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO THE 
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE 
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE  GOODS OR 
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *-----------------------------------------------------------------------------
+ * What's in this file:
+ *  A class used to read options from a configuration file using the libconfig.
+ *  library.
+ ******************************************************************************/
 #include "omicron/Config.h"
 #include "omicron/DataManager.h"
 #include "omicron/StringUtils.h"
 
 using namespace omicron;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 String Config::getTypeName(Setting::Type type)
 {
 	switch(type)
@@ -48,7 +57,7 @@ String Config::getTypeName(Setting::Type type)
 	return "UNKNOWN";
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 Config::Config(const String& filename): 
 	myCfgFile(NULL), 
 	myCfgFilename(filename),
@@ -56,7 +65,7 @@ Config::Config(const String& filename):
 {
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 Config::~Config()
 {
 	if(myCfgFile != NULL) 
@@ -66,7 +75,7 @@ Config::~Config()
 	}
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 bool Config::load()
 {
 	if(!myIsLoaded)
@@ -124,25 +133,25 @@ bool Config::load()
 	return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 Setting& Config::getRootSetting()
 {
 	return myCfgFile->getRoot();
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 bool Config::exists(const String& path)
 {
 	return myCfgFile->exists(path);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 Setting& Config::lookup(const String& path)
 {
 	return myCfgFile->lookup(path);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 bool Config::getBoolValue(const String& name, bool defaultValue)
 {
 	if(!exists(name)) return defaultValue;
@@ -155,7 +164,7 @@ bool Config::getBoolValue(const String& name, bool defaultValue)
 	return (bool)s;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 bool Config::getBoolValue(const String& name, const Setting& s, bool defaultValue)
 {
 	if(!s.exists(name)) return defaultValue;
@@ -168,7 +177,7 @@ bool Config::getBoolValue(const String& name, const Setting& s, bool defaultValu
 	return (bool)sv;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 float Config::getFloatValue(const String& name, const Setting& s, float defaultValue)
 {
 	if(!s.exists(name)) return defaultValue;
@@ -182,7 +191,7 @@ float Config::getFloatValue(const String& name, const Setting& s, float defaultV
 	return (float)sv;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 float Config::getFloatValue(int index, const Setting& s, float defaultValue)
 {
 	if(s.getLength() <= index) return defaultValue;
@@ -196,7 +205,7 @@ float Config::getFloatValue(int index, const Setting& s, float defaultValue)
 	return (float)sv;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 int Config::getIntValue(const String& name, const Setting& s, int defaultValue)
 {
 	if(!s.exists(name)) return defaultValue;
@@ -210,7 +219,7 @@ int Config::getIntValue(const String& name, const Setting& s, int defaultValue)
 	return (int)sv;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 int Config::getIntValue(int index, const Setting& s, int defaultValue)
 {
 	if(s.getLength() <= index) return defaultValue;
@@ -224,7 +233,7 @@ int Config::getIntValue(int index, const Setting& s, int defaultValue)
 	return (int)sv;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 String Config::getStringValue(const String& name, const Setting& s, const String& defaultValue)
 {
 	if(!s.exists(name)) return defaultValue;
@@ -237,7 +246,7 @@ String Config::getStringValue(const String& name, const Setting& s, const String
 	return String((const char*)sv);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 Vector4f Config::getVector4fValue(const String& name, const Setting& s, const Vector4f& defaultValue)
 {
 	if(!s.exists(name)) return defaultValue;
@@ -250,7 +259,7 @@ Vector4f Config::getVector4fValue(const String& name, const Setting& s, const Ve
 	return value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 Vector3f Config::getVector3fValue(const String& name, const Setting& s, const Vector3f& defaultValue)
 {
 	if(!s.exists(name)) return defaultValue;
@@ -262,7 +271,7 @@ Vector3f Config::getVector3fValue(const String& name, const Setting& s, const Ve
 	return value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 Vector2f Config::getVector2fValue(const String& name, const Setting& s, const Vector2f& defaultValue)
 {
 	if(!s.exists(name)) return defaultValue;
@@ -273,7 +282,7 @@ Vector2f Config::getVector2fValue(const String& name, const Setting& s, const Ve
 	return value;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 Vector2i Config::getVector2iValue(const String& name, const Setting& s, const Vector2i& defaultValue)
 {
 	if(!s.exists(name)) return defaultValue;

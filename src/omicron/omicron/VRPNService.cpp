@@ -55,7 +55,7 @@ void VRPN_CALLBACK handle_tracker(void *userdata, const vrpn_TRACKERCB t)
     VRPNStruct* vs = ((VRPNStruct*)userdata);
     VRPNService* vrpnService = vs->vrnpService;
 
-    vrpnService->generateEvent(t, vs->object_id, vs->userId);
+    vrpnService->generateEvent(t, vs->object_id, vs->userId, vs->jointId);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -88,6 +88,16 @@ void VRPNService::setup(Setting& settings)
             else
             {
                 trackerInfo.userId = 0;
+            }
+
+            if(str.exists("jointId"))
+            {
+                String jointName = (const char*)str["jointId"];
+                trackerInfo.jointId = Event::parseJointName(jointName);
+            }
+            else
+            {
+                trackerInfo.jointId = -1;
             }
 
             trackerInfo.trackableId = str["trackableID"];
@@ -130,6 +140,7 @@ void VRPNService::initialize()
         vrpnData->object_name = t.object_name;
         vrpnData->object_id = t.trackableId;
         vrpnData->userId = t.userId;
+        vrpnData->jointId = t.jointId;
         vrpnData->vrnpService = this;
 
         // Set up the tracker callback handler
@@ -166,7 +177,7 @@ void VRPNService::dispose()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void VRPNService::generateEvent(vrpn_TRACKERCB t, int id, unsigned short userId) 
+void VRPNService::generateEvent(vrpn_TRACKERCB t, int id, unsigned short userId, int jointId) 
 {
      //static float lastt;
      //float curt = (float)((double)clock() / CLOCKS_PER_SEC);
@@ -180,6 +191,12 @@ void VRPNService::generateEvent(vrpn_TRACKERCB t, int id, unsigned short userId)
         // //double euler[3];
         // //q_to_euler(euler, t.quat);
          evt->setOrientation(t.quat[3], t.quat[0], t.quat[1], t.quat[2]);
+
+         if(jointId != -1)
+         {
+             evt->setExtraDataInt(0, jointId);
+         }
+
          mysInstance->unlockEvents();
          //lastt = curt;
      //}

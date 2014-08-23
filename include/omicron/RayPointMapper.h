@@ -30,59 +30,24 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *-----------------------------------------------------------------------------
  * What's in this file:
- *  A service merges mocap and gamepad data to generate 6DOF wand events.
+ *  The interface mappers that convert 3D ray data into a 2D point
  ******************************************************************************/
-#ifndef __WAND_SERVICE_H__
-#define __WAND_SERVICE_H__
-
-#include "osystem.h"
-#include "Timer.h"
-#include "Service.h"
-#include "RayPointMapper.h"
+#ifndef RAY_POINT_MAPPER
+#define RAY_POINT_MAPPER
+#include "omicron/otypes.h"
 
 namespace omicron
 {
-    ///////////////////////////////////////////////////////////////////////////
-    class WandService: public Service
+    class RayPointMapper: public ReferenceType
     {
     public:
-        // Allocator function
-        static WandService* New() { return new WandService(); }
-
-    public:
-        WandService();
-
-        virtual void setup(Setting& settings);
-        virtual void initialize();
-        virtual void poll();
-        virtual void dispose();
-
-    private:
-        float myUpdateInterval;
-        Timer myUpdateTimer;
-
-        int myRaySourceId;
-
-        Service* myControllerService;
-        int myControllerSourceId;
-
-        Vector3f myWandPosition;
-        Quaternion myWandOrientation;
-        unsigned short myWandUserId;
-
-        enum EventBase::Type myType;
-        uint myFlags;
-        EventBase::ExtraDataType myExtraDataType;
-        int myExtraDataItems;
-        int myExtraDataValidMask;
-
-        bool myDebug;
-
-        Ref<RayPointMapper> myRayPointMapper;
-        int myPointerXAxisId;
-        int myPointerYAxisId;
+        //! Creates a ray to point mapper based on the specified settings.
+        //! @return a specialization based on the passed settings, or NULL
+        //! if settings are invalid.
+        static RayPointMapper* create(const Setting& s);
+        
+        virtual void setup(const Setting& s) {}
+        virtual Vector2f getPointFromRay(const Ray& ray) = 0;
     };
-
-}; // namespace omega
-
+};
 #endif

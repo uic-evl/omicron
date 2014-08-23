@@ -136,7 +136,7 @@ void SAGEInputServer::connectToSage(){
 		closesocket(sock);  
 		sageConnected = false;
 
-		printf("\nTrying to reconnect to sage on %s... failed, socket error code: %d", sageHost, errno);
+		printf("\nTrying to reconnect to sage on %s:%d... failed, socket error code: %d", sageHost, DIM_PORT, errno);
 		Sleep(1000);
 
 		// recreate the socket...

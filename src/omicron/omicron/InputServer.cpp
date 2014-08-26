@@ -123,22 +123,6 @@ public:
             sizeof(recvAddr));
     }// SendEvent
 
-    void sendMsg(char* eventPacket, int length)
-    {
-        // Ping the client to see if still active
-        int result = sendto(msgSocket, 
-            eventPacket, 
-            length, 
-            0,
-            (const struct sockaddr*)&recvAddr,
-            sizeof(recvAddr));
-
-        //if( result == SOCKET_ERROR )
-        //{
-        ///    connected = false;
-        //}
-    }// SendMsg
-
     void setLegacy(bool value)
     {
         legacyMode = value;
@@ -166,7 +150,7 @@ public:
 
 			if( strcmp(inMessage, "data_off") == 1 )
             {
-				//ofmsg("InputServer: Received disconnect from %1%:%2%", %clientAddress %clientPort);
+				ofmsg("InputServer: Received disconnect from %1%:%2%", %clientAddress %clientPort);
 				connected = false;
 			}
 		}
@@ -213,42 +197,21 @@ char* InputServer::createOmicronEventPacket(const Event* evt)
 //
 void InputServer::sendToClients(char* eventPacket)
 {
-    std::map<char*,NetClient*> activeClients;
-
     std::map<char*,NetClient*>::iterator itr = netClients.begin();
     while( itr != netClients.end() )
     {
         NetClient* client = itr->second;
-            
+
         if( client->isLegacy() )
         {
             //client->sendEvent(legacyPacket, 512);
         }
         else
         {
-            // Send an empty message to check if the client is still here.
-            //client->sendMsg("",1);
             client->sendEvent(eventPacket, DEFAULT_BUFLEN);
-        }
-            
-        if( checkForDisconnectedClients )
-        {
-            // If client is still connected add to active list
-            if( client->isConnected() )
-            {
-                activeClients[itr->first] = client;
-            }
-            else // Client disconnected, remove from list
-            {
-                ofmsg("OInputServer: Client '%1%' Disconnected.", %itr->first);
-                delete client;
-            }
         }
         itr++;
     }
-
-    if( checkForDisconnectedClients )
-        netClients = activeClients;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -509,7 +472,7 @@ void InputServer::startConnection(Config* cfg)
     Setting& sCfg = cfg->lookup("config");
     serverPort = strdup(Config::getStringValue("serverPort", sCfg, "27000").c_str());
 
-    checkForDisconnectedClients = Config::getBoolValue("checkForDisconnectedClients", sCfg, false );
+    checkForDisconnectedClients = Config::getBoolValue("checkForDisconnectedClients", sCfg, true );
     showEventStream = Config::getBoolValue("showEventStream", sCfg, false );
     showStreamSpeed = Config::getBoolValue("showStreamSpeed", sCfg, false );
 
@@ -738,6 +701,28 @@ SOCKET InputServer::startListening()
 ///////////////////////////////////////////////////////////////////////////////
 void InputServer::loop()
 {
+	if( checkForDisconnectedClients )
+	{
+		std::map<char*,NetClient*> activeClients;
+		activeClients.clear();
+
+		std::map<char*,NetClient*>::iterator itr = netClients.begin();
+		while( itr != netClients.end() )
+		{
+			NetClient* client = itr->second;
+			if( client->isConnected() )
+			{
+				activeClients[itr->first] = client;
+			}
+			else // Client disconnected, remove from list
+			{
+				ofmsg("OInputServer: Client '%1%' Disconnected.", %itr->first);
+				delete client;
+			}
+			itr++;
+		}
+		netClients = activeClients;
+	}
 #ifdef OMICRON_USE_VRPN
     // VRPN connection
     connection->mainloop();

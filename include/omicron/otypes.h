@@ -98,7 +98,7 @@ namespace omicron
 	typedef unsigned int uint;
 	#endif
 	typedef unsigned long long uint64;
-	typedef long long int64;
+	typedef unsigned long long int64;
 	typedef std::string String;
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
@@ -222,6 +222,7 @@ namespace omicron
 	protected:
 		String mPrefix;
 		unsigned long long int mNext;
+        fast_mutex mMutex;
 		//OGRE_AUTO_MUTEX
 	public:
 		NameGenerator(const NameGenerator& rhs)

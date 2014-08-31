@@ -57,6 +57,7 @@ const int GESTURE_FIVE_FINGER_SWIPE = EventBase::User << 5;
 const int GESTURE_THREE_FINGER_HOLD = EventBase::User << 6;
 const int GESTURE_SINGLE_CLICK = EventBase::User << 7;
 const int GESTURE_DOUBLE_CLICK = EventBase::User << 8;
+const int GESTURE_MULTI_TOUCH = EventBase::User << 9;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Touch Group
@@ -142,6 +143,16 @@ void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID,
 
 		touchListLock->lock();
 
+		if( touchList.count(touchID) == 1 )
+		{
+			t.initXPos = touchList[touchID].initXPos;
+			t.initYPos = touchList[touchID].initYPos;
+		}
+		else
+		{
+			t.initXPos = x;
+			t.initYPos = y;
+		}
 
 		if( touchList.size() == 0 ) // Initial touch group
 		{ 
@@ -306,7 +317,13 @@ void TouchGroup::process(){
 
 	centerTouch.xPos = xPos;
 	centerTouch.yPos = yPos;
-	gestureManager->generatePQServiceEvent( Event::Move, centerTouch, gestureFlag );
+	centerTouch.initXPos = init_xPos;
+	centerTouch.initYPos = init_yPos;
+
+	// Double click should be the last gesture a touch group will generate
+	// to prevent an accidental drag or zoom
+	if( !doubleClickTriggered )
+		gestureManager->generatePQServiceEvent( Event::Move, centerTouch, gestureFlag );
 
 	// Determine the farthest point from the group center (thumb?)
 	int farthestTouchID = -1;
@@ -343,7 +360,11 @@ void TouchGroup::process(){
 			groupHandedness = NONE;
 		}
 	}
-	generateGestures();
+
+	// Double click should be the last gesture a touch group will generate
+	// to prevent an accidental drag or zoom
+	if( !doubleClickTriggered )
+		generateGestures();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -390,7 +411,11 @@ void TouchGroup::generateGestures(){
 			//ofmsg("   size: %1%, %2%", %t.xWidth %t.yWidth);
 		}
 	}
-	
+	else if( touchList.size() > 1 )
+	{
+		gestureFlag = GESTURE_MULTI_TOUCH;
+	}
+
 	// Basic 2-touch zoom
 	if( touchList.size() == 2 && idleTouchList.size() <= 1 && !zoomGestureTriggered){
       zoomGestureTriggered = true;
@@ -702,6 +727,8 @@ void TouchGestureManager::generatePQServiceEvent( Event::Type eventType, Touch t
 		evt->setExtraDataType(Event::ExtraDataFloatArray);
 		evt->setExtraDataFloat(0, touch.xWidth);
 		evt->setExtraDataFloat(1, touch.yWidth);
+		evt->setExtraDataFloat(2, touch.initXPos);
+		evt->setExtraDataFloat(3, touch.initYPos);
 		evt->setFlags( gesture );
 
 		pqsInstance->unlockEvents();

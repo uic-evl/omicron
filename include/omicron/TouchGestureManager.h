@@ -49,6 +49,9 @@ struct Touch{
 	int prevPosResetTime;
 	int prevPosTimer;
 
+	float initXPos;
+	float initYPos;
+
 	int idleTime;
 
 	// Gestures

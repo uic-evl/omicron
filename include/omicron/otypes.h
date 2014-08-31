@@ -86,6 +86,7 @@
 #include <omicron/math/AlignedBox.h>
 #include <omicron/math/Sphere.h>
 #include <omicron/math/Plane.h>
+#include <omicron/fast_mutex.h>
 
 namespace boost { template<class Ch, class Tr, class Alloc> class basic_format; };
 
@@ -221,6 +222,7 @@ namespace omicron
 	protected:
 		String mPrefix;
 		unsigned long long int mNext;
+        fast_mutex mMutex;
 		//OGRE_AUTO_MUTEX
 	public:
 		NameGenerator(const NameGenerator& rhs)
@@ -232,6 +234,7 @@ namespace omicron
 		String generate()
 		{
 			//OGRE_LOCK_AUTO_MUTEX
+            fast_mutex_autolock autolock(mMutex);
 			std::ostringstream s;
 			s << mPrefix << mNext++;
 			return s.str();
@@ -241,6 +244,7 @@ namespace omicron
 		void reset()
 		{
 			//OGRE_LOCK_AUTO_MUTEX
+            fast_mutex_autolock autolock(mMutex);
 			mNext = 1ULL;
 		}
 
@@ -248,6 +252,7 @@ namespace omicron
 		void setNext(unsigned long long int val)
 		{
 			//OGRE_LOCK_AUTO_MUTEX
+            fast_mutex_autolock autolock(mMutex);
 			mNext = val;
 		}
 
@@ -256,6 +261,7 @@ namespace omicron
 		{
 			// lock even on get because 64-bit may not be atomic read
 			//OGRE_LOCK_AUTO_MUTEX
+            fast_mutex_autolock autolock(*(const_cast<fast_mutex*>(&mMutex)));
 			return mNext;
 		}
 	};

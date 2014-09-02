@@ -84,6 +84,7 @@ void VRPNService::setup(Setting& settings)
             {
                 unsigned int uid = (unsigned int)str["userId"];
                 trackerInfo.userId = (unsigned short)uid;
+				ofmsg("Tracker %1% user ID %2%", %trackerInfo.object_name %uid);
             }
             else
             {
@@ -185,7 +186,7 @@ void VRPNService::generateEvent(vrpn_TRACKERCB t, int id, unsigned short userId,
      //{
          mysInstance->lockEvents();
          Event* evt = mysInstance->writeHead();
-         evt->reset(Event::Update, Service::Mocap, id, 0, userId);
+         evt->reset(Event::Update, Service::Mocap, id, getServiceId(), userId);
          evt->setPosition(t.pos[0], t.pos[1], t.pos[2]);
 
         // //double euler[3];
@@ -194,6 +195,7 @@ void VRPNService::generateEvent(vrpn_TRACKERCB t, int id, unsigned short userId,
 
          if(jointId != -1)
          {
+			 evt->setExtraDataType(Event::ExtraDataIntArray);
              evt->setExtraDataInt(0, jointId);
          }
 

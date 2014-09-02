@@ -230,7 +230,7 @@ void InputServer::handleEvent(const Event& evt)
             
     OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getTimestamp()); 
     OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getSourceId()); 
-    OI_WRITEBUF(int, eventPacket, offset, evt.getServiceId()); 
+    OI_WRITEBUF(int, eventPacket, offset, evt.getDeviceTag()); 
     OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getServiceType()); 
     OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getType()); 
     OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getFlags()); 

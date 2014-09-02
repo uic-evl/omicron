@@ -76,7 +76,7 @@ namespace omicron
         //! size of data to stream.
         size_t serialize(omicronConnector::EventData* ed) const;
         //! Deserializes from an event data packet
-        void deserialize(omicronConnector::EventData* ed);
+        void deserialize(const omicronConnector::EventData* ed);
 
         void reset(Type type, Service::ServiceType serviceType, uint sourceId = 0, unsigned short serviceId = 0, unsigned short userId = 0);
         //! Only resets the event sourc eid, keeping the rest of the event data intact.
@@ -235,7 +235,7 @@ namespace omicron
 
     ///////////////////////////////////////////////////////////////////////////
     inline 
-    void Event::deserialize(omicronConnector::EventData* ed)
+    void Event::deserialize(const omicronConnector::EventData* ed)
     {
         reset((Event::Type)ed->type,
             (Service::ServiceType)ed->serviceType,

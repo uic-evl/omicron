@@ -90,7 +90,7 @@ namespace omicron {
 class OMICRON_API InputServer
 {
 public:
-    virtual void handleEvent(const Event* evt);
+    virtual void handleEvent(const Event& evt);
     virtual bool handleLegacyEvent(const Event& evt);
     void startConnection(Config* cfg);
     SOCKET startListening();
@@ -110,6 +110,7 @@ private:
     
     #define DEFAULT_BUFLEN 512
 	char eventPacket[DEFAULT_BUFLEN];
+	char legacyPacket[DEFAULT_BUFLEN];
 
     char recvbuf[DEFAULT_BUFLEN];
     int iResult, iSendResult;

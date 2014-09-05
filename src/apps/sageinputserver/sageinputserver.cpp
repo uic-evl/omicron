@@ -372,18 +372,19 @@ void main(int argc, char** argv)
 	while(runServer)
 	{
 		sm->poll();
-		sm->lockEvents();
-		int numEvts = sm->getAvailableEvents();
-		for(int i = 0; i < numEvts; i++)
-		{
-			Event* evt = sm->getEvent(i);
-			
-			app.handleEvent(evt);
-			
-			evt->setProcessed();
-		}
-		sm->clearEvents();
-		sm->unlockEvents();
+		// Get events
+        int av = sm->getAvailableEvents();
+        //ofmsg("------------------------loop %1%  av %2%", %i++ %av);
+        if(av != 0)
+        {
+            // TODO: Instead of copying the event list, we can lock the main one.
+            Event evts[OMICRON_MAX_EVENTS];
+            sm->getEvents(evts, OMICRON_MAX_EVENTS);
+            for( int evtNum = 0; evtNum < av; evtNum++)
+            {
+                app.handleEvent(&evts[evtNum]);
+            }
+        }
 #ifdef WIN32
 		Sleep(1);
 #else

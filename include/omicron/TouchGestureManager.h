@@ -139,6 +139,7 @@ namespace omicron {
 
 	public:
 		TouchGestureManager();
+		void setup(Setting&);
 		void registerPQService(Service*);
 		void setMaxTouchIDs(int);
 

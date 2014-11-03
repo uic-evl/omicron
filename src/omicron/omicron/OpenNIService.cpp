@@ -122,14 +122,17 @@ void OpenNIService::initialize()
 			const XnProductionNodeDescription& description = info.GetDescription(); 
 			omsg("image: vendor" + String(description.strVendor) + " name " + String(description.strName) + " instance " + info.GetInstanceName());
 
-			UserGenerator omg_UserGenerator;
-	 
-			info.GetInstance( omg_UserGenerator ); 
+            UserGenerator omg_UserGenerator;
+            
+            XnStatus nRetVal = XN_STATUS_OK;
+            nRetVal = omg_Context.FindExistingNode(XN_NODE_TYPE_USER, omg_UserGenerator);
+            if (nRetVal != XN_STATUS_OK)
+            {
+                nRetVal = omg_UserGenerator.Create(omg_Context);
+            }
 			omg_UserGenerator.StartGenerating();
-			omg_UserGenerator_v->push_back(omg_UserGenerator);
-		
 
-		
+			omg_UserGenerator_v->push_back(omg_UserGenerator);
 
 			// Callbacks
 			// XXX - HACKED TO WORK FOR 1 OR 2 KINECTS
@@ -190,8 +193,7 @@ void OpenNIService::initialize()
 		}
 		
 	}
-	
-	
+
 	//omg_Context.SetGlobalMirror(true);
 	//omg_Context.StartGeneratingAll();	
 
@@ -395,6 +397,7 @@ void OpenNIService::poll(void)
 		{
 			if( trackClosestEnabled && i != trackClosestUser) continue;
 
+            //omsg("OpenNIService: Poll - Got event");
 			XnPoint3D com;
 			omg_UserGenerator.GetCoM(aUsers[i], com);
 			omg_DepthGenerator.ConvertRealWorldToProjective(1, &com, &com);

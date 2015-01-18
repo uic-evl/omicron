@@ -239,3 +239,5 @@ namespace omicron {
 			IHttpRequestListener* myListener;
 	};
 };
+
+#endif

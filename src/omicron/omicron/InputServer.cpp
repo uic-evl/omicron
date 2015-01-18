@@ -527,6 +527,7 @@ void InputServer::startConnection(Config* cfg)
 
     Setting& sCfg = cfg->lookup("config");
     serverPort = strdup(Config::getStringValue("serverPort", sCfg, "27000").c_str());
+	String serverIP = Config::getStringValue("serverListenIP", sCfg, "");
 
     checkForDisconnectedClients = Config::getBoolValue("checkForDisconnectedClients", sCfg, false );
     showEventStream = Config::getBoolValue("showEventStream", sCfg, false );
@@ -564,19 +565,24 @@ void InputServer::startConnection(Config* cfg)
     hints.ai_flags = AI_PASSIVE;
 
     // Resolve the local address and port to be used by the server
-    iResult = getaddrinfo(NULL, serverPort, &hints, &result);
+	if( serverIP.length() != 0 )
+		iResult = getaddrinfo(strdup(serverIP.c_str()), serverPort, &hints, &result);
+	else
+		iResult = getaddrinfo(NULL, serverPort, &hints, &result);
+
     if (iResult != 0) 
     {
         ofmsg("OInputServer: getaddrinfo failed: %1%", %iResult);
         SOCKET_CLEANUP();
     } 
-    else 
-    {
-        ofmsg("OInputServer: Server set to listen on port %1%", %serverPort);
-    }
-
+    
     // Create a SOCKET for the server to listen for client connections
     listenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+	
+	if( iResult == 0 ) 
+    {
+		ofmsg("OInputServer: Server listening on %1% port %2%", %serverIP %serverPort);
+    }
 
     // If iMode != 0, non-blocking mode is enabled.
     u_long iMode = 1;

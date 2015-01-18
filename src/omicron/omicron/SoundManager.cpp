@@ -1,11 +1,11 @@
 /********************************************************************************************************************** 
  * THE OMICRON PROJECT
  *---------------------------------------------------------------------------------------------------------------------
- * Copyright 2010-2014								Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2015								Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto								anishimoto42@gmail.com
  *---------------------------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2014, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2015, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the 
  * following conditions are met:
@@ -216,7 +216,7 @@ bool SoundManager::isSoundServerRunning()
                             nodeID = i;
                     }
                 } else if (arg.isInt64()) {
-                    oscpkt::int64_t h; arg.popInt64(h);
+                    int64_t h; arg.popInt64(h);
                     //ofmsg( "  received %1%", %h );
                 } else if (arg.isFloat()) {
                     float f; arg.popFloat(f);
@@ -379,7 +379,7 @@ void SoundManager::poll()
                     if( nodeID == -1 )
                         nodeID = i;
                 } else if (arg.isInt64()) {
-                    oscpkt::int64_t h; arg.popInt64(h);
+                    int64_t h; arg.popInt64(h);
                     //if( isDebugEnabled() ) 
                     //	ofmsg( "  received %1%", %h );
                 } else if (arg.isFloat()) {

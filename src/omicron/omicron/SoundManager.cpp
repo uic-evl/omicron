@@ -52,657 +52,657 @@ int SoundManager::soundLoadWaitTime = 200;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 SoundManager::SoundManager():
-	myAssetCacheEnabled(false)
+    myAssetCacheEnabled(false)
 {
-	environment = new SoundEnvironment(this);
-	myAssetCacheManager = new AssetCacheManager();
+    environment = new SoundEnvironment(this);
+    myAssetCacheManager = new AssetCacheManager();
 
-	listenerPosition = Vector3f::Zero();
-	listenerOrientation = Quaternion::Identity();
+    listenerPosition = Vector3f::Zero();
+    listenerOrientation = Quaternion::Identity();
 
-	userPosition = Vector3f::Zero();
-	userOrientation = Quaternion::Identity();
+    userPosition = Vector3f::Zero();
+    userOrientation = Quaternion::Identity();
 
-	assetDirectory = "";
-	assetDirectorySet = false;
+    assetDirectory = "";
+    assetDirectorySet = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 SoundManager::~SoundManager()
 {
-	//stopSoundServer(); // Do not call this under penalty of catapult
-	stopAllSounds();
+    //stopSoundServer(); // Do not call this under penalty of catapult
+    stopAllSounds();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 SoundManager::SoundManager(const String& serverIP, int serverPort):
-	myAssetCacheEnabled(false)
+    myAssetCacheEnabled(false)
 {
-	environment = new SoundEnvironment(this);
-	myAssetCacheManager = new AssetCacheManager();
-	connectToServer(serverIP, serverPort);
+    environment = new SoundEnvironment(this);
+    myAssetCacheManager = new AssetCacheManager();
+    connectToServer(serverIP, serverPort);
 
-	listenerPosition = Vector3f::Zero();
-	listenerOrientation = Quaternion::Identity();
+    listenerPosition = Vector3f::Zero();
+    listenerOrientation = Quaternion::Identity();
 
-	userPosition = Vector3f::Zero();
-	userOrientation = Quaternion::Identity();
+    userPosition = Vector3f::Zero();
+    userOrientation = Quaternion::Identity();
 
-	assetDirectory = "";
-	assetDirectorySet = false;
+    assetDirectory = "";
+    assetDirectorySet = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::setup(Setting& settings)
 {
-	Setting& dispCfg = settings["display"];
-	if(dispCfg.exists("radius"))
-	{
-		float radius = dispCfg["radius"];
-		ofmsg("SoundManager::setup: Display radius: %1%", %radius );
-	}
+    Setting& dispCfg = settings["display"];
+    if(dispCfg.exists("radius"))
+    {
+        float radius = dispCfg["radius"];
+        ofmsg("SoundManager::setup: Display radius: %1%", %radius );
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::connectToServer(const String& serverIP, int serverPort)
 {
-	soundMsgSocket.connectTo(serverIP, 57110);
-	soundMsgSocket.bindTo(8001); // Port to receive notify messages
+    soundMsgSocket.connectTo(serverIP, 57110);
+    soundMsgSocket.bindTo(8001); // Port to receive notify messages
 
-	Message msg5("/notify");
-	msg5.pushInt32(1);
+    Message msg5("/notify");
+    msg5.pushInt32(1);
 
-	PacketWriter pw;
-	pw.startBundle().addMessage(msg5).endBundle();
-	soundMsgSocket.sendPacket(pw.packetData(), pw.packetSize());
+    PacketWriter pw;
+    pw.startBundle().addMessage(msg5).endBundle();
+    soundMsgSocket.sendPacket(pw.packetData(), pw.packetSize());
 
-	// Create socket and connect to OSC server
-	soundServerSocket.connectTo(serverIP, serverPort);
-	if (!soundServerSocket.isOk()) {
-		ofmsg( "SoundManager: Error connection to port %1%: %2%", %serverPort %soundServerSocket.errorMessage() );
-	} else {
-		ofmsg( "SoundManager: Connected to server, will send messages to %1% on port %2%", %serverIP %serverPort );
-	}
+    // Create socket and connect to OSC server
+    soundServerSocket.connectTo(serverIP, serverPort);
+    if (!soundServerSocket.isOk()) {
+        ofmsg( "SoundManager: Error connection to port %1%: %2%", %serverPort %soundServerSocket.errorMessage() );
+    } else {
+        ofmsg( "SoundManager: Connected to server, will send messages to %1% on port %2%", %serverIP %serverPort );
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::startSoundServer()
 {
-	startingSoundServer = true;
-	Message msg("/startServer");
-	sendOSCMessage(msg);
+    startingSoundServer = true;
+    Message msg("/startServer");
+    sendOSCMessage(msg);
 
-	wait(200); // Give the server a second to startup
+    wait(200); // Give the server a second to startup
 
-	Message msg2("/loadSynth");
-	sendOSCMessage(msg2);
+    Message msg2("/loadSynth");
+    sendOSCMessage(msg2);
 
-	wait(1000); // Give the server a second to startup
+    wait(1000); // Give the server a second to startup
 
-	Message msg3("/loadStereoSynth");
-	sendOSCMessage(msg3);
+    Message msg3("/loadStereoSynth");
+    sendOSCMessage(msg3);
 
-	wait(1000); // Give the server a second to startup
+    wait(1000); // Give the server a second to startup
 
-	Message msg4("/startup");
-	sendOSCMessage(msg4);
+    Message msg4("/startup");
+    sendOSCMessage(msg4);
 
-	startingSoundServer = false;
+    startingSoundServer = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::stopSoundServer()
 {
-	Message msg("/killServer");
-	sendOSCMessage(msg);
+    Message msg("/killServer");
+    sendOSCMessage(msg);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool SoundManager::isSoundServerRunning()
 {
-	// Query sound server
-	Message msg5("/status");
+    // Query sound server
+    Message msg5("/status");
 
-	PacketWriter pw;
-	pw.startBundle().addMessage(msg5).endBundle();
-	soundMsgSocket.sendPacket(pw.packetData(), pw.packetSize());
+    PacketWriter pw;
+    pw.startBundle().addMessage(msg5).endBundle();
+    soundMsgSocket.sendPacket(pw.packetData(), pw.packetSize());
 
-	// Check for response to query
-	if( soundMsgSocket.receiveNextPacket(1) ){// Paramater is timeout in milliseconds. -1 (default) will wait indefinatly 
-		PacketReader pr(soundMsgSocket.packetData(), soundMsgSocket.packetSize());
+    // Check for response to query
+    if( soundMsgSocket.receiveNextPacket(1) ){// Paramater is timeout in milliseconds. -1 (default) will wait indefinatly 
+        PacketReader pr(soundMsgSocket.packetData(), soundMsgSocket.packetSize());
         Message *incoming_msg;
-		
-		int MSG_STATUS = 0;
-		int MSG_NODE_END = 1;
-		int msgType = -1;
+        
+        int MSG_STATUS = 0;
+        int MSG_NODE_END = 1;
+        int msgType = -1;
 
-		int nodeID = -1;
+        int nodeID = -1;
 
         while (pr.isOk() && (incoming_msg = pr.popMessage()) != 0) {		
 
-			//if( isDebugEnabled() )
-			//	ofmsg( "SoundManager::isSoundServerRunning(): /status.reply received %1%", %incoming_msg->addressPattern() );
+            //if( isDebugEnabled() )
+            //	ofmsg( "SoundManager::isSoundServerRunning(): /status.reply received %1%", %incoming_msg->addressPattern() );
 
-			if( incoming_msg->addressPattern() == "/status.reply" )
-				msgType = MSG_STATUS;
-			else if( incoming_msg->addressPattern() == "/n_end" )
-				msgType = MSG_NODE_END;
+            if( incoming_msg->addressPattern() == "/status.reply" )
+                msgType = MSG_STATUS;
+            else if( incoming_msg->addressPattern() == "/n_end" )
+                msgType = MSG_NODE_END;
 
-			Message::ArgReader arg(incoming_msg->arg());
-			while (arg.nbArgRemaining()) {
-				if (arg.isBlob()) {
-					std::vector<char> b; arg.popBlob(b); 
-				} else if (arg.isBool()) {
-					bool b; arg.popBool(b);
-					//ofmsg( "  received %1%", %b );
-				} else if (arg.isInt32()) {
-					int i; arg.popInt32(i);
-					//ofmsg( "  received %1%", %i );
+            Message::ArgReader arg(incoming_msg->arg());
+            while (arg.nbArgRemaining()) {
+                if (arg.isBlob()) {
+                    std::vector<char> b; arg.popBlob(b); 
+                } else if (arg.isBool()) {
+                    bool b; arg.popBool(b);
+                    //ofmsg( "  received %1%", %b );
+                } else if (arg.isInt32()) {
+                    int i; arg.popInt32(i);
+                    //ofmsg( "  received %1%", %i );
 
-					if( msgType == MSG_STATUS )
-					{
-						if( nUnitGenerators == -1 )
-							nUnitGenerators = i;
-						else if( nSynths == -1 )
-							nSynths = i;
-						else if( nGroups == -1 )
-							nGroups = i;
-						else if( nLoadedSynths == -1 )
-							nLoadedSynths = i;
-					}
-					else if( msgType == MSG_NODE_END )
-					{
-						if( nodeID == -1 )
-							nodeID = i;
-					}
-				} else if (arg.isInt64()) {
-					int64_t h; arg.popInt64(h);
-					//ofmsg( "  received %1%", %h );
-				} else if (arg.isFloat()) {
-					float f; arg.popFloat(f);
-					//ofmsg( "  received %1%", %f );
+                    if( msgType == MSG_STATUS )
+                    {
+                        if( nUnitGenerators == -1 )
+                            nUnitGenerators = i;
+                        else if( nSynths == -1 )
+                            nSynths = i;
+                        else if( nGroups == -1 )
+                            nGroups = i;
+                        else if( nLoadedSynths == -1 )
+                            nLoadedSynths = i;
+                    }
+                    else if( msgType == MSG_NODE_END )
+                    {
+                        if( nodeID == -1 )
+                            nodeID = i;
+                    }
+                } else if (arg.isInt64()) {
+                    int64_t h; arg.popInt64(h);
+                    //ofmsg( "  received %1%", %h );
+                } else if (arg.isFloat()) {
+                    float f; arg.popFloat(f);
+                    //ofmsg( "  received %1%", %f );
 
-					if( msgType == MSG_STATUS )
-					{
-						if( avgCPU == -1 )
-							avgCPU = f;
-						else if( peakCPU == -1 )
-							peakCPU = f;
-					}
-				} else if (arg.isDouble()) {
-					double d; arg.popDouble(d);
-					//ofmsg( "  received %1%", %d );
+                    if( msgType == MSG_STATUS )
+                    {
+                        if( avgCPU == -1 )
+                            avgCPU = f;
+                        else if( peakCPU == -1 )
+                            peakCPU = f;
+                    }
+                } else if (arg.isDouble()) {
+                    double d; arg.popDouble(d);
+                    //ofmsg( "  received %1%", %d );
 
-					if( msgType = MSG_STATUS )
-					{
-						if( nominalSampleRate == -1 )
-							nominalSampleRate = d;
-						else if( actualSampleRate == -1 )
-							actualSampleRate = d;
-					}
-				} else if (arg.isStr()) {
-					std::string s; arg.popStr(s); 
-					//ofmsg( "  received %1%", %s );
-			  }
-			}
+                    if( msgType = MSG_STATUS )
+                    {
+                        if( nominalSampleRate == -1 )
+                            nominalSampleRate = d;
+                        else if( actualSampleRate == -1 )
+                            actualSampleRate = d;
+                    }
+                } else if (arg.isStr()) {
+                    std::string s; arg.popStr(s); 
+                    //ofmsg( "  received %1%", %s );
+              }
+            }
 
-			if( msgType == MSG_STATUS && nLoadedSynths > 0 )
-			{
-				/*
-				if( isDebugEnabled() )
-				{
-					omsg( "  Sound Server Status: Running");
-					ofmsg( "    Unit Generators: %1%", %nUnitGenerators );
-					ofmsg( "    Synths: %1%", %nSynths );
-					ofmsg( "    Groups: %1%", %nGroups );
-					ofmsg( "    Loaded Synths: %1%", %nLoadedSynths );
-					ofmsg( "    Avg. Signal Processing CPU: %1%", %avgCPU );
-					ofmsg( "    Peak Signal Processing CPU: %1%", %peakCPU );
-					ofmsg( "    Nominal Sample Rate: %1%", %nominalSampleRate );
-					ofmsg( "    Actual Sample Rate: %1%", %actualSampleRate );
-				}
-				*/
+            if( msgType == MSG_STATUS && nLoadedSynths > 0 )
+            {
+                /*
+                if( isDebugEnabled() )
+                {
+                    omsg( "  Sound Server Status: Running");
+                    ofmsg( "    Unit Generators: %1%", %nUnitGenerators );
+                    ofmsg( "    Synths: %1%", %nSynths );
+                    ofmsg( "    Groups: %1%", %nGroups );
+                    ofmsg( "    Loaded Synths: %1%", %nLoadedSynths );
+                    ofmsg( "    Avg. Signal Processing CPU: %1%", %avgCPU );
+                    ofmsg( "    Peak Signal Processing CPU: %1%", %peakCPU );
+                    ofmsg( "    Nominal Sample Rate: %1%", %nominalSampleRate );
+                    ofmsg( "    Actual Sample Rate: %1%", %actualSampleRate );
+                }
+                */
 
-				if( !soundServerRunning )
-				{
-					Message msg5("/notify");
-					msg5.pushInt32(1);
+                if( !soundServerRunning )
+                {
+                    Message msg5("/notify");
+                    msg5.pushInt32(1);
 
-					PacketWriter pw;
-					pw.startBundle().addMessage(msg5).endBundle();
-					soundMsgSocket.sendPacket(pw.packetData(), pw.packetSize());
-					soundServerRunning = true;
-				}
-			}
-			else if(  msgType == MSG_NODE_END )
-			{
-				if( isDebugEnabled() )
-					ofmsg("SoundManager::isSoundServerRunning(): received /n_end Removed node %1%", %nodeID );
-				removeInstanceNode(nodeID);
-			}
+                    PacketWriter pw;
+                    pw.startBundle().addMessage(msg5).endBundle();
+                    soundMsgSocket.sendPacket(pw.packetData(), pw.packetSize());
+                    soundServerRunning = true;
+                }
+            }
+            else if(  msgType == MSG_NODE_END )
+            {
+                if( isDebugEnabled() )
+                    ofmsg("SoundManager::isSoundServerRunning(): received /n_end Removed node %1%", %nodeID );
+                removeInstanceNode(nodeID);
+            }
 
         }
-	}
-	return soundServerRunning;
+    }
+    return soundServerRunning;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 SoundEnvironment* SoundManager::getSoundEnvironment()
 {
-	return environment;
+    return environment;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::setEnvironment(SoundEnvironment* newEnv)
 {
-	environment = newEnv;
+    environment = newEnv;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool SoundManager::sendOSCMessage(Message msg)
 {
-	if(soundServerRunning || startingSoundServer)
-	{
-		PacketWriter pw;
-		pw.startBundle().addMessage(msg).endBundle();
-		return soundServerSocket.sendPacket(pw.packetData(), pw.packetSize());
-	}
-	return false;
+    if(soundServerRunning || startingSoundServer)
+    {
+        PacketWriter pw;
+        pw.startBundle().addMessage(msg).endBundle();
+        return soundServerSocket.sendPacket(pw.packetData(), pw.packetSize());
+    }
+    return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::showDebugInfo(bool value)
 {
-	showDebug = value;
+    showDebug = value;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool SoundManager::isDebugEnabled()
 {
-	return showDebug;
+    return showDebug;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::wait(float millis)
 {
-	timeb tb;
-	ftime( &tb );
-	int curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
-	int startTime = curTime;
+    timeb tb;
+    ftime( &tb );
+    int curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
+    int startTime = curTime;
 
-	while( true )
-	{
-		timeb tb;
-		ftime( &tb );
-		curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
-		int timeSinceLastCheck = curTime-startTime;
+    while( true )
+    {
+        timeb tb;
+        ftime( &tb );
+        curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
+        int timeSinceLastCheck = curTime-startTime;
 
-		//if( isDebugEnabled() )
-		//	ofmsg("SoundManager: Waiting: %1%", %timeSinceLastCheck);
-		if( timeSinceLastCheck > millis )
-		{
-			break;
-		}
-	}
-		
+        //if( isDebugEnabled() )
+        //	ofmsg("SoundManager: Waiting: %1%", %timeSinceLastCheck);
+        if( timeSinceLastCheck > millis )
+        {
+            break;
+        }
+    }
+        
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::poll()
 {
-	if( soundMsgSocket.receiveNextPacket(1) ){// Paramater is timeout in milliseconds. -1 (default) will wait indefinatly 
-		PacketReader pr(soundMsgSocket.packetData(), soundMsgSocket.packetSize());
+    if( soundMsgSocket.receiveNextPacket(1) ){// Paramater is timeout in milliseconds. -1 (default) will wait indefinatly 
+        PacketReader pr(soundMsgSocket.packetData(), soundMsgSocket.packetSize());
         Message *incoming_msg;
-		
-		bool nodeEndEvent = false;
-		int nodeID = -1;
+        
+        bool nodeEndEvent = false;
+        int nodeID = -1;
 
         while (pr.isOk() && (incoming_msg = pr.popMessage()) != 0) {
-			//if( isDebugEnabled() )
-			//	ofmsg( "SoundManager::poll() received %1%", %incoming_msg->addressPattern() );
-			if( incoming_msg->addressPattern() == "/n_end" )
-				nodeEndEvent = true;
+            //if( isDebugEnabled() )
+            //	ofmsg( "SoundManager::poll() received %1%", %incoming_msg->addressPattern() );
+            if( incoming_msg->addressPattern() == "/n_end" )
+                nodeEndEvent = true;
 
-			Message::ArgReader arg(incoming_msg->arg());
-			while (arg.nbArgRemaining()) {
-				if (arg.isBlob()) {
-					std::vector<char> b; arg.popBlob(b); 
-				} else if (arg.isBool()) {
-					bool b; arg.popBool(b);
-					//if( isDebugEnabled() )
-					//	ofmsg( "  received %1%", %b );
-				} else if (arg.isInt32()) {
-					int i; arg.popInt32(i);
-					//if( isDebugEnabled() ) 
-					//	ofmsg( "  received %1%", %i );
+            Message::ArgReader arg(incoming_msg->arg());
+            while (arg.nbArgRemaining()) {
+                if (arg.isBlob()) {
+                    std::vector<char> b; arg.popBlob(b); 
+                } else if (arg.isBool()) {
+                    bool b; arg.popBool(b);
+                    //if( isDebugEnabled() )
+                    //	ofmsg( "  received %1%", %b );
+                } else if (arg.isInt32()) {
+                    int i; arg.popInt32(i);
+                    //if( isDebugEnabled() ) 
+                    //	ofmsg( "  received %1%", %i );
 
-					if( nodeID == -1 )
-						nodeID = i;
-				} else if (arg.isInt64()) {
-					int64_t h; arg.popInt64(h);
-					//if( isDebugEnabled() ) 
-					//	ofmsg( "  received %1%", %h );
-				} else if (arg.isFloat()) {
-					float f; arg.popFloat(f);
-					//if( isDebugEnabled() ) 
-					//	ofmsg( "  received %1%", %f );
-				} else if (arg.isDouble()) {
-					double d; arg.popDouble(d);
-					//if( isDebugEnabled() ) 
-					//	ofmsg( "  received %1%", %d );
-				} else if (arg.isStr()) {
-					std::string s; arg.popStr(s); 
-					//if( isDebugEnabled() ) 
-					//	ofmsg( "  received %1%", %s );
-			  }
-			}
+                    if( nodeID == -1 )
+                        nodeID = i;
+                } else if (arg.isInt64()) {
+                    int64_t h; arg.popInt64(h);
+                    //if( isDebugEnabled() ) 
+                    //	ofmsg( "  received %1%", %h );
+                } else if (arg.isFloat()) {
+                    float f; arg.popFloat(f);
+                    //if( isDebugEnabled() ) 
+                    //	ofmsg( "  received %1%", %f );
+                } else if (arg.isDouble()) {
+                    double d; arg.popDouble(d);
+                    //if( isDebugEnabled() ) 
+                    //	ofmsg( "  received %1%", %d );
+                } else if (arg.isStr()) {
+                    std::string s; arg.popStr(s); 
+                    //if( isDebugEnabled() ) 
+                    //	ofmsg( "  received %1%", %s );
+              }
+            }
         }
-		if( nodeEndEvent )
-		{
-			if( isDebugEnabled() )
-					ofmsg("SoundManager::poll(): received /n_end Removed node %1%", %nodeID );
-			removeInstanceNode(nodeID);
-		}
-	}
+        if( nodeEndEvent )
+        {
+            if( isDebugEnabled() )
+                    ofmsg("SoundManager::poll(): received /n_end Removed node %1%", %nodeID );
+            removeInstanceNode(nodeID);
+        }
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::setForceCacheOverwrite(bool value)
 {
-	if( myAssetCacheManager )
-		myAssetCacheManager->setForceOverwrite(value);
+    if( myAssetCacheManager )
+        myAssetCacheManager->setForceOverwrite(value);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool SoundManager::isForceCacheOverwriteEnabled()
 {
-	if( myAssetCacheManager )
-		return myAssetCacheManager->isForceOverwriteEnabled();
-	else
-		return false;
+    if( myAssetCacheManager )
+        return myAssetCacheManager->isForceOverwriteEnabled();
+    else
+        return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::setAssetDirectory(const String& directory)
 {
-	assetDirectory = directory;
-	assetDirectorySet = true;
+    assetDirectory = directory;
+    assetDirectorySet = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 String& SoundManager::getAssetDirectory()
 {
-	return assetDirectory;
+    return assetDirectory;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool SoundManager::isAssetDirectorySet()
 {
-	return assetDirectorySet;
+    return assetDirectorySet;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::addInstance( Ref<SoundInstance> newInstance )
 {
-	soundInstanceList[newInstance->getID()] = newInstance;
-	if( isDebugEnabled() )
-		ofmsg("Added instance %1% from buffer %2%", %newInstance->getID() %newInstance->getBufferID() );
+    soundInstanceList[newInstance->getID()] = newInstance;
+    if( isDebugEnabled() )
+        ofmsg("Added instance %1% from buffer %2%", %newInstance->getID() %newInstance->getBufferID() );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::addBuffer( Ref<Sound> newSound )
 {
-	soundList[newSound->getBufferID()] = newSound;
-	soundNameList[newSound->getName()] = newSound->getBufferID();
+    soundList[newSound->getBufferID()] = newSound;
+    soundNameList[newSound->getName()] = newSound->getBufferID();
 
-	if( isDebugEnabled() )
-		ofmsg("Added buffer %1%", %newSound->getBufferID() );
+    if( isDebugEnabled() )
+        ofmsg("Added buffer %1%", %newSound->getBufferID() );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Vector3f SoundManager::getListenerPosition()
 {
-	return listenerPosition;
+    return listenerPosition;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Quaternion SoundManager::getListenerOrientation()
 {
-	return listenerOrientation;
+    return listenerOrientation;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::setListenerPosition(Vector3f newPos)
 {
-	listenerPosition = newPos;
-	updateInstancePositions();
+    listenerPosition = newPos;
+    updateInstancePositions();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::setListenerOrientation(Quaternion newOrientation)
 {
-	listenerOrientation = newOrientation;
-	updateInstancePositions();
+    listenerOrientation = newOrientation;
+    updateInstancePositions();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::setListener(Vector3f newPos, Quaternion newOrientation)
 {
-	listenerPosition = newPos;
-	listenerOrientation = newOrientation;
-	updateInstancePositions();
+    listenerPosition = newPos;
+    listenerOrientation = newOrientation;
+    updateInstancePositions();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Vector3f SoundManager::getUserPosition()
 {
-	return userPosition;
-	//return Vector3f(0,0,0);
+    return userPosition;
+    //return Vector3f(0,0,0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Quaternion SoundManager::getUserOrientation()
 {
-	return userOrientation;
+    return userOrientation;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::setUserPosition(Vector3f newPos)
 {
-	userPosition = newPos;
-	updateInstancePositions();
+    userPosition = newPos;
+    updateInstancePositions();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::setUserOrientation(Quaternion newOrientation)
 {
-	userOrientation = newOrientation;
-	updateInstancePositions();
+    userOrientation = newOrientation;
+    updateInstancePositions();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Vector3f SoundManager::worldToLocalPosition( Vector3f position )
 {
-	Vector3f res = listenerOrientation.inverse() * (position - listenerPosition);
-	return res;
+    Vector3f res = listenerOrientation.inverse() * (position - listenerPosition);
+    return res;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 Vector3f SoundManager::localToWorldPosition( Vector3f position )
 {
-	Vector3f res = listenerPosition + listenerOrientation * position;
+    Vector3f res = listenerPosition + listenerOrientation * position;
     return res;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Sound* SoundManager::getSound(const String& soundName)
 {
-	Sound* newSound = soundList[soundNameList[soundName]];
-	if( newSound == NULL )
-		ofmsg("SoundEnvironment:getSound() - '%1%' does not exist", %soundName);
-	return newSound;
+    Sound* newSound = soundList[soundNameList[soundName]];
+    if( newSound == NULL )
+        ofmsg("SoundEnvironment:getSound() - '%1%' does not exist", %soundName);
+    return newSound;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::setSound(const String& soundName, Ref<Sound> newSound)
 {
-	if( soundNameList.count(soundName) > 0 )
-	{
-		Sound* oldSound = getSound(soundName);
+    if( soundNameList.count(soundName) > 0 )
+    {
+        Sound* oldSound = getSound(soundName);
 
-		ofmsg("SoundEnvironment:setSound() - Replacing bufferID %2% with bufferID %3% for sound '%1%' ", %soundName %oldSound->getBufferID() %newSound->getBufferID() );
+        ofmsg("SoundEnvironment:setSound() - Replacing bufferID %2% with bufferID %3% for sound '%1%' ", %soundName %oldSound->getBufferID() %newSound->getBufferID() );
 
-		soundList[newSound->getBufferID()] = newSound;
-		soundNameList[soundName] = newSound->getBufferID();
-	}
-	else
-	{
-		ofmsg("SoundEnvironment:setSound() - '%1%' does not exist", %soundName);
-	}
+        soundList[newSound->getBufferID()] = newSound;
+        soundNameList[soundName] = newSound->getBufferID();
+    }
+    else
+    {
+        ofmsg("SoundEnvironment:setSound() - '%1%' does not exist", %soundName);
+    }
 
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Vector<int> SoundManager::getInstanceIDList()
 {
-	return instanceNodeIDList;
+    return instanceNodeIDList;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::stopAllSounds()
 {
-	if( isDebugEnabled() )
-		ofmsg("SoundManager: Freeing %1% nodes...", %soundInstanceList.size());
+    if( isDebugEnabled() )
+        ofmsg("SoundManager: Freeing %1% nodes...", %soundInstanceList.size());
 
-	map< int, Ref<SoundInstance> >::iterator it = soundInstanceList.begin();
-	for ( it = soundInstanceList.begin(); it != soundInstanceList.end(); ++it )
-	{
-		SoundInstance* inst = it->second;
-		int nodeID = inst->getID();
-		Message msg("/freeNode");
-		msg.pushInt32(nodeID);
-		sendOSCMessage(msg);
+    map< int, Ref<SoundInstance> >::iterator it = soundInstanceList.begin();
+    for ( it = soundInstanceList.begin(); it != soundInstanceList.end(); ++it )
+    {
+        SoundInstance* inst = it->second;
+        int nodeID = inst->getID();
+        Message msg("/freeNode");
+        msg.pushInt32(nodeID);
+        sendOSCMessage(msg);
 
-		if( isDebugEnabled() )
-			ofmsg("SoundManager: Node %1% freed", %nodeID);
-	}
-	soundInstanceList.clear();
+        if( isDebugEnabled() )
+            ofmsg("SoundManager: Node %1% freed", %nodeID);
+    }
+    soundInstanceList.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::cleanupAllSounds()
 {
-	if( isDebugEnabled() )
-		ofmsg("SoundManager: Freeing %1% buffers...", %soundList.size());
+    if( isDebugEnabled() )
+        ofmsg("SoundManager: Freeing %1% buffers...", %soundList.size());
 
-	map< int, Ref<Sound> >::iterator it = soundList.begin();
-	for ( it = soundList.begin(); it != soundList.end(); ++it )
-	{
-		Sound* snd = it->second;
-		int bufferID = snd->getBufferID();
-		Message msg("/freeBuf");
-		msg.pushInt32(bufferID);
-		sendOSCMessage(msg);
+    map< int, Ref<Sound> >::iterator it = soundList.begin();
+    for ( it = soundList.begin(); it != soundList.end(); ++it )
+    {
+        Sound* snd = it->second;
+        int bufferID = snd->getBufferID();
+        Message msg("/freeBuf");
+        msg.pushInt32(bufferID);
+        sendOSCMessage(msg);
 
-		if( isDebugEnabled() )
-			ofmsg("SoundManager: Buffer %1% freed", %bufferID);
-	}
-	soundList.clear();
+        if( isDebugEnabled() )
+            ofmsg("SoundManager: Buffer %1% freed", %bufferID);
+    }
+    soundList.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::setServerVolume(int value)
 {
-	if( value > 8 )
-		soundServerVolume = 8;
-	else if( value < -30 )
-		soundServerVolume = -30;
-	else
-		soundServerVolume = value;
+    if( value > 8 )
+        soundServerVolume = 8;
+    else if( value < -30 )
+        soundServerVolume = -30;
+    else
+        soundServerVolume = value;
 
-	Message msg("/serverVol");
-	msg.pushInt32(soundServerVolume);
-	sendOSCMessage(msg);
+    Message msg("/serverVol");
+    msg.pushInt32(soundServerVolume);
+    sendOSCMessage(msg);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int SoundManager::getServerVolume()
 {
-	// TODO: Should query sound server to get current volume and update variable
-	return soundServerVolume;
+    // TODO: Should query sound server to get current volume and update variable
+    return soundServerVolume;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::updateInstancePositions()
 {
-	map< int, Ref<SoundInstance> >::iterator it = soundInstanceList.begin();
-	for ( it = soundInstanceList.begin(); it != soundInstanceList.end(); ++it )
-	{
-		SoundInstance* inst = it->second;
+    map< int, Ref<SoundInstance> >::iterator it = soundInstanceList.begin();
+    for ( it = soundInstanceList.begin(); it != soundInstanceList.end(); ++it )
+    {
+        SoundInstance* inst = it->second;
 
-		if( inst->isPlaying() )
-		{
-			
+        if( inst->isPlaying() )
+        {
+            
 
-			Message msg("/setObjectLoc");
-			msg.pushInt32(inst->getID());
-		
-			Vector3f soundLocalPosition = worldToLocalPosition( inst->getPosition() );
+            Message msg("/setObjectLoc");
+            msg.pushInt32(inst->getID());
+        
+            Vector3f soundLocalPosition = worldToLocalPosition( inst->getPosition() );
 
-			msg.pushFloat( soundLocalPosition[0] );
-			msg.pushFloat( soundLocalPosition[1] );
-			msg.pushFloat( soundLocalPosition[2] );
+            msg.pushFloat( soundLocalPosition[0] );
+            msg.pushFloat( soundLocalPosition[1] );
+            msg.pushFloat( soundLocalPosition[2] );
 
-			sendOSCMessage(msg);
+            sendOSCMessage(msg);
 
-			// Calculate and send the volume rolloff
-			
-			Vector3f audioListener = environment->getUserPosition();
-			float distanceToListener = Math::sqrt( Math::sqr(audioListener[0] - soundLocalPosition[0]) + Math::sqr(audioListener[1] - soundLocalPosition[1]) + Math::sqr(audioListener[2] - soundLocalPosition[2]) );
-			float newVol = inst->getVolume();
+            // Calculate and send the volume rolloff
+            
+            Vector3f audioListener = environment->getUserPosition();
+            float distanceToListener = Math::sqrt( Math::sqr(audioListener[0] - soundLocalPosition[0]) + Math::sqr(audioListener[1] - soundLocalPosition[1]) + Math::sqr(audioListener[2] - soundLocalPosition[2]) );
+            float newVol = inst->getVolume();
 
-			int rolloffType = 0;
-			if( inst->isRolloffLinear() )
-			{
-				rolloffType = 1;
-				newVol = ( 1 - ((distanceToListener - inst->getMinRolloffDistance() ) / inst->getMaxDistance())) * inst->getVolume(); //Linear rolloff
-			}
-			else if( inst->isRolloffLogarithmic() )
-			{
-				rolloffType = 2;
-				if( distanceToListener > 0 )
-					newVol = inst->getMinRolloffDistance() * (inst->getMaxDistance() / Math::sqr(distanceToListener) );  // Logarithmic
-			}
-			if( newVol > inst->getVolume() )
-				newVol = inst->getVolume();
-			else if( newVol < 0 )
-				newVol = 0;
+            int rolloffType = 0;
+            if( inst->isRolloffLinear() )
+            {
+                rolloffType = 1;
+                newVol = ( 1 - ((distanceToListener - inst->getMinRolloffDistance() ) / inst->getMaxDistance())) * inst->getVolume(); //Linear rolloff
+            }
+            else if( inst->isRolloffLogarithmic() )
+            {
+                rolloffType = 2;
+                if( distanceToListener > 0 )
+                    newVol = inst->getMinRolloffDistance() * (inst->getMaxDistance() / Math::sqr(distanceToListener) );  // Logarithmic
+            }
+            if( newVol > inst->getVolume() )
+                newVol = inst->getVolume();
+            else if( newVol < 0 )
+                newVol = 0;
 
-			if( newVol * inst->getVolumeScale() > 1 )
-				newVol = 1.0;
-			else
-				newVol =  newVol * inst->getVolumeScale();
+            if( newVol * inst->getVolumeScale() > 1 )
+                newVol = 1.0;
+            else
+                newVol =  newVol * inst->getVolumeScale();
 
-			Message msg2("/setVol");
-			msg2.pushInt32(inst->getID());
-			msg2.pushFloat(newVol);
-			
-			environment->getSoundManager()->sendOSCMessage(msg2);
-			//if( isDebugEnabled() )
-			//	ofmsg("%1%: instanceID %2% rolloff type %3% newVol %4%", %__FUNCTION__ %inst->getID() %rolloffType %newVol );
-		}
-	}
+            Message msg2("/setVol");
+            msg2.pushInt32(inst->getID());
+            msg2.pushFloat(newVol);
+            
+            environment->getSoundManager()->sendOSCMessage(msg2);
+            //if( isDebugEnabled() )
+            //	ofmsg("%1%: instanceID %2% rolloff type %3% newVol %4%", %__FUNCTION__ %inst->getID() %rolloffType %newVol );
+        }
+    }
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::removeInstanceNode(int id)
 {
-	SoundInstance* si = soundInstanceList[id];
-	if( si != NULL )
-	{
-		si->serverStopSignalReceived();
-	}
-	soundInstanceList.erase(id);
+    SoundInstance* si = soundInstanceList[id];
+    if( si != NULL )
+    {
+        si->serverStopSignalReceived();
+    }
+    soundInstanceList.erase(id);
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -710,11 +710,11 @@ void SoundManager::removeInstanceNode(int id)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 SoundEnvironment::SoundEnvironment(SoundManager* soundManager)
 {
-	this->soundManager = soundManager;
+    this->soundManager = soundManager;
 
-	environmentVolumeScale = 0.5;
-	environmentRoomSize = 0.0;
-	environmentWetness = 0.0;
+    environmentVolumeScale = 0.5;
+    environmentRoomSize = 0.0;
+    environmentWetness = 0.0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -727,70 +727,70 @@ SoundEnvironment::~SoundEnvironment()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundEnvironment::showDebugInfo(bool value)
 {
-	soundManager->showDebugInfo(value);
+    soundManager->showDebugInfo(value);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 SoundManager* SoundEnvironment::getSoundManager()
 {
-	return soundManager;
+    return soundManager;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Sound* SoundEnvironment::createSound(const String& soundName)
 {
-	Sound* newSound = new Sound(soundName);
-	newSound->setSoundEnvironment(this);
+    Sound* newSound = new Sound(soundName);
+    newSound->setSoundEnvironment(this);
 
-	soundManager->addBuffer( newSound );
+    soundManager->addBuffer( newSound );
 
-	return newSound;
+    return newSound;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Sound* SoundEnvironment::getSound(const String& soundName)
 {
-	return soundManager->getSound(soundName);
+    return soundManager->getSound(soundName);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundEnvironment::setSound(const String& soundName, Ref<Sound> newSound)
 {
-	soundManager->setSound( soundName, newSound );
+    soundManager->setSound( soundName, newSound );
 
 }
 /*
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Sound* SoundEnvironment::loadSoundFromFile(const String& fileName)
 {
-	String soundFullPath = soundManager->getAssetDirectory() + "/" + fileName;
-	if( !soundManager->isAssetDirectorySet() )
-		soundFullPath = fileName;
+    String soundFullPath = soundManager->getAssetDirectory() + "/" + fileName;
+    if( !soundManager->isAssetDirectorySet() )
+        soundFullPath = fileName;
 
-	Sound* sound = createSound(soundFullPath);
-	if(sound != NULL)
-	{
-		sound->loadFromFile(soundFullPath);
-	}
-	return sound;
+    Sound* sound = createSound(soundFullPath);
+    if(sound != NULL)
+    {
+        sound->loadFromFile(soundFullPath);
+    }
+    return sound;
 }
 */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Sound* SoundEnvironment::loadSoundFromFile(const String& soundName, const String& filePath)
 {
-	String soundFullPath = soundManager->getAssetDirectory() + "/" + filePath;
-	if( !soundManager->isAssetDirectorySet() )
-		soundFullPath = filePath;
+    String soundFullPath = soundManager->getAssetDirectory() + "/" + filePath;
+    if( !soundManager->isAssetDirectorySet() )
+        soundFullPath = filePath;
 
-	// If the asset cache is enabled, copy local sound assets to the sound server
-	 if(soundManager->isAssetCacheEnabled())
-	 {
-		AssetCacheManager* acm = soundManager->getAssetCacheManager();
-		acm->setCacheName(soundManager->getAssetDirectory());
-		acm->clearCacheFileList();
-		acm->addFileToCacheList(filePath);
-		acm->sync();
-	}
+    // If the asset cache is enabled, copy local sound assets to the sound server
+     if(soundManager->isAssetCacheEnabled())
+     {
+        AssetCacheManager* acm = soundManager->getAssetCacheManager();
+        acm->setCacheName(soundManager->getAssetDirectory());
+        acm->clearCacheFileList();
+        acm->addFileToCacheList(filePath);
+        acm->sync();
+    }
      // If the asset cache is disabled we are playing sounds locally: convert the
      // relative sound path to a full sound path.
      else
@@ -801,187 +801,187 @@ Sound* SoundEnvironment::loadSoundFromFile(const String& soundName, const String
          }
      }
 
-	Sound* sound = createSound(soundName);
-	if(sound != NULL)
-	{
-		sound->loadFromFile(soundFullPath);
+    Sound* sound = createSound(soundName);
+    if(sound != NULL)
+    {
+        sound->loadFromFile(soundFullPath);
 
-		// Let the server load the sound before continuing (make sure buffer/sound is ready before a node/soundinstance is created)
-		soundManager->wait(soundManager->getSoundLoadWaitTime()); 
-	}
-	return sound;
+        // Let the server load the sound before continuing (make sure buffer/sound is ready before a node/soundinstance is created)
+        soundManager->wait(soundManager->getSoundLoadWaitTime()); 
+    }
+    return sound;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 SoundInstance* SoundEnvironment::createInstance(Sound* sound)
 {
-	SoundInstance* newInstance = new SoundInstance(sound);
-	return newInstance;
+    SoundInstance* newInstance = new SoundInstance(sound);
+    return newInstance;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Vector3f SoundEnvironment::getListenerPosition()
 {
-	return soundManager->getListenerPosition();
+    return soundManager->getListenerPosition();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Quaternion SoundEnvironment::getListenerOrientation()
 {
-	return soundManager->getListenerOrientation();
+    return soundManager->getListenerOrientation();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundEnvironment::setListenerPosition(Vector3f newPos)
 {
-	soundManager->setListenerPosition(newPos);
+    soundManager->setListenerPosition(newPos);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundEnvironment::setListenerOrientation(Quaternion newOrientation)
 {
-	soundManager->setListenerOrientation(newOrientation);
+    soundManager->setListenerOrientation(newOrientation);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundEnvironment::setListener(Vector3f newPos, Quaternion newOrientation)
 {
-	soundManager->setListenerPosition(newPos);
-	soundManager->setListenerOrientation(newOrientation);
+    soundManager->setListenerPosition(newPos);
+    soundManager->setListenerOrientation(newOrientation);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Vector3f SoundEnvironment::getUserPosition()
 {
-	return soundManager->getUserPosition(); // Disabled until local user position is correctly accounted for sound server side
+    return soundManager->getUserPosition(); // Disabled until local user position is correctly accounted for sound server side
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Quaternion SoundEnvironment::getUserOrientation()
 {
-	return soundManager->getUserOrientation();
+    return soundManager->getUserOrientation();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundEnvironment::setUserPosition(Vector3f newPos)
 {
-	soundManager->setUserPosition(newPos);
+    soundManager->setUserPosition(newPos);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundEnvironment::setUserOrientation(Quaternion newOrientation)
 {
-	soundManager->setUserOrientation(newOrientation);
+    soundManager->setUserOrientation(newOrientation);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundEnvironment::setAssetDirectory(const String& directory)
 {
-	soundManager->setAssetDirectory(directory);
+    soundManager->setAssetDirectory(directory);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 String& SoundEnvironment::getAssetDirectory()
 {
-	return soundManager->getAssetDirectory();
+    return soundManager->getAssetDirectory();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundEnvironment::setServerVolume(int value)
 {
-	soundManager->setServerVolume(value);
+    soundManager->setServerVolume(value);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int SoundEnvironment::getServerVolume()
 {
-	return soundManager->getServerVolume();
+    return soundManager->getServerVolume();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundEnvironment::setForceCacheOverwrite(bool value)
 {
-	soundManager->setForceCacheOverwrite(value);
+    soundManager->setForceCacheOverwrite(value);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool SoundEnvironment::isForceCacheOverwriteEnabled()
 {
-	return soundManager->isForceCacheOverwriteEnabled();
+    return soundManager->isForceCacheOverwriteEnabled();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundEnvironment::setVolumeScale(float value)
 {
-	environmentVolumeScale = value;
+    environmentVolumeScale = value;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundEnvironment::setSoundLoadWaitTime(int time)
 { 
-	soundManager->setSoundLoadWaitTime(time);
+    soundManager->setSoundLoadWaitTime(time);
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int SoundEnvironment::getSoundLoadWaitTime()
 {
-	return soundManager->getSoundLoadWaitTime();
+    return soundManager->getSoundLoadWaitTime();
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 float SoundEnvironment::getVolumeScale()
 {
-	return environmentVolumeScale;
+    return environmentVolumeScale;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundEnvironment::setRoomSize(float value)
 {
-	environmentRoomSize = value;
+    environmentRoomSize = value;
 
-	if( soundManager->isSoundServerRunning() )
-	{
-		Vector<int> instanceNodeIDList = soundManager->getInstanceIDList();
+    if( soundManager->isSoundServerRunning() )
+    {
+        Vector<int> instanceNodeIDList = soundManager->getInstanceIDList();
 
-		for( int i = 0; i < instanceNodeIDList.size(); i++ )
-		{
-			Message msg("/setReverb");
-			msg.pushInt32(instanceNodeIDList[i]);
-			msg.pushFloat(environmentWetness);
-			msg.pushFloat(environmentRoomSize);
-			soundManager->sendOSCMessage(msg);
-		}
-	}
+        for( int i = 0; i < instanceNodeIDList.size(); i++ )
+        {
+            Message msg("/setReverb");
+            msg.pushInt32(instanceNodeIDList[i]);
+            msg.pushFloat(environmentWetness);
+            msg.pushFloat(environmentRoomSize);
+            soundManager->sendOSCMessage(msg);
+        }
+    }
 
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 float SoundEnvironment::getRoomSize()
 {
-	return environmentRoomSize;
+    return environmentRoomSize;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundEnvironment::setWetness(float value)
 {
-	environmentWetness = value;
+    environmentWetness = value;
 
-	if( soundManager->isSoundServerRunning() )
-	{
-		Vector<int> instanceNodeIDList = soundManager->getInstanceIDList();
-		for( int i = 0; i < instanceNodeIDList.size(); i++ )
-		{
-			Message msg("/setReverb");
-			msg.pushInt32(instanceNodeIDList[i]);
-			msg.pushFloat(environmentWetness);
-			msg.pushFloat(environmentRoomSize);
-			soundManager->sendOSCMessage(msg);
-		}
-	}
+    if( soundManager->isSoundServerRunning() )
+    {
+        Vector<int> instanceNodeIDList = soundManager->getInstanceIDList();
+        for( int i = 0; i < instanceNodeIDList.size(); i++ )
+        {
+            Message msg("/setReverb");
+            msg.pushInt32(instanceNodeIDList[i]);
+            msg.pushFloat(environmentWetness);
+            msg.pushFloat(environmentRoomSize);
+            soundManager->sendOSCMessage(msg);
+        }
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 float SoundEnvironment::getWetness()
 {
-	return environmentWetness;
+    return environmentWetness;
 }

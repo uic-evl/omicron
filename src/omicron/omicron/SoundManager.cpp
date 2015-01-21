@@ -98,9 +98,13 @@ void SoundManager::setup(Setting& settings)
     Setting& dispCfg = settings["display"];
     if(dispCfg.exists("radius"))
     {
-        float radius = dispCfg["radius"];
-        ofmsg("SoundManager::setup: Display radius: %1%", %radius );
-    }
+		radius = dispCfg["radius"];
+	}
+	else
+	{
+		radius = 10000;
+	}
+	ofmsg("SoundManager::setup: Display radius: %1%", %radius );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -497,7 +501,7 @@ void SoundManager::setListener(Vector3f newPos, Quaternion newOrientation)
 Vector3f SoundManager::getUserPosition()
 {
     return userPosition;
-    //return Vector3f(0,0,0);
+	//return Vector3f(6,6,6);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -509,8 +513,10 @@ Quaternion SoundManager::getUserOrientation()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::setUserPosition(Vector3f newPos)
 {
+
     userPosition = newPos;
     updateInstancePositions();
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -642,8 +648,6 @@ void SoundManager::updateInstancePositions()
 
         if( inst->isPlaying() )
         {
-            
-
             Message msg("/setObjectLoc");
             msg.pushInt32(inst->getID());
         
@@ -652,26 +656,38 @@ void SoundManager::updateInstancePositions()
             msg.pushFloat( soundLocalPosition[0] );
             msg.pushFloat( soundLocalPosition[1] );
             msg.pushFloat( soundLocalPosition[2] );
-
             sendOSCMessage(msg);
+			ofmsg( "objectx %1% and objectz %2%", %soundLocalPosition[0] %soundLocalPosition[2] );
+
+			Message msg3("/setUserLoc");
+			msg3.pushInt32(inst->getID());
+			Vector3f userPosition = environment->getUserPosition();
+			msg3.pushFloat( userPosition[0] );
+			msg3.pushFloat( userPosition[1] );
+			msg3.pushFloat( userPosition[2] );
+			sendOSCMessage(msg3);
+			ofmsg( "userx %1% and userz %2%", %userPosition[0] %userPosition[2] );
+
+			//Calculate speaker angle relative to user
+			updateAudioImage(soundLocalPosition, userPosition, inst->getID());
 
             // Calculate and send the volume rolloff
             
-            Vector3f audioListener = environment->getUserPosition();
-            float distanceToListener = Math::sqrt( Math::sqr(audioListener[0] - soundLocalPosition[0]) + Math::sqr(audioListener[1] - soundLocalPosition[1]) + Math::sqr(audioListener[2] - soundLocalPosition[2]) );
+			float objToUser3D = Math::sqrt( Math::sqr(userPosition[0] - soundLocalPosition[0]) + Math::sqr(userPosition[1] - soundLocalPosition[1]) + Math::sqr(userPosition[2] - soundLocalPosition[2]) );
             float newVol = inst->getVolume();
+			//ofmsg( "fetching newVol = %1%", %newVol );
 
             int rolloffType = 0;
             if( inst->isRolloffLinear() )
             {
                 rolloffType = 1;
-                newVol = ( 1 - ((distanceToListener - inst->getMinRolloffDistance() ) / inst->getMaxDistance())) * inst->getVolume(); //Linear rolloff
+				newVol = ( 1 - ((objToUser3D - inst->getMinRolloffDistance() ) / inst->getMaxDistance())) * inst->getVolume(); //Linear rolloff
             }
             else if( inst->isRolloffLogarithmic() )
             {
                 rolloffType = 2;
-                if( distanceToListener > 0 )
-                    newVol = inst->getMinRolloffDistance() * (inst->getMaxDistance() / Math::sqr(distanceToListener) );  // Logarithmic
+				if( objToUser3D > 0 )
+					newVol = inst->getMinRolloffDistance() * (inst->getMaxDistance() / Math::sqr(objToUser3D) );  // Logarithmic
             }
             if( newVol > inst->getVolume() )
                 newVol = inst->getVolume();
@@ -689,11 +705,94 @@ void SoundManager::updateInstancePositions()
             
             environment->getSoundManager()->sendOSCMessage(msg2);
             //if( isDebugEnabled() )
-            //	ofmsg("%1%: instanceID %2% rolloff type %3% newVol %4%", %__FUNCTION__ %inst->getID() %rolloffType %newVol );
+			//ofmsg("%1%: instanceID %2% rolloff type %3% newVol %4%", %__FUNCTION__ %inst->getID() %rolloffType %newVol );
         }
     }
 };
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SoundManager::updateAudioImage(Vector3f soundLocalPosition, Vector3f userPosition, int instID)
+{
+	int flow;
+	float m, intercept;
+	float coeff1, coeff2, coeff3;
+	float wallx1, wallx2, wallz1, wallz2; 
+	float wallToObject, wallToUser;
+	float wallx, wallz;
+	float objToCenter = sqrt(soundLocalPosition[0]*soundLocalPosition[0] + soundLocalPosition[2]*soundLocalPosition[2]);
+	float objToWall1, objToWall2;
 
+	if (abs(userPosition[0] - soundLocalPosition[0]) < 0.1f){
+		flow = 1;
+		ofmsg( "infinite slope case flow = %1%", %flow );
+
+		wallx = soundLocalPosition[0];
+		if (userPosition[2] > soundLocalPosition[2])
+		{
+			wallz = (-1.0f)* abs(sqrt(radius*radius-soundLocalPosition[0]*soundLocalPosition[0]));
+		}
+		else
+		{
+			wallz = abs(sqrt(radius*radius-soundLocalPosition[0]*soundLocalPosition[0]));
+		}
+	}
+	else 
+	{
+
+		m = (userPosition[2]-soundLocalPosition[2])/(userPosition[0] - soundLocalPosition[0]);
+		intercept = soundLocalPosition[2] - m* soundLocalPosition[0];
+		//forumulas that obatin varables for quadratic
+		coeff1 = 1 + m*m;
+		coeff2 = 2 * m * intercept;
+		coeff3 = intercept*intercept - radius*radius;
+		//getting the two solutions...
+		wallx1 = ((-1.0f*coeff2) + Math::sqrt(coeff2*coeff2-4*coeff1*coeff3))/(2*coeff1);
+		wallx2 = ((-1.0f*coeff2) - Math::sqrt(coeff2*coeff2-4*coeff1*coeff3))/(2*coeff1);
+		wallz1 = (m * wallx1) + intercept;
+		wallz2 = (m * wallx2) + intercept;
+
+		if(objToCenter < radius){
+			flow = 2;
+			ofmsg( "finite inside case flow = %1%", %flow );
+
+			wallToObject = Math::sqrt( ((wallx1-soundLocalPosition[0])*(wallx1-soundLocalPosition[0]))+((wallz1 - soundLocalPosition[2])*(wallz1 - soundLocalPosition[2])));
+			wallToUser = Math::sqrt( ((wallx1-userPosition[0])*(wallx1-userPosition[0]))+((wallz1 - userPosition[2])*(wallz1 - userPosition[2])));
+			if (wallToUser > wallToObject){
+				wallx = wallx1;
+				wallz = wallz1;
+			}
+			else{
+				wallx = wallx2;
+				wallz = wallz2;
+			}					
+		}
+		// if object is farther away than radius
+		else{
+			flow = 3;
+			ofmsg( "finite outside case flow = %1%", %flow );
+
+			objToWall1 = Math::sqrt(((soundLocalPosition[0]-wallx1)*(soundLocalPosition[0]-wallx1)) + ((soundLocalPosition[2]-wallz1)*(soundLocalPosition[2]-wallz1)));
+			objToWall2 = Math::sqrt(((soundLocalPosition[0]-wallx2)*(soundLocalPosition[0]-wallx2)) + ((soundLocalPosition[2]-wallz2)*(soundLocalPosition[2]-wallz2)));
+			if (objToWall1 < objToWall2){
+				wallx = wallx1;
+				wallz = wallz1;	
+				}
+			else{
+				wallx = wallx2;
+				wallz = wallz2;
+			}
+		}
+	}
+	ofmsg( "wallx %1% and wallz %2%", %wallx %wallz );
+
+	// Calculate and send the speaker angle to sound server
+	float pos = atan2((wallz), (wallx))/3.14159f;//pi
+	pos = pos - 0.5;
+	Message msg4("/setPos");
+	msg4.pushInt32( instID );
+	msg4.pushFloat( pos );
+	sendOSCMessage(msg4);
+	//ofmsg("%1%: pos", %pos );
+}
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundManager::removeInstanceNode(int id)
 {
@@ -865,7 +964,16 @@ Quaternion SoundEnvironment::getUserOrientation()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SoundEnvironment::setUserPosition(Vector3f newPos)
 {
+	//newPos = Vector3f(5,5,5);
     soundManager->setUserPosition(newPos);
+	/*
+	Message msg("/setUserLoc");
+					
+			msg.pushFloat( newPos[0] );
+			msg.pushFloat( newPos[1] );
+			msg.pushFloat( newPos[2] );
+			soundManager->sendOSCMessage(msg);
+	*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

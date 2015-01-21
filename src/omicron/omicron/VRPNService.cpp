@@ -50,12 +50,33 @@ typedef	struct {
     double		pos[3];		// Position of the sensor
     double		quat[4];	// Orientation of the sensor
 } vrpn_TRACKERCB; */
-void VRPN_CALLBACK handle_tracker(void *userdata, const vrpn_TRACKERCB t)
+void VRPN_CALLBACK handle_tracker(void *userData, const vrpn_TRACKERCB t)
 {
-    VRPNStruct* vs = ((VRPNStruct*)userdata);
+    VRPNStruct* vs = ((VRPNStruct*)userData);
     VRPNService* vrpnService = vs->vrnpService;
 
-    vrpnService->generateEvent(t, vs->object_id, vs->userId, vs->jointId);
+    vrpnService->generateTrackerEvent(t, vs->object_id, vs->userId, vs->jointId);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// User routine to handle a change in button state.  This is called when
+// the button callback is called (when a message from its counterpart
+// across the connetion arrives).
+/* // For additional information http://www.cs.unc.edu/Research/vrpn/vrpn_Button_Remote.html
+typedef	struct {
+	struct timeval	msg_time;	// Time of button press/release
+	int		button;		// Which button (numbered from zero)
+	int		state;		// New state (0 = off, 1 = on)
+} vrpn_BUTTONCB; */
+void VRPN_CALLBACK handle_button( void* userData, const vrpn_BUTTONCB b )
+{
+	VRPNStruct* vs = ((VRPNStruct*)userData);
+    VRPNService* vrpnService = vs->vrnpService;
+
+	if(vrpnService->isDebugEnabled())
+		printf("VRPNService: Button %d, %d\n", b.button, b.state);
+
+	vrpnService->generateButtonEvent(vs, vs->object_id, b.button, b.state);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -68,7 +89,7 @@ void VRPNService::setup(Setting& settings)
 
     if(settings.exists("trackedObjects"))
     {
-        Setting& strs = settings["trackedObjects"];
+        Setting& strs = settings["objects"];
         for(int i = 0; i < strs.getLength(); i++)
         {
             Setting& str = strs[i];
@@ -101,7 +122,16 @@ void VRPNService::setup(Setting& settings)
                 trackerInfo.jointId = -1;
             }
 
-            trackerInfo.trackableId = str["trackableID"];
+			if(str.exists("objectType"))
+            {
+                trackerInfo.object_type = (const char*)str["serverIP"];
+            }
+			else
+			{
+				trackerInfo.object_type = "None";
+			}
+
+            trackerInfo.trackableId = str["objectID"];
             trackerNames.push_back(trackerInfo);
 
         }
@@ -139,6 +169,7 @@ void VRPNService::initialize()
 
         VRPNStruct* vrpnData = new VRPNStruct();
         vrpnData->object_name = t.object_name;
+		vrpnData->object_type = t.object_type;
         vrpnData->object_id = t.trackableId;
         vrpnData->userId = t.userId;
         vrpnData->jointId = t.jointId;
@@ -178,7 +209,7 @@ void VRPNService::dispose()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void VRPNService::generateEvent(vrpn_TRACKERCB t, int id, unsigned short userId, int jointId) 
+void VRPNService::generateTrackerEvent(vrpn_TRACKERCB t, int id, unsigned short userId, int jointId) 
 {
      //static float lastt;
      //float curt = (float)((double)clock() / CLOCKS_PER_SEC);
@@ -202,4 +233,27 @@ void VRPNService::generateEvent(vrpn_TRACKERCB t, int id, unsigned short userId,
          mysInstance->unlockEvents();
          //lastt = curt;
      //}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void VRPNService::generateButtonEvent(VRPNStruct* userData, int id, int buttonID, int stateFlag) 
+{
+	mysInstance->lockEvents();
+	Event* evt = mysInstance->writeHead();
+	evt->reset(Event::Update, Service::Controller, id);
+     
+	uint curButtonState = 0;
+
+	if( userData->object_name == "ViconApex" )
+	{
+		if( buttonID == 0 && stateFlag == 1 ) // Apex Bottom
+			curButtonState |= Event::Button1;
+		if( buttonID == 2 && stateFlag == 1 ) // Apex Left -> Wand Button 3 (Left)
+			curButtonState |= Event::Button3;
+		if( buttonID == 3 && stateFlag == 1 ) // Apex Right -> Wand Button 2 (Right)
+			curButtonState |= Event::Button2;
+		if( buttonID == 4 && stateFlag == 1 ) // Apex Trigger -> Wand Button 7 (Trigger)
+			curButtonState |= Event::Button7;
+	}
+	mysInstance->unlockEvents();
 }

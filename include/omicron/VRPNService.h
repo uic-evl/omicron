@@ -42,9 +42,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <vrpn_tracker.h> // Remember to set Linker directories and Input/Dependencies to vrpn.lib
+#include <vrpn_Button.h>
 
 namespace omicron
 {
+struct VRPNStruct;
 ///////////////////////////////////////////////////////////////////////////////
 class OMICRON_API VRPNService: public Service
 {
@@ -58,7 +60,8 @@ public:
     virtual void poll();
     virtual void dispose();
 
-    void generateEvent(vrpn_TRACKERCB, int, unsigned short userId, int jointId);
+    void generateTrackerEvent(vrpn_TRACKERCB, int, unsigned short userId, int jointId);
+	void generateButtonEvent(VRPNStruct*, int, int buttonID, int stateFlag);
 
     //! Sets the data update interval, in seconds. This is the interval at which this service will generate events
     //! If set to zero, the service will generate events as fast as possible.
@@ -75,6 +78,7 @@ private:
     {
         const char* server_ip;
         const char* object_name;
+		const char* object_type;
         int trackableId;
         unsigned short userId;
         int jointId;
@@ -85,17 +89,17 @@ private:
 
     float myUpdateInterval;
 };
-
+///////////////////////////////////////////////////////////////////////////////
 struct VRPNStruct
 {
     const char* server_ip;
     const char* object_name;
+	const char* object_type;
     int object_id;
     unsigned short userId;
     int jointId;
     VRPNService* vrnpService;
 };
-
 ///////////////////////////////////////////////////////////////////////////////
 inline void VRPNService::setUpdateInterval(float value) 
 { myUpdateInterval = value; }

@@ -233,6 +233,7 @@ private:
 
 	bool debugInfo;
 	bool caveSimulator;
+	bool enableKinectAudio;
 	int caveSimulatorHeadID;
 	int caveSimulatorWandID;
 

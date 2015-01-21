@@ -97,9 +97,9 @@ void MSKinectService::setup(Setting& settings)
 		ofmsg("   Kinect right hand (wand) will be mapped to mocap ID %1%", %caveSimulatorWandID);
 	}
 
-	
+#ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
 	speechGrammerFilePath = Config::getStringValue("speechGrammerFilePath", settings, "kinectSpeech.grxml");
-
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

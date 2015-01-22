@@ -46,7 +46,7 @@ Sound::Sound()
 	loop = false;
 	useEnvironmentParameters = true;
 
-	rolloffMode = Logarithmic;
+	rolloffMode = None;
 	minRolloffDistance = 1.0f;
 	maxDistance = 20.0f;
 }
@@ -67,7 +67,7 @@ Sound::Sound(const String& soundName)
 	loop = false;
 	useEnvironmentParameters = true;
 
-	rolloffMode = Logarithmic;
+	rolloffMode = None;
 	minRolloffDistance = 1.0f;
 	maxDistance = 20.0f;
 }
@@ -88,7 +88,7 @@ Sound::Sound(const String& soundName, float volume, float width, float roomSize,
 	this->environmentSound = env;
 	useEnvironmentParameters = false;
 
-	rolloffMode = Logarithmic;
+	rolloffMode = None;
 	minRolloffDistance = 1.0f;
 	maxDistance = 20.0f;
 }

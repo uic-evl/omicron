@@ -78,6 +78,8 @@ void MSKinectService::setup(Setting& settings)
 
 	debugInfo = Config::getBoolValue("debug", settings, false);
 
+	enableKinectAudio = Config::getBoolValue("enableKinectSpeech", settings, false);
+
 	caveSimulator = Config::getBoolValue("caveSimulator", settings, false);
 	caveSimulatorHeadID = Config::getIntValue("caveSimulatorHeadID", settings, 0);
 	caveSimulatorWandID = Config::getIntValue("caveSimulatorWandID", settings, 1);
@@ -88,10 +90,11 @@ void MSKinectService::setup(Setting& settings)
 	//	ofmsg("   Kinect head will be mapped to mocap ID %1%", %caveSimulatorHeadID);
 	//	ofmsg("   Kinect right hand (wand) will be mapped to mocap ID %1%", %caveSimulatorWandID);
 	//}
-
+#ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
 	speechGrammerFilePath = Config::getStringValue("speechGrammerFilePath", settings, "kinectSpeech.grxml");
 
 	confidenceThreshold = Config::getFloatValue("confidenceThreshold", settings, 0.3f);
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -125,7 +128,8 @@ void MSKinectService::poll()
 	pollBody();
 
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
-	pollSpeech();
+	if( enableKinectAudio )
+		pollSpeech();
 #endif
 }
 
@@ -171,7 +175,9 @@ void MSKinectService::pollBody()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void MSKinectService::pollSpeech() 
 {
+#ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
 	ProcessSpeech();
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

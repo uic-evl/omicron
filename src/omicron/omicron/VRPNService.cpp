@@ -87,7 +87,7 @@ void VRPNService::setup(Setting& settings)
         server_ip =  (const char*)settings["serverIP"];
     }
 
-    if(settings.exists("trackedObjects"))
+    if(settings.exists("objects"))
     {
         Setting& strs = settings["objects"];
         for(int i = 0; i < strs.getLength(); i++)
@@ -246,6 +246,10 @@ void VRPNService::generateButtonEvent(VRPNStruct* userData, int id, int buttonID
 
 	if( userData->object_name == "ViconApex" )
 	{
+		if( isDebugEnabled() )
+		{
+			ofmsg("VRPNService: Button Device ID %1% using Vicon Apex mapping. Button: %2% State: %3%", %id %buttonID % stateFlag);
+		}
 		if( buttonID == 0 && stateFlag == 1 ) // Apex Bottom
 			curButtonState |= Event::Button1;
 		if( buttonID == 2 && stateFlag == 1 ) // Apex Left -> Wand Button 3 (Left)

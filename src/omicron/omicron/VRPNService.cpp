@@ -124,7 +124,7 @@ void VRPNService::setup(Setting& settings)
 
 			if(str.exists("objectType"))
             {
-                trackerInfo.object_type = (const char*)str["serverIP"];
+                trackerInfo.object_type = (const char*)str["objectType"];
             }
 			else
 			{
@@ -166,6 +166,7 @@ void VRPNService::initialize()
 
         // Open the tracker: '[object name]@[tracker IP]'
         vrpn_Tracker_Remote *tkr = new vrpn_Tracker_Remote(trackerName);
+		vrpn_Button_Remote* vrpnButton = new vrpn_Button_Remote(trackerName);
 
         VRPNStruct* vrpnData = new VRPNStruct();
         vrpnData->object_name = t.object_name;
@@ -175,8 +176,9 @@ void VRPNService::initialize()
         vrpnData->jointId = t.jointId;
         vrpnData->vrnpService = this;
 
-        // Set up the tracker callback handler
+        // Set up the callback handler
         tkr->register_change_handler((void*)vrpnData, handle_tracker);
+		vrpnButton->register_change_handler((void*)vrpnData, handle_button);
 
         // Add to tracker remote list
         trackerRemotes.push_back(tkr);
@@ -244,20 +246,20 @@ void VRPNService::generateButtonEvent(VRPNStruct* userData, int id, int buttonID
      
 	uint curButtonState = 0;
 
-	if( userData->object_name == "ViconApex" )
+	if( isDebugEnabled() )
 	{
-		if( isDebugEnabled() )
-		{
-			ofmsg("VRPNService: Button Device ID %1% using Vicon Apex mapping. Button: %2% State: %3%", %id %buttonID % stateFlag);
-		}
-		if( buttonID == 0 && stateFlag == 1 ) // Apex Bottom
-			curButtonState |= Event::Button1;
-		if( buttonID == 2 && stateFlag == 1 ) // Apex Left -> Wand Button 3 (Left)
-			curButtonState |= Event::Button3;
-		if( buttonID == 3 && stateFlag == 1 ) // Apex Right -> Wand Button 2 (Right)
-			curButtonState |= Event::Button2;
-		if( buttonID == 4 && stateFlag == 1 ) // Apex Trigger -> Wand Button 7 (Trigger)
-			curButtonState |= Event::Button7;
+		ofmsg("VRPNService: Button Device ID %1% using Vicon Apex mapping. Button: %2% State: %3%", %id %buttonID % stateFlag);
 	}
+	if( buttonID == 0 && stateFlag == 1 ) // Apex Bottom
+		curButtonState |= Event::Button1;
+	if( buttonID == 2 && stateFlag == 1 ) // Apex Left -> Wand Button 3 (Left)
+		curButtonState |= Event::Button3;
+	if( buttonID == 3 && stateFlag == 1 ) // Apex Right -> Wand Button 2 (Right)
+		curButtonState |= Event::Button2;
+	if( buttonID == 4 && stateFlag == 1 ) // Apex Trigger -> Wand Button 7 (Trigger)
+		curButtonState |= Event::Button7;
+
+	evt->setFlags(curButtonState);
+
 	mysInstance->unlockEvents();
 }

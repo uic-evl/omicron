@@ -180,6 +180,8 @@ public:
 	int getSoundLoadWaitTime() { return soundLoadWaitTime; };
 private:
 	void updateInstancePositions();
+	void updateAudioImage(Vector3f soundLocalPosition, Vector3f userPosition, int instID);
+	void updateObjectWidth(float width, float objToUser3D, int instID);
 	void removeInstanceNode(int);
 private:
 	Ref<SoundEnvironment> environment;
@@ -191,6 +193,10 @@ private:
 	static bool showDebug;
 	static bool startingSoundServer;
 	static bool soundServerRunning;
+
+	// This is set in .cfg. If 'radius' does not exist in .cfg,
+	// a large value is used.
+	float radius;
 
 	// This is assumed to be the navigative position
 	// of the listener in world coordinates

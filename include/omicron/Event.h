@@ -79,10 +79,12 @@ namespace omicron
         void deserialize(const omicronConnector::EventData* ed);
 
         void reset(Type type, Service::ServiceType serviceType, uint sourceId = 0, unsigned short serviceId = 0, unsigned short userId = 0);
-        //! Only resets the event sourc eid, keeping the rest of the event data intact.
+        //! Only resets the event source id, keeping the rest of the event data intact.
         //! Useful when dynamically re-routing events (i.e. to transparently re-associate 
         //! head tracking sources to applications)
         void resetSourceId(uint newSourceId);
+        //! Only resets the event type, keeping the rest of the event data intact.
+        void resetType(Type type);
 
         //! id of the source of this event. Input services associate unique ids to each of their event sources.
         unsigned int getSourceId() const;
@@ -313,6 +315,13 @@ namespace omicron
     void Event::resetSourceId(uint newSourceId)
     {
         mySourceId = newSourceId;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    inline 
+    void Event::resetType(Type type)
+    {
+        myType = type;
     }
 
     ///////////////////////////////////////////////////////////////////////////

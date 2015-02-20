@@ -329,6 +329,6 @@ void Config::append(Config* cfg, bool overwrite)
             if(overwrite) myRoot.remove(s.getName());
             else continue;
         }
-        insertSetting(myRoot, myRoot[i]);
+        insertSetting(myRoot, root[i]);
     }
 }

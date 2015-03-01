@@ -283,7 +283,7 @@ endif()
 
 # ThinkGear module support
 if(WIN32)
-	set(OMICRON_USE_THINKGEAR true CACHE BOOL "Enable/disable ThinkGear support")
+	set(OMICRON_USE_THINKGEAR false CACHE BOOL "Enable/disable ThinkGear support")
 	if(OMICRON_USE_THINKGEAR)
 		set( srcs	 ${srcs} omicron/ThinkGearService.cpp )
 		set( headers ${headers} ${CMAKE_SOURCE_DIR}/include/omicron/ThinkGearService.h

@@ -51,22 +51,22 @@
 
 // Unordered map: use different implementations on linux & windows.
 #if defined(_LIBCPP_VERSION) || __cplusplus >= 201103L
-	// C++11 support or using libc++
-	#define HAVE_STD_UNORDERED_MAP
+    // C++11 support or using libc++
+    #define HAVE_STD_UNORDERED_MAP
 #elif _MSC_VER
- 	// At least on supported versions of MSVC (>= 2008) we have
- 	// std::unordered_map
- 	#define HAVE_STD_UNORDERED_MAP
+    // At least on supported versions of MSVC (>= 2008) we have
+    // std::unordered_map
+    #define HAVE_STD_UNORDERED_MAP
 #endif
 
 #ifdef HAVE_STD_UNORDERED_MAP
-	#include <unordered_map>
+    #include <unordered_map>
 #else
-	#ifdef __GNUC__
- 		#include <tr1/unordered_map>
-	#else
-		#include <hash_map>
-	#endif
+    #ifdef __GNUC__
+        #include <tr1/unordered_map>
+    #else
+        #include <hash_map>
+    #endif
 #endif
 
 // Libconfig
@@ -86,184 +86,129 @@
 #include <omicron/math/AlignedBox.h>
 #include <omicron/math/Sphere.h>
 #include <omicron/math/Plane.h>
-#include <omicron/fast_mutex.h>
+//#include <omicron/fast_mutex.h>
 
 namespace boost { template<class Ch, class Tr, class Alloc> class basic_format; };
 
 namespace omicron
 {
-	// Basic typedefs
-	typedef unsigned char byte;
-	#ifndef OMICRON_OS_LINUX
-	typedef unsigned int uint;
-	#endif
-	typedef unsigned long long uint64;
-	typedef long long int64;
-	typedef std::string String;
+    // Basic typedefs
+    typedef unsigned char byte;
+    #ifndef OMICRON_OS_LINUX
+    typedef unsigned int uint;
+    #endif
+    typedef unsigned long long uint64;
+    typedef long long int64;
+    typedef std::string String;
 
-	///////////////////////////////////////////////////////////////////////////////////////////////
-	//! A key-value pair, usually stored in objects of the Dictionary class.
-	template<typename K, typename T>
-	class KeyValue: public std::pair<K, T>
-	{
-	public:
-		KeyValue(const K& k, T v): std::pair<K, T>(k, v) {}
-		KeyValue(std::pair<K, T> src): std::pair<K, T>(src.first, src.second) {}
-		KeyValue(std::pair<const K, T> src): std::pair<K, T>(src.first, src.second) {}
-		const K& getKey() { return this->first; }
-		T getValue() { return this->second; }
-		T operator->() { return this->second; }
-	};
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //! A key-value pair, usually stored in objects of the Dictionary class.
+    template<typename K, typename T>
+    class KeyValue: public std::pair<K, T>
+    {
+    public:
+        KeyValue(const K& k, T v): std::pair<K, T>(k, v) {}
+        KeyValue(std::pair<K, T> src): std::pair<K, T>(src.first, src.second) {}
+        KeyValue(std::pair<const K, T> src): std::pair<K, T>(src.first, src.second) {}
+        const K& getKey() { return this->first; }
+        T getValue() { return this->second; }
+        T operator->() { return this->second; }
+    };
 
-	///////////////////////////////////////////////////////////////////////////////////////////////
-	// Container typedefs
-	//! A Dictionary storing key-value pairs using a hashtable implementation.
-	//! @remarks Dictionary is usually a lightweight wrapper around a standard library implementation
-	#ifdef HAVE_STD_UNORDERED_MAP
-		template<typename K, typename T> class Dictionary: public std::unordered_map<K, T> {
-	#else
-		#ifdef __GNUC__
-			template<typename K, typename T> class Dictionary: public std::tr1::unordered_map<K, T> {
-		#else
-			template<typename K, typename T> class Dictionary: public stdext::hash_map<K, T> {
-		#endif
-	#endif
-		public:
-			typedef KeyValue<K, T> Item;
-			typedef std::pair<  typename Dictionary<K, T>::iterator,  typename Dictionary<K, T>::iterator> Range;
-			typedef std::pair<  typename Dictionary<K, T>::const_iterator,  typename Dictionary<K, T>::const_iterator> ConstRange;
-		};
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // Container typedefs
+    //! A Dictionary storing key-value pairs using a hashtable implementation.
+    //! @remarks Dictionary is usually a lightweight wrapper around a standard library implementation
+    #ifdef HAVE_STD_UNORDERED_MAP
+        template<typename K, typename T> class Dictionary: public std::unordered_map<K, T> {
+    #else
+        #ifdef __GNUC__
+            template<typename K, typename T> class Dictionary: public std::tr1::unordered_map<K, T> {
+        #else
+            template<typename K, typename T> class Dictionary: public stdext::hash_map<K, T> {
+        #endif
+    #endif
+        public:
+            typedef KeyValue<K, T> Item;
+            typedef std::pair<  typename Dictionary<K, T>::iterator,  typename Dictionary<K, T>::iterator> Range;
+            typedef std::pair<  typename Dictionary<K, T>::const_iterator,  typename Dictionary<K, T>::const_iterator> ConstRange;
+        };
 
-	///////////////////////////////////////////////////////////////////////////////////////////////
-	//! Dictionary is usually a lightweight wrapper around a standard library vector implementation
-	template<typename T> class Vector: public std::vector<T>
-	{
-	public:
-		typedef std::pair<  typename Vector<T>::iterator,  typename Vector<T>::iterator> Range;
-		typedef std::pair<  typename Vector<T>::const_iterator,  typename Vector<T>::const_iterator> ConstRange;
-	};
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //! Dictionary is usually a lightweight wrapper around a standard library vector implementation
+    template<typename T> class Vector: public std::vector<T>
+    {
+    public:
+        typedef std::pair<  typename Vector<T>::iterator,  typename Vector<T>::iterator> Range;
+        typedef std::pair<  typename Vector<T>::const_iterator,  typename Vector<T>::const_iterator> ConstRange;
+    };
 
-	///////////////////////////////////////////////////////////////////////////////////////////////
-	//! List is usually a lightweight wrapper around a standard library list implementation
-	template<typename T> class List: public std::list<T>
-	{
-	public:
-		typedef std::pair<  typename List<T>::iterator, typename List<T>::iterator> Range;
-		typedef std::pair<  typename List<T>::const_iterator,  typename List<T>::const_iterator> ConstRange;
-	};
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //! List is usually a lightweight wrapper around a standard library list implementation
+    template<typename T> class List: public std::list<T>
+    {
+    public:
+        typedef std::pair<  typename List<T>::iterator, typename List<T>::iterator> Range;
+        typedef std::pair<  typename List<T>::const_iterator,  typename List<T>::const_iterator> ConstRange;
+    };
 
-	///////////////////////////////////////////////////////////////////////////////////////////////
-	//! Queue is usually a lightweight wrapper around a standard library queue implementation
-	template<typename T> class Queue: public std::queue<T>
-	{
-	};
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //! Queue is usually a lightweight wrapper around a standard library queue implementation
+    template<typename T> class Queue: public std::queue<T>
+    {
+    };
 
-	///////////////////////////////////////////////////////////////////////////////////////////////
-	//! Stores configuration settings from a section of a config file.
-	//! @remarks for full reference see http://www.hyperrealm.com/libconfig/libconfig_manual.html#The-C_002b_002b-API
-	typedef libconfig::Setting Setting;
-
-
-	///////////////////////////////////////////////////////////////////////////////////////////////
-	//! enumeration for the axes
-	enum Axis
-	{
-		AxisX,
-		AxisY,
-		AxisZ
-	};
-
-	///////////////////////////////////////////////////////////////////////////////////////////////
-	//! Enumeration for orientation.
-	enum Orientation
-	{
-		Horizontal = 0,
-		Vertical = 1
-	};
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //! Stores configuration settings from a section of a config file.
+    //! @remarks for full reference see http://www.hyperrealm.com/libconfig/libconfig_manual.html#The-C_002b_002b-API
+    typedef libconfig::Setting Setting;
 
 
-	///////////////////////////////////////////////////////////////////////////////////////////////
-	//! Implements a base class for reference-counted types. o be used in conjunction with the
-	//! Ref<> type.
-	class OMICRON_API ReferenceType
-	{
-	public:
-		static void printObjCounts();
-	public:
-		ReferenceType();
-		virtual ~ReferenceType();
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //! enumeration for the axes
+    enum Axis
+    {
+        AxisX,
+        AxisY,
+        AxisZ
+    };
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //! Enumeration for orientation.
+    enum Orientation
+    {
+        Horizontal = 0,
+        Vertical = 1
+    };
 
 
-		void ref();
-		void unref();
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //! Implements a base class for reference-counted types. o be used in conjunction with the
+    //! Ref<> type.
+    class OMICRON_API ReferenceType
+    {
+    public:
+        static void printObjCounts();
+    public:
+        ReferenceType();
+        virtual ~ReferenceType();
 
-		long refCount()
-		{
-			return myRefCount;
-		}
 
-	private:
-		mutable boost::detail::atomic_count myRefCount;
-	protected:
-		static List<ReferenceType*> mysObjList;
-	};
+        void ref();
+        void unref();
 
-	inline void intrusive_ptr_add_ref(ReferenceType* p) { p->ref(); }
-	inline void intrusive_ptr_release(ReferenceType* p) { p->unref(); }
+        long refCount()
+        {
+            return myRefCount;
+        }
 
-	///////////////////////////////////////////////////////////////////////////////////////////////////
-	//! Utility class to generate a sequentially numbered series of names
-	//-------------------------------------------------------------------------------------------------
-	// Original code taken from OGRE
-	//  Copyright (c) 2000-2009 Torus Knot Software Ltd
-	//  For the latest info, see http://www.ogre3d.org/
-	class NameGenerator
-	{
-	protected:
-		String mPrefix;
-		unsigned long long int mNext;
-        fast_mutex mMutex;
-		//OGRE_AUTO_MUTEX
-	public:
-		NameGenerator(const NameGenerator& rhs)
-			: mPrefix(rhs.mPrefix), mNext(rhs.mNext) {}
+    private:
+        mutable boost::detail::atomic_count myRefCount;
+    protected:
+        static List<ReferenceType*> mysObjList;
+    };
 
-		NameGenerator(const String& prefix) : mPrefix(prefix), mNext(1) {}
-
-		/// Generate a new name
-		String generate()
-		{
-			//OGRE_LOCK_AUTO_MUTEX
-            fast_mutex_autolock autolock(mMutex);
-			std::ostringstream s;
-			s << mPrefix << mNext++;
-			return s.str();
-		}
-
-		/// Reset the internal counter
-		void reset()
-		{
-			//OGRE_LOCK_AUTO_MUTEX
-            fast_mutex_autolock autolock(mMutex);
-			mNext = 1ULL;
-		}
-
-		/// Manually set the internal counter (use caution)
-		void setNext(unsigned long long int val)
-		{
-			//OGRE_LOCK_AUTO_MUTEX
-            fast_mutex_autolock autolock(mMutex);
-			mNext = val;
-		}
-
-		/// Get the internal counter
-		unsigned long long int getNext() const
-		{
-			// lock even on get because 64-bit may not be atomic read
-			//OGRE_LOCK_AUTO_MUTEX
-            fast_mutex_autolock autolock(*(const_cast<fast_mutex*>(&mMutex)));
-			return mNext;
-		}
-	};
+    inline void intrusive_ptr_add_ref(ReferenceType* p) { p->ref(); }
+    inline void intrusive_ptr_release(ReferenceType* p) { p->unref(); }
 }; // namespace omicron
 #endif

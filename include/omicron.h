@@ -38,6 +38,7 @@
 #include "omicron/FileDataStream.h"
 #include "omicron/FilesystemDataSource.h"
 #include "omicron/IEventListener.h"
+#include "omicron/NameGenerator.h"
 #include "omicron/PointSetId.h"
 #include "omicron/Thread.h"
 #include "omicron/Service.h"

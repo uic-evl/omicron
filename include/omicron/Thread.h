@@ -83,7 +83,7 @@ namespace omicron
     };
     
     ////////////////////////////////////////////////////////////////////////////
-    class ThreadEvent
+    class OMICRON_API ThreadEvent
     {
     public:
         ThreadEvent();

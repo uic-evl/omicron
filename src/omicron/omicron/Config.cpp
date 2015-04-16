@@ -99,7 +99,7 @@ bool Config::load()
 			useFile = false;
 		}
 
-		ofmsg("Opened config file: %1%", %myCfgFilename);
+		oflog(Verbose, "Opened config file: %1%", %myCfgFilename);
 
 		try
 		{

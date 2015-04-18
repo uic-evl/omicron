@@ -633,30 +633,42 @@ void MSKinectService::GenerateMocapEvent(const NUI_SKELETON_DATA & skel, INuiSen
 
 	evt->setExtraDataType(Event::ExtraDataVector3Array);
 
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_SPINE, NUI_SKELETON_POSITION_SPINE );
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_SHOULDER_CENTER, NUI_SKELETON_POSITION_SHOULDER_CENTER );
+	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_HIP_CENTER, NUI_SKELETON_POSITION_HIP_CENTER );
 	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_HEAD, NUI_SKELETON_POSITION_HEAD );
+	evt->setExtraDataVector3(2, Vector3f(0,0,0)); // OpenNI/MSKinect2 Neck
+	evt->setExtraDataVector3(3, Vector3f(0,0,0)); // OpenNI Torso
+	evt->setExtraDataVector3(4, Vector3f(0,0,0)); // OpenNI Waist
 
+	evt->setExtraDataVector3(5, Vector3f(0,0,0)); // OpenNI Left Collar
 	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_LEFT_SHOULDER, NUI_SKELETON_POSITION_SHOULDER_LEFT );
 	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_LEFT_ELBOW, NUI_SKELETON_POSITION_ELBOW_LEFT );
 	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_LEFT_WRIST, NUI_SKELETON_POSITION_WRIST_LEFT );
 	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_LEFT_HAND, NUI_SKELETON_POSITION_HAND_LEFT );
 
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_RIGHT_SHOULDER, NUI_SKELETON_POSITION_SHOULDER_RIGHT );
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_RIGHT_ELBOW, NUI_SKELETON_POSITION_ELBOW_RIGHT );
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_RIGHT_WRIST, NUI_SKELETON_POSITION_WRIST_RIGHT );
-	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_RIGHT_HAND, NUI_SKELETON_POSITION_HAND_RIGHT );
-
+	evt->setExtraDataVector3(10, Vector3f()); // OpenNI/MSKinect2 Left Finger Tip
 	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_LEFT_HIP, NUI_SKELETON_POSITION_HIP_LEFT );
 	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_LEFT_KNEE, NUI_SKELETON_POSITION_KNEE_LEFT );
 	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_LEFT_ANKLE, NUI_SKELETON_POSITION_ANKLE_LEFT );
 	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_LEFT_FOOT, NUI_SKELETON_POSITION_FOOT_LEFT );
 
+	evt->setExtraDataVector3(15, Vector3f(0,0,0)); // OpenNI Right Collar
+	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_RIGHT_SHOULDER, NUI_SKELETON_POSITION_SHOULDER_RIGHT );
+	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_RIGHT_ELBOW, NUI_SKELETON_POSITION_ELBOW_RIGHT );
+	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_RIGHT_WRIST, NUI_SKELETON_POSITION_WRIST_RIGHT );
+	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_RIGHT_HAND, NUI_SKELETON_POSITION_HAND_RIGHT );
+
+	evt->setExtraDataVector3(20, Vector3f(0,0,0)); // OpenNI/MSKinect2 Right Finger Tip
 	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_RIGHT_HIP, NUI_SKELETON_POSITION_HIP_RIGHT );
 	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_RIGHT_KNEE, NUI_SKELETON_POSITION_KNEE_RIGHT );
 	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_RIGHT_ANKLE, NUI_SKELETON_POSITION_ANKLE_RIGHT );
 	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_RIGHT_FOOT, NUI_SKELETON_POSITION_FOOT_RIGHT );
 	
+	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_SPINE, NUI_SKELETON_POSITION_SPINE );
+	SkeletonPositionToEvent( skel, evt, Event::OMICRON_SKEL_SHOULDER_CENTER, NUI_SKELETON_POSITION_SHOULDER_CENTER );
+
+	evt->setExtraDataVector3(27, Vector3f(0,0,0)); // MSKinect2 Left Thumb
+	evt->setExtraDataVector3(28, Vector3f(0,0,0)); // MSKinect2 Right Thumb
+
 	mysInstance->unlockEvents();
 }
 

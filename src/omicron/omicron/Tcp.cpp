@@ -187,7 +187,7 @@ void TcpConnection::close()
     }
     else 
     {
-        ofwarn("TcpConnection::close (id=%1%): connection was not open", %myConnectionInfo.id);
+        oflog(Verbose, "TcpConnection::close (id=%1%): connection was not open", %myConnectionInfo.id);
     }
 }
 

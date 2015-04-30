@@ -75,10 +75,10 @@
    void ArgumentHelper::Argument_target::writeUsage(std::ostream &out) const {
      if (key != 0) {
        out << '-' << key;
-       out << "/--" << long_name;
+       //out << "/--" << long_name;
      }
-     out << ' ' << arg_description;
-     out << "\t" << description;
+     out << '\t' << arg_description;
+     if(description != "") out << ": " << description;
      //out << " Value: ";
      //write_value(out);
      out << std::endl;
@@ -102,9 +102,10 @@
      virtual void writeUsage(std::ostream &out) const {
        if (key != 0) {
          out << '-' << key;
-         out << "/--" << long_name;
+         //out << "/--" << long_name;
        }
-       out << "\t" << description;
+       if(description != "") out << ":\t" << description;
+       //out << "\t" << description;
        //out << " Value: ";
        //write_value(out);
        out << std::endl;

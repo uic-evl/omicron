@@ -108,7 +108,7 @@ namespace omicron
             {
                 String res = str;
 #ifndef OMICRON_OS_WINDOWS
-                res = StringUtils::replaceAll(str, "[", "[\e[1;35m");
+                res = StringUtils::replaceAll(str, "[", "[\e[1;32m");
                 res = StringUtils::replaceAll(res, "]", "\e[0m]");
                 res = StringUtils::replaceAll(res, "<", "\e[1;33m");
                 res = StringUtils::replaceAll(res, ">", "\e[0m");
@@ -141,7 +141,13 @@ namespace omicron
 		if(sLogEnabled)
 		{
 			const char* fmt = sAppendNewline? "!!! %s\n" : "!!! %s";
-			printf(fmt, str.c_str());
+#ifndef OMICRON_OS_WINDOWS
+			printf("\e[1;33m");
+            printf(fmt, str.c_str());
+			printf("\e[0m");
+#else
+            printf(fmt, str.c_str());
+#endif
 			if(sLogFile)
 			{
 				fprintf(sLogFile, fmt, str.c_str());
@@ -158,8 +164,14 @@ namespace omicron
 		if(sLogEnabled)
 		{
 			const char* fmt = sAppendNewline? "*** %s\n" : "*** %s";
-			printf(fmt, str.c_str());
-			if(sLogFile)
+#ifndef OMICRON_OS_WINDOWS
+			printf("\e[1;31m");
+            printf(fmt, str.c_str());
+			printf("\e[0m");
+#else
+            printf(fmt, str.c_str());
+#endif
+            if(sLogFile)
 			{
 				fprintf(sLogFile, fmt, str.c_str());
 				fflush(sLogFile);

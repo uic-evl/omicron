@@ -107,7 +107,7 @@ namespace omicron
             if(sAutocolor && str[0] == '[')
             {
                 String res = str;
-#ifndef OMICRON_OS_WINDOWS
+#ifndef OMICRON_OS_WIN
                 res = StringUtils::replaceAll(str, "[", "[\e[1;32m");
                 res = StringUtils::replaceAll(res, "]", "\e[0m]");
                 res = StringUtils::replaceAll(res, "<", "\e[1;33m");
@@ -117,7 +117,7 @@ namespace omicron
                 //res = StringUtils::replaceAll(res, ";", "\e[0m");
 #endif
                 printf(fmt, res.c_str());
-#ifndef OMICRON_OS_WINDOWS
+#ifndef OMICRON_OS_WIN
                 printf("\e[0m");
 #endif
             }
@@ -141,7 +141,7 @@ namespace omicron
 		if(sLogEnabled)
 		{
 			const char* fmt = sAppendNewline? "!!! %s\n" : "!!! %s";
-#ifndef OMICRON_OS_WINDOWS
+#ifndef OMICRON_OS_WIN
 			printf("\e[1;33m");
             printf(fmt, str.c_str());
 			printf("\e[0m");
@@ -164,7 +164,7 @@ namespace omicron
 		if(sLogEnabled)
 		{
 			const char* fmt = sAppendNewline? "*** %s\n" : "*** %s";
-#ifndef OMICRON_OS_WINDOWS
+#ifndef OMICRON_OS_WIN
 			printf("\e[1;31m");
             printf(fmt, str.c_str());
 			printf("\e[0m");

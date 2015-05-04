@@ -19,6 +19,7 @@ SET( srcs
 		omicron/FileDataStream.cpp
 		omicron/FilesystemDataSource.cpp
 		omicron/InputServer.cpp
+		omicron/Library.cpp
 		omicron/Tcp.cpp
 		omicron/Thread.cpp
 		omicron/WandService.cpp
@@ -72,6 +73,7 @@ SET( headers
         ${CMAKE_SOURCE_DIR}/include/omicron/FilesystemDataSource.h
         ${CMAKE_SOURCE_DIR}/include/omicron/FileDataStream.h
         ${CMAKE_SOURCE_DIR}/include/omicron/InputServer.h
+        ${CMAKE_SOURCE_DIR}/include/omicron/Library.h
 		${CMAKE_SOURCE_DIR}/include/omicron/Tcp.h
         ${CMAKE_SOURCE_DIR}/include/omicron/Thread.h
         ${CMAKE_SOURCE_DIR}/include/omicron/WandService.h

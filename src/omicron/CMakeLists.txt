@@ -309,6 +309,7 @@ enable_precompiled_headers(omicron/precompiled.h srcs)
 
 # omicron always builds as a shared library
 add_library( omicron SHARED ${srcs} ${csrcs} ${headers})
+target_link_libraries(omicron ${CMAKE_DL_LIBS})
 
 ###############################################################################
 # Setup module-specific link info

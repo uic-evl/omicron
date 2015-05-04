@@ -1,13 +1,13 @@
 /******************************************************************************
  * THE OMICRON SDK
  *-----------------------------------------------------------------------------
- * Copyright 2010-2014		Electronic Visualization Laboratory, 
+ * Copyright 2010-2015		Electronic Visualization Laboratory, 
  *							University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto		anishimoto42@gmail.com
  *  Alessandro Febretti		febret@gmail.com
  *-----------------------------------------------------------------------------
- * Copyright (c) 2010-2014, Electronic Visualization Laboratory,  
+ * Copyright (c) 2010-2015, Electronic Visualization Laboratory,  
  * University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, 
@@ -45,7 +45,7 @@ using namespace omicron;
 
 using namespace omicron;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 // Based on Winsock UDP Server Example:
 // http://msdn.microsoft.com/en-us/library/ms740148
 // Also based on Beej's Guide to Network Programming:
@@ -59,13 +59,13 @@ private:
     bool legacyMode;
     bool connected;
 
-	const char* clientAddress;
-	int clientPort;
+    const char* clientAddress;
+    int clientPort;
 public:
     NetClient( const char* address, int port, SOCKET clientSocket )
     {
-		clientAddress = address;
-		clientPort = port;
+        clientAddress = address;
+        clientPort = port;
 
         legacyMode = false;
         connected = true;
@@ -85,8 +85,8 @@ public:
 
     NetClient( const char* address, int port, int legacy, SOCKET clientSocket )
     {
-		clientAddress = address;
-		clientPort = port;
+        clientAddress = address;
+        clientPort = port;
 
         legacyMode = legacy;
         connected = true;
@@ -302,7 +302,7 @@ void InputServer::handleEvent(const Event& evt)
                 delete client;
             }
         }
-		*/
+        */
         itr++;
     }
 
@@ -527,7 +527,7 @@ void InputServer::startConnection(Config* cfg)
 
     Setting& sCfg = cfg->lookup("config");
     serverPort = strdup(Config::getStringValue("serverPort", sCfg, "27000").c_str());
-	String serverIP = Config::getStringValue("serverListenIP", sCfg, "");
+    String serverIP = Config::getStringValue("serverListenIP", sCfg, "");
 
     checkForDisconnectedClients = Config::getBoolValue("checkForDisconnectedClients", sCfg, false );
     showEventStream = Config::getBoolValue("showEventStream", sCfg, false );
@@ -565,10 +565,10 @@ void InputServer::startConnection(Config* cfg)
     hints.ai_flags = AI_PASSIVE;
 
     // Resolve the local address and port to be used by the server
-	if( serverIP.length() != 0 )
-		iResult = getaddrinfo(strdup(serverIP.c_str()), serverPort, &hints, &result);
-	else
-		iResult = getaddrinfo(NULL, serverPort, &hints, &result);
+    if( serverIP.length() != 0 )
+        iResult = getaddrinfo(strdup(serverIP.c_str()), serverPort, &hints, &result);
+    else
+        iResult = getaddrinfo(NULL, serverPort, &hints, &result);
 
     if (iResult != 0) 
     {
@@ -578,10 +578,10 @@ void InputServer::startConnection(Config* cfg)
     
     // Create a SOCKET for the server to listen for client connections
     listenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-	
-	if( iResult == 0 ) 
+    
+    if( iResult == 0 ) 
     {
-		ofmsg("OInputServer: Server listening on %1% port %2%", %serverIP %serverPort);
+        ofmsg("OInputServer: Server listening on %1% port %2%", %serverIP %serverPort);
     }
 
     // If iMode != 0, non-blocking mode is enabled.
@@ -665,7 +665,7 @@ SOCKET InputServer::startListening()
     float timer = 0.0f;
     int timeout = 1; // seconds
     int startTime = time (NULL);
-	int timeoutTime = startTime + timeout;
+    int timeoutTime = startTime + timeout;
 
     printf("OInputServer: Waiting for client handshake\n");
     do 
@@ -696,7 +696,7 @@ SOCKET InputServer::startListening()
                 else 
                 {
                     portCStr[i-portIndex] = recvbuf[i];
-					portCStr[i-portIndex+1] = '\n';
+                    portCStr[i-portIndex+1] = '\n';
                 }
             }
 
@@ -744,11 +744,11 @@ SOCKET InputServer::startListening()
         else if (iResult == 0)
         {
             printf("OInputServer: Closing client connection...\n");
-			break;
+            break;
         }
         else 
         {
-			int curTime = time (NULL);
+            int curTime = time (NULL);
             if( timeoutTime <= curTime )
             {
                 printf("OInputServer: Handshake timed out\n");

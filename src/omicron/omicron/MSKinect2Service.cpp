@@ -84,12 +84,12 @@ void MSKinectService::setup(Setting& settings)
 	caveSimulatorHeadID = Config::getIntValue("caveSimulatorHeadID", settings, 0);
 	caveSimulatorWandID = Config::getIntValue("caveSimulatorWandID", settings, 1);
 
-	//if( caveSimulator )
-	//{
-	//	omsg("MSKinectService: CAVE2 tracker simulation mode active!");
-	//	ofmsg("   Kinect head will be mapped to mocap ID %1%", %caveSimulatorHeadID);
-	//	ofmsg("   Kinect right hand (wand) will be mapped to mocap ID %1%", %caveSimulatorWandID);
-	//}
+	if( caveSimulator )
+	{
+		omsg("MSKinectService: CAVE2 tracker simulation mode active!");
+		ofmsg("   Kinect head will be mapped to mocap ID %1%", %caveSimulatorHeadID);
+		ofmsg("   Kinect right hand (wand) will be mapped to mocap ID %1%", %caveSimulatorWandID);
+	}
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
 	speechGrammerFilePath = Config::getStringValue("speechGrammerFilePath", settings, "kinectSpeech.grxml");
 
@@ -338,42 +338,45 @@ void MSKinectService::GenerateMocapEvent( IBody* body, Joint* joints )
 	if( debugInfo )
 		ofmsg( "Kinect Head %1% (%2%,%3%,%4%)",  %skeletonID %(headPos.x()) %(headPos.y()) %(headPos.z()) );
 
-	/*
+	
 	if( caveSimulator )
 	{
-	Event* evt = mysInstance->writeHead();
-	evt->reset(Event::Update, Service::Mocap, caveSimulatorHeadID);
+		Event* evt = mysInstance->writeHead();
+		evt->reset(Event::Update, Service::Mocap, caveSimulatorHeadID);
 
-	Joint curJoint = joints[JointType_Head];
-	Vector3f jointPos = Vector3f( curJoint.Position.X, curJoint.Position.Y, curJoint.Position.Z );
-	Vector3f pos;
-	pos[0] = jointPos.x;
-	pos[1] = jointPos.y + 1.8f;
-	pos[2] = jointPos.z;
-	evt->setPosition( pos );
-	evt->setOrientation( Quaternion::Identity() );
+		Joint curJoint = joints[JointType_Head];
+		Vector3f jointPos = Vector3f( curJoint.Position.X, curJoint.Position.Y, curJoint.Position.Z );
+		Vector3f pos;
+		pos[0] = jointPos.x();
+		pos[1] = jointPos.y() + 1.8f;
+		pos[2] = jointPos.z();
+		evt->setPosition( pos );
+		evt->setOrientation( Quaternion::Identity() );
 
-	mysInstance->unlockEvents();
+		mysInstance->unlockEvents();
 
-	Event* evt2 = mysInstance->writeHead();
-	evt2->reset(Event::Update, Service::Mocap, caveSimulatorWandID);
+		Event* evt2 = mysInstance->writeHead();
+		evt2->reset(Event::Update, Service::Mocap, caveSimulatorWandID);
 
-	Vector4 jointLPos = skel.SkeletonPositions[NUI_SKELETON_POSITION_HAND_LEFT];
-	Vector4 jointRPos = skel.SkeletonPositions[NUI_SKELETON_POSITION_HAND_RIGHT];
+		Joint jointL = joints[JointType_HandLeft];
+		Joint jointR = joints[JointType_HandRight];
 
-	Vector3f pos2;
-	// Check for the closest hand
-	if( jointLPos.z < jointRPos.z )
-	{
-	pos2[0] = jointLPos.x;
-	pos2[1] = jointLPos.y + 1.8f;
-	pos2[2] = jointLPos.z;
-	}
-	else
-	{
-	pos2[0] = jointRPos.x;
-	pos2[1] = jointRPos.y + 1.8f;
-	pos2[2] = jointRPos.z;
+		Vector3f jointLPos = Vector3f( jointL.Position.X, jointL.Position.Y, jointL.Position.Z );
+		Vector3f jointRPos = Vector3f( jointR.Position.X, jointR.Position.Y, jointR.Position.Z );
+
+		Vector3f pos2;
+		// Check for the closest hand
+		if( jointLPos.z() < jointRPos.z() )
+		{
+		pos2[0] = jointLPos.x();
+		pos2[1] = jointLPos.y() + 1.8f;
+		pos2[2] = jointLPos.z();
+		}
+		else
+		{
+		pos2[0] = jointRPos.x();
+		pos2[1] = jointRPos.y() + 1.8f;
+		pos2[2] = jointRPos.z();
 	}
 
 	evt2->setPosition( pos2 );
@@ -382,7 +385,7 @@ void MSKinectService::GenerateMocapEvent( IBody* body, Joint* joints )
 	mysInstance->unlockEvents();
 
 	}
-	*/
+	
 
 	HandState leftHandState = HandState_Unknown;
 	HandState rightHandState = HandState_Unknown;

@@ -1,11 +1,11 @@
 /**************************************************************************************************
 * THE OMICRON PROJECT
 *-------------------------------------------------------------------------------------------------
-* Copyright 2010-2014		Electronic Visualization Laboratory, University of Illinois at Chicago
+* Copyright 2010-2015		Electronic Visualization Laboratory, University of Illinois at Chicago
 * Authors:										
 *  Arthur Nishimoto		anishimoto42@gmail.com
 *-------------------------------------------------------------------------------------------------
-* Copyright (c) 2010-2014, Electronic Visualization Laboratory, University of Illinois at Chicago
+* Copyright (c) 2010-2015, Electronic Visualization Laboratory, University of Illinois at Chicago
 * All rights reserved.
 * Redistribution and use in source and binary forms, with or without modification, are permitted 
 * provided that the following conditions are met:
@@ -301,7 +301,9 @@ void MSKinectService::ProcessBody(INT64 nTime, int nBodyCount, IBody** ppBodies)
 {
 	HRESULT hr;
 
-	
+	UINT64 closestBodyIndex = 0;
+	float closestSkeletonDistance = 10000;
+
 	for (int i = 0; i < nBodyCount; ++i)
 	{
 		IBody* pBody = ppBodies[i];
@@ -317,9 +319,74 @@ void MSKinectService::ProcessBody(INT64 nTime, int nBodyCount, IBody** ppBodies)
 
 				if (SUCCEEDED(hr))
 				{
+					UINT64 skeletonID;
+					pBody->get_TrackingId(&skeletonID);
+
+					Vector3f headPos;
+					float headDistance = joints[JointType_Head].Position.Z;
+					if (headDistance < closestSkeletonDistance)
+					{
+						closestSkeletonDistance = headDistance;
+						closestBodyIndex = i;
+					}
 					GenerateMocapEvent( pBody, joints );
 				}
 			}
+		}
+	}
+
+	if (caveSimulator)
+	{
+		Joint joints[JointType_Count];
+		hr = ppBodies[closestBodyIndex]->GetJoints(_countof(joints), joints);
+
+		if (SUCCEEDED(hr))
+		{
+
+			Event* evt = mysInstance->writeHead();
+			evt->reset(Event::Update, Service::Mocap, caveSimulatorHeadID);
+
+			Joint curJoint = joints[JointType_Head];
+			Vector3f jointPos = Vector3f(curJoint.Position.X, curJoint.Position.Y, curJoint.Position.Z);
+			Vector3f pos;
+
+			// When facing the Kinect: +X to the right, +Y up, +Z toward the player
+			pos[0] = jointPos.x();
+			pos[1] = jointPos.y();
+			pos[2] = jointPos.z();
+			evt->setPosition(pos);
+			evt->setOrientation(Quaternion::Identity());
+
+			mysInstance->unlockEvents();
+
+			Event* evt2 = mysInstance->writeHead();
+			evt2->reset(Event::Update, Service::Mocap, caveSimulatorWandID);
+
+			Joint jointL = joints[JointType_HandLeft];
+			Joint jointR = joints[JointType_HandRight];
+
+			Vector3f jointLPos = Vector3f(jointL.Position.X, jointL.Position.Y, jointL.Position.Z);
+			Vector3f jointRPos = Vector3f(jointR.Position.X, jointR.Position.Y, jointR.Position.Z);
+
+			Vector3f pos2;
+			// Check for the closest hand
+			if (jointLPos.z() < jointRPos.z())
+			{
+				pos2[0] = jointLPos.x();
+				pos2[1] = jointLPos.y();
+				pos2[2] = jointLPos.z();
+			}
+			else
+			{
+				pos2[0] = jointRPos.x();
+				pos2[1] = jointRPos.y();
+				pos2[2] = jointRPos.z();
+			}
+
+			evt2->setPosition(pos2);
+			evt->setOrientation(Quaternion::Identity());
+
+			mysInstance->unlockEvents();
 		}
 	}
 }
@@ -337,55 +404,6 @@ void MSKinectService::GenerateMocapEvent( IBody* body, Joint* joints )
 
 	if( debugInfo )
 		ofmsg( "Kinect Head %1% (%2%,%3%,%4%)",  %skeletonID %(headPos.x()) %(headPos.y()) %(headPos.z()) );
-
-	
-	if( caveSimulator )
-	{
-		Event* evt = mysInstance->writeHead();
-		evt->reset(Event::Update, Service::Mocap, caveSimulatorHeadID);
-
-		Joint curJoint = joints[JointType_Head];
-		Vector3f jointPos = Vector3f( curJoint.Position.X, curJoint.Position.Y, curJoint.Position.Z );
-		Vector3f pos;
-		pos[0] = jointPos.x();
-		pos[1] = jointPos.y() + 1.8f;
-		pos[2] = jointPos.z();
-		evt->setPosition( pos );
-		evt->setOrientation( Quaternion::Identity() );
-
-		mysInstance->unlockEvents();
-
-		Event* evt2 = mysInstance->writeHead();
-		evt2->reset(Event::Update, Service::Mocap, caveSimulatorWandID);
-
-		Joint jointL = joints[JointType_HandLeft];
-		Joint jointR = joints[JointType_HandRight];
-
-		Vector3f jointLPos = Vector3f( jointL.Position.X, jointL.Position.Y, jointL.Position.Z );
-		Vector3f jointRPos = Vector3f( jointR.Position.X, jointR.Position.Y, jointR.Position.Z );
-
-		Vector3f pos2;
-		// Check for the closest hand
-		if( jointLPos.z() < jointRPos.z() )
-		{
-		pos2[0] = jointLPos.x();
-		pos2[1] = jointLPos.y() + 1.8f;
-		pos2[2] = jointLPos.z();
-		}
-		else
-		{
-		pos2[0] = jointRPos.x();
-		pos2[1] = jointRPos.y() + 1.8f;
-		pos2[2] = jointRPos.z();
-	}
-
-	evt2->setPosition( pos2 );
-	evt->setOrientation( Quaternion::Identity() );
-
-	mysInstance->unlockEvents();
-
-	}
-	
 
 	HandState leftHandState = HandState_Unknown;
 	HandState rightHandState = HandState_Unknown;

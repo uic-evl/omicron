@@ -87,8 +87,8 @@ void MSKinectService::setup(Setting& settings)
 	if( caveSimulator )
 	{
 		omsg("MSKinectService: CAVE2 tracker simulation mode active!");
-		ofmsg("   Kinect head will be mapped to mocap ID %1%", %caveSimulatorHeadID);
-		ofmsg("   Kinect right hand (wand) will be mapped to mocap ID %1%", %caveSimulatorWandID);
+		ofmsg("   Closest Kinect head will be mapped to mocap ID %1%", %caveSimulatorHeadID);
+		ofmsg("   Closest Kinect hand (wand) will be mapped to mocap ID %1%", %caveSimulatorWandID);
 	}
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
 	speechGrammerFilePath = Config::getStringValue("speechGrammerFilePath", settings, "kinectSpeech.grxml");
@@ -384,7 +384,7 @@ void MSKinectService::ProcessBody(INT64 nTime, int nBodyCount, IBody** ppBodies)
 			}
 
 			evt2->setPosition(pos2);
-			evt->setOrientation(Quaternion::Identity());
+			evt2->setOrientation(Quaternion::Identity());
 
 			mysInstance->unlockEvents();
 		}

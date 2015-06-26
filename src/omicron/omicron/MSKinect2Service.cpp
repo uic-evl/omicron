@@ -84,11 +84,14 @@ void MSKinectService::setup(Setting& settings)
 	caveSimulatorHeadID = Config::getIntValue("caveSimulatorHeadID", settings, 0);
 	caveSimulatorWandID = Config::getIntValue("caveSimulatorWandID", settings, 1);
 
+	kinectOriginOffset = Config::getVector3fValue("kinectOriginOffset", settings, Vector3f(0, 0, 0));
+
 	if( caveSimulator )
 	{
 		omsg("MSKinectService: CAVE2 tracker simulation mode active!");
 		ofmsg("   Closest Kinect head will be mapped to mocap ID %1%", %caveSimulatorHeadID);
 		ofmsg("   Closest Kinect hand (wand) will be mapped to mocap ID %1%", %caveSimulatorWandID);
+		ofmsg("   Kinect origin offset: %1%", %kinectOriginOffset);
 	}
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
 	speechGrammerFilePath = Config::getStringValue("speechGrammerFilePath", settings, "kinectSpeech.grxml");
@@ -347,7 +350,7 @@ void MSKinectService::ProcessBody(INT64 nTime, int nBodyCount, IBody** ppBodies)
 			evt->reset(Event::Update, Service::Mocap, caveSimulatorHeadID);
 
 			Joint curJoint = joints[JointType_Head];
-			Vector3f jointPos = Vector3f(curJoint.Position.X, curJoint.Position.Y, curJoint.Position.Z);
+			Vector3f jointPos = Vector3f(curJoint.Position.X, curJoint.Position.Y, curJoint.Position.Z) + kinectOriginOffset;
 			Vector3f pos;
 
 			// When facing the Kinect: +X to the right, +Y up, +Z toward the player
@@ -365,8 +368,8 @@ void MSKinectService::ProcessBody(INT64 nTime, int nBodyCount, IBody** ppBodies)
 			Joint jointL = joints[JointType_HandLeft];
 			Joint jointR = joints[JointType_HandRight];
 
-			Vector3f jointLPos = Vector3f(jointL.Position.X, jointL.Position.Y, jointL.Position.Z);
-			Vector3f jointRPos = Vector3f(jointR.Position.X, jointR.Position.Y, jointR.Position.Z);
+			Vector3f jointLPos = Vector3f(jointL.Position.X, jointL.Position.Y, jointL.Position.Z) + kinectOriginOffset;
+			Vector3f jointRPos = Vector3f(jointR.Position.X, jointR.Position.Y, jointR.Position.Z) + kinectOriginOffset;
 
 			Vector3f pos2;
 			// Check for the closest hand

@@ -1,11 +1,11 @@
 /********************************************************************************************************************** 
  * THE OMICRON PROJECT
  *---------------------------------------------------------------------------------------------------------------------
- * Copyright 2010-2013							Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2015							Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto							anishimoto42@gmail.com
  *---------------------------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2013, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2015, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the 
  * following conditions are met:
@@ -46,7 +46,7 @@ Sound::Sound()
 	loop = false;
 	useEnvironmentParameters = true;
 
-	rolloffMode = None;
+	rolloffMode = Logarithmic;
 	minRolloffDistance = 1.0f;
 	maxDistance = 20.0f;
 }
@@ -67,7 +67,7 @@ Sound::Sound(const String& soundName)
 	loop = false;
 	useEnvironmentParameters = true;
 
-	rolloffMode = None;
+	rolloffMode = Logarithmic;
 	minRolloffDistance = 1.0f;
 	maxDistance = 20.0f;
 }
@@ -88,7 +88,7 @@ Sound::Sound(const String& soundName, float volume, float width, float roomSize,
 	this->environmentSound = env;
 	useEnvironmentParameters = false;
 
-	rolloffMode = None;
+	rolloffMode = Logarithmic;
 	minRolloffDistance = 1.0f;
 	maxDistance = 20.0f;
 }
@@ -1109,6 +1109,12 @@ void SoundInstance::setCurrentFrame(int value)
 			environment->getSoundManager()->sendOSCMessage(msg);
 		}
 	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool SoundInstance::isStereo()
+{
+	return stereoSound;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

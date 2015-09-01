@@ -1,11 +1,11 @@
 /**************************************************************************************************
 * THE OMICRON PROJECT
  *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2012		Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2015		Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Alessandro Febretti		febret@gmail.com
  *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2011, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2015, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted 
  * provided that the following conditions are met:
@@ -39,18 +39,38 @@
 
 namespace omicron 
 {
-	//using namespace boost;
-
 	// Define some macros to simplify string formatting and formatted logging
 	#define ostr(fmt, args) boost::str(boost::format(fmt) args)
 	#define ofmsg(fmt, args) omsg(boost::str(boost::format(fmt) args))
 	#define oferror(fmt, args) oerror(boost::str(boost::format(fmt) args))
 	#define ofwarn(fmt, args) owarn(boost::str(boost::format(fmt) args))
 
+    // Logging macros
+    #define oflog(level, fmt, args) if(StringUtils::logLevel >= StringUtils::level) omsg(boost::str(boost::format(fmt) args))
+    #define olog(level, message) if(StringUtils::logLevel >= StringUtils::level) omsg(message)   
+        
     /** Utility class for manipulating Strings.  */
     class OMICRON_API StringUtils
     {
 	public:
+        //! Log level enumeration
+        enum LogLevel {
+            // In silent mode, no log messages are printed.
+            Silent,
+            // Default mode. Few important log messages printed.
+            Normal,
+            // Verbose mode. Additional messages printed, useful for following
+            // General program flow.
+            Verbose,
+            // Debug mode. All log messages printed. Useful for tracing internal
+            // workings of code, but frequency of messages might make it difficult
+            // to use the interactive console.
+            Debug
+        };
+        
+        //! The current log level
+        static LogLevel logLevel;
+        
 		//typedef StringStream StrStreamType;
 
         /** Removes any whitespace characters, be it standard space or

@@ -99,7 +99,7 @@ bool Config::load()
 			useFile = false;
 		}
 
-		ofmsg("Opened config file: %1%", %myCfgFilename);
+		oflog(Verbose, "Opened config file: %1%", %myCfgFilename);
 
 		try
 		{
@@ -291,4 +291,44 @@ Vector2i Config::getVector2iValue(const String& name, const Setting& s, const Ve
 	value[0] = getIntValue(0, sv, defaultValue[0]);
 	value[1] = getIntValue(1, sv, defaultValue[1]);
 	return value;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void insertSetting(Setting& to, const Setting& from)
+{
+    Setting& copy = to.add(from.getName(), from.getType());
+    switch(from.getType())
+    {
+    case Setting::TypeBoolean: copy = (bool)from; break;
+    case Setting::TypeFloat: copy = (float)from; break;
+    case Setting::TypeInt: copy = (int)from; break;
+    case Setting::TypeInt64: copy = (int64)from; break;
+    case Setting::TypeString: copy = (const char*)from; break;
+    case Setting::TypeArray: 
+    case Setting::TypeList:
+    case Setting::TypeGroup:
+        for(int i = 0; i < from.getLength(); i++) insertSetting(copy, from[i]);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void Config::append(Config* cfg, bool overwrite)
+{
+    oassert(cfg != NULL);
+    Setting& root = cfg->getRootSetting();
+
+    Setting& myRoot = getRootSetting();
+    for(int i = 0; i < root.getLength(); i++)
+    {
+        Setting& s = root[i];
+
+        bool settingExists = myRoot.exists(s.getName());
+
+        if(settingExists)
+        {
+            if(overwrite) myRoot.remove(s.getName());
+            else continue;
+        }
+        insertSetting(myRoot, root[i]);
+    }
 }

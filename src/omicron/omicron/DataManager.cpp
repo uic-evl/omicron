@@ -1,11 +1,11 @@
 /**************************************************************************************************
 * THE OMICRON PROJECT
  *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2012		Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2015		Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Alessandro Febretti		febret@gmail.com
  *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2011, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2015, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted 
  * provided that the following conditions are met:
@@ -41,116 +41,124 @@
 using namespace omicron;
 
 DataManager* DataManager::mysInstance = NULL;
-	
+    
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 DataManager* DataManager::getInstance() 
 {
-	if(mysInstance == NULL)
-	{
-		mysInstance = new DataManager();
-	}
-	return mysInstance; 
+    if(mysInstance == NULL)
+    {
+        mysInstance = new DataManager();
+    }
+    return mysInstance; 
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+void DataManager::cleanup()
+{
+    delete mysInstance;
+    mysInstance = NULL;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 bool DataManager::findFile(const String& name, String& outPath)
 {
-	if( mysInstance != NULL )
-	{
-		DataInfo di = mysInstance->getInfo(name);
-		if(!di.isNull())
-		{
-			outPath = di.path;
-			return true;
-		}
-	}
-	return false;
+    if( mysInstance != NULL )
+    {
+        DataInfo di = mysInstance->getInfo(name);
+        if(!di.isNull())
+        {
+            outPath = di.path;
+            return true;
+        }
+    }
+    return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 bool DataManager::createPath(const String& path)
 {
-	Vector<String> args = StringUtils::split(path, "/");
-	String curPath = "";
-	// Keep initial slash for absolute paths.
-	if(path[0] == '/') curPath = "/";
-	foreach(String dir, args)
-	{
-		curPath += dir + "/";
+    Vector<String> args = StringUtils::split(path, "/");
+    String curPath = "";
+    // Keep initial slash for absolute paths.
+    if(path[0] == '/') curPath = "/";
+    foreach(String dir, args)
+    {
+        curPath += dir + "/";
 #ifdef WIN32
-		_mkdir(curPath.c_str());
+        _mkdir(curPath.c_str());
 #else
-		mkdir(curPath.c_str(), S_IRWXU | S_IRWXO);
+        mkdir(curPath.c_str(), S_IRWXU | S_IRWXO);
 #endif
-	}
-	return true;
+    }
+    return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 String DataManager::readTextFile(const String& name)
 {
-	String path;
-	if(DataManager::findFile(name, path))
-	{
-		std::ifstream t(path.c_str());
-		std::stringstream buffer;
-		buffer << t.rdbuf();
-		return buffer.str();
-	}
-	return "";
+    String path;
+    if(DataManager::findFile(name, path))
+    {
+        std::ifstream t(path.c_str());
+        std::stringstream buffer;
+        buffer << t.rdbuf();
+        return buffer.str();
+    }
+    return "";
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 DataManager::DataManager()
 {
-	if(mysInstance != NULL)
-	{
-		oerror("DataManager: creating multiple instances not allowed.");
-	}
-	myCurrentPath = new FilesystemDataSource("[cwd]");
-	addSource(myCurrentPath);
+    if(mysInstance != NULL)
+    {
+        oerror("DataManager: creating multiple instances not allowed.");
+    }
+    myCurrentPath = new FilesystemDataSource("[cwd]");
+    addSource(myCurrentPath);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void DataManager::setCurrentPath(const String& path)
 {
-	myCurrentPath->setPath(path);
+    myCurrentPath->setPath(path);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 String DataManager::getCurrentPath()
 {
-	return myCurrentPath->getPath();
+    return myCurrentPath->getPath();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 String DataManager::getDataSourceNames()
 {
-	String res = "";
-	typedef std::pair<String, DataSource*> DataSourceItem;
-	foreach(DataSource* src, mySources)
-	{
-		res = res + src->getName() + "\n";
-	}
-	return res;
+    String res = "";
+    typedef std::pair<String, DataSource*> DataSourceItem;
+    foreach(DataSource* src, mySources)
+    {
+        res = res + src->getName() + "\n";
+    }
+    return res;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void DataManager::addSource(DataSource* source)
 {
-	mySources.push_back(source);
+    mySources.push_back(source);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void DataManager::removeSource(DataSource* source)
 {
-	mySources.remove(source);
+    mySources.remove(source);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void DataManager::removeAllSources()
 {
-	mySources.clear();
+    mySources.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -162,44 +170,44 @@ void DataManager::removeAllSources()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 DataInfo DataManager::getInfo(const String& path)
 {
-	foreach(DataSource* ds, mySources)
-	{
-		if(ds->exists(path))
-		{
-			return ds->getInfo(path);
-		}
-	}
-	// Data stream not found, return a null data info.
-	return DataInfo();
+    foreach(DataSource* ds, mySources)
+    {
+        if(ds->exists(path))
+        {
+            return ds->getInfo(path);
+        }
+    }
+    // Data stream not found, return a null data info.
+    return DataInfo();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 DataStream* DataManager::createStream(const String& path)
 {
-	DataStream* stream = NULL;
-	foreach(DataSource* ds, mySources)
-	{
-		stream = ds->newStream(path);
-		if(stream != NULL) break;
-	}
-	return stream;
+    DataStream* stream = NULL;
+    foreach(DataSource* ds, mySources)
+    {
+        stream = ds->newStream(path);
+        if(stream != NULL) break;
+    }
+    return stream;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 DataStream* DataManager::openStream(const String& path, DataStream::Mode mode)
 {
-	DataStream* stream = createStream(path);
-	if(stream != NULL)
-	{
-		stream->open(mode);
-	}
-	return stream;
+    DataStream* stream = createStream(path);
+    if(stream != NULL)
+    {
+        stream->open(mode);
+    }
+    return stream;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void DataManager::deleteStream(DataStream* stream)
 {
-	if(stream->isOpen()) stream->close();
-	delete stream;
+    if(stream->isOpen()) stream->close();
+    delete stream;
 }
 

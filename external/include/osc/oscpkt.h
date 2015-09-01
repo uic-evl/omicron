@@ -58,7 +58,7 @@
 
 
 #ifndef OMEGA_API
-#ifdef OMICRON_OS_WIN
+#if defined(OMICRON_OS_WIN) && _MSC_VER < 1800
 namespace oscpkt {
   typedef __int32 int32_t;
   typedef unsigned __int32 uint32_t;

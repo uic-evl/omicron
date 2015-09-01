@@ -72,6 +72,9 @@ public:
 
 	bool getBoolValue(const String& name, bool defaultValue = false);
 
+    //! Appends another configuration to this one.
+    void append(Config* cfg, bool overwrite = true);
+
 private:
 	bool myIsLoaded;
 

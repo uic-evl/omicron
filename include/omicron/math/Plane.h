@@ -236,7 +236,7 @@ namespace omicron {
 
         // Calculate the maximise allows absolute distance for
         // the distance between box centre and plane
-        float maxAbsDist = abs(normal.dot(halfSize));
+        float maxAbsDist = std::abs(normal.dot(halfSize));
 
         if (dist < -maxAbsDist)
             return NEGATIVE_SIDE;

@@ -233,8 +233,10 @@ private:
 
 	bool debugInfo;
 	bool caveSimulator;
+	bool enableKinectAudio;
 	int caveSimulatorHeadID;
 	int caveSimulatorWandID;
+	Vector3f kinectOriginOffset;
 
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
     String                  speechGrammerFilePath;

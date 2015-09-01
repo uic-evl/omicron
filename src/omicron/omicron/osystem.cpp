@@ -1,11 +1,11 @@
 /**************************************************************************************************
 * THE OMICRON PROJECT
  *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2012		Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2015		Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Alessandro Febretti		febret@gmail.com
  *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2011, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2015, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted 
  * provided that the following conditions are met:
@@ -46,6 +46,7 @@ namespace omicron
 	bool sAppendNewline = true;
 	bool sLogEnabled = true;
 	bool sDebugAlloc = false;
+    bool sAutocolor = true;
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 	void odebugalloc(bool value) { sDebugAlloc = value; }
@@ -97,8 +98,33 @@ namespace omicron
 	{
 		if(sLogEnabled)
 		{
-			const char* fmt = sAppendNewline? "%s\n" : "%s";
-			printf(fmt, str.c_str());
+            const char* fmt = sAppendNewline? "%s\n" : "%s";
+            // If autocolor is enabled and the string starts with [
+            // (lost verbose log lines do), enable auto-coloring. Since this is
+            // only used for strings that start with a context indication [class:method]
+            // the color string does not affect the performance of standard log
+            // messages.
+            if(sAutocolor && str[0] == '[')
+            {
+                String res = str;
+#ifndef OMICRON_OS_WIN
+                res = StringUtils::replaceAll(str, "[", "[\e[1;32m");
+                res = StringUtils::replaceAll(res, "]", "\e[0m]");
+                res = StringUtils::replaceAll(res, "<", "\e[1;33m");
+                res = StringUtils::replaceAll(res, ">", "\e[0m");
+                //res = StringUtils::replaceAll(res, "::", "::\e[1;32m");
+                res = StringUtils::replaceAll(res, "::", "\e[0m::\e[1;34m");
+                //res = StringUtils::replaceAll(res, ";", "\e[0m");
+#endif
+                printf(fmt, res.c_str());
+#ifndef OMICRON_OS_WIN
+                printf("\e[0m");
+#endif
+            }
+            else
+            {
+                printf(fmt, str.c_str());
+            }
 			if(sLogFile)
 			{
 				fprintf(sLogFile, fmt, str.c_str());
@@ -115,7 +141,13 @@ namespace omicron
 		if(sLogEnabled)
 		{
 			const char* fmt = sAppendNewline? "!!! %s\n" : "!!! %s";
-			printf(fmt, str.c_str());
+#ifndef OMICRON_OS_WIN
+			printf("\e[1;33m");
+            printf(fmt, str.c_str());
+			printf("\e[0m");
+#else
+            printf(fmt, str.c_str());
+#endif
 			if(sLogFile)
 			{
 				fprintf(sLogFile, fmt, str.c_str());
@@ -132,8 +164,14 @@ namespace omicron
 		if(sLogEnabled)
 		{
 			const char* fmt = sAppendNewline? "*** %s\n" : "*** %s";
-			printf(fmt, str.c_str());
-			if(sLogFile)
+#ifndef OMICRON_OS_WIN
+			printf("\e[1;31m");
+            printf(fmt, str.c_str());
+			printf("\e[0m");
+#else
+            printf(fmt, str.c_str());
+#endif
+            if(sLogFile)
 			{
 				fprintf(sLogFile, fmt, str.c_str());
 				fflush(sLogFile);

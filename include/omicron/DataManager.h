@@ -1,11 +1,11 @@
 /**************************************************************************************************
 * THE OMICRON PROJECT
  *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2012		Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2015		Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Alessandro Febretti		febret@gmail.com
  *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2011, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2015, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted 
  * provided that the following conditions are met:
@@ -33,136 +33,136 @@
 
 namespace omicron
 {
-	///////////////////////////////////////////////////////////////////////////////////////////////
-	class DataSource;
-	class FilesystemDataSource;
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    class DataSource;
+    class FilesystemDataSource;
 
-	///////////////////////////////////////////////////////////////////////////////////////////////
-	struct DataInfo
-	{
-		//! Default constructor. Creates a NULL data info (isNull() returns true)
-		DataInfo():
-			source(NULL),
-			size(-1),
-			local(false) {}
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    struct DataInfo
+    {
+        //! Default constructor. Creates a NULL data info (isNull() returns true)
+        DataInfo():
+            source(NULL),
+            size(-1),
+            local(false) {}
 
-		//! The data stream name
-		String name;
-		//! The data stream path (relative to the DataSource)
-		String path;
-		//! Pointer to the data source providing this info.
-		DataSource* source;
-		//! The size of the data.
-		int64 size;
-		//! True if this data is local (that is, it can be accessed using standard streams or c 
-		//! files using the DataInfo path)
-		bool local;
-		
-		//! True if this object contains information about an existing data object.
-		bool isNull() { return (size == -1); }
-	};
+        //! The data stream name
+        String name;
+        //! The data stream path (relative to the DataSource)
+        String path;
+        //! Pointer to the data source providing this info.
+        DataSource* source;
+        //! The size of the data.
+        int64 size;
+        //! True if this data is local (that is, it can be accessed using standard streams or c 
+        //! files using the DataInfo path)
+        bool local;
+        
+        //! True if this object contains information about an existing data object.
+        bool isNull() { return (size == -1); }
+    };
 
-	///////////////////////////////////////////////////////////////////////////////////////////////
-	class OMICRON_API DataStream
-	{
-	public:
-		enum Mode { Read, Write, ReadWrite };
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    class OMICRON_API DataStream
+    {
+    public:
+        enum Mode { Read, Write, ReadWrite };
 
-	public:
-		DataStream(const DataInfo& info): myInfo(info) {}
-		virtual ~DataStream() {}
+    public:
+        DataStream(const DataInfo& info): myInfo(info) {}
+        virtual ~DataStream() {}
 
-		const DataInfo& getInfo() { return myInfo; }
+        const DataInfo& getInfo() { return myInfo; }
 
-		virtual bool isOpen() { return false; }
-		virtual int bytesAvailable() { return 0; }
-		virtual bool isCFile() { return false; }
-		virtual FILE* getCFile() { return NULL; }
-		virtual void open(Mode mode) = 0;
-		virtual void close() = 0;
-		virtual void read(void* data, uint64 size) = 0;
-		virtual void write(void* data, uint64 size) = 0;
+        virtual bool isOpen() { return false; }
+        virtual int bytesAvailable() { return 0; }
+        virtual bool isCFile() { return false; }
+        virtual FILE* getCFile() { return NULL; }
+        virtual void open(Mode mode) = 0;
+        virtual void close() = 0;
+        virtual void read(void* data, uint64 size) = 0;
+        virtual void write(void* data, uint64 size) = 0;
 
 
-	protected:
-		DataInfo myInfo;
-	};
+    protected:
+        DataInfo myInfo;
+    };
 
-	///////////////////////////////////////////////////////////////////////////////////////////////////
-	class OMICRON_API DataSource: public ReferenceType
-	{
-	public:
-		DataSource(const String& name): myName(name) {}
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    class OMICRON_API DataSource: public ReferenceType
+    {
+    public:
+        DataSource(const String& name): myName(name) {}
 
-		String getName();
+        String getName();
 
-		//! Data stream management
-		//@{
-		virtual bool exists(const String& name) = 0;
-		virtual DataInfo getInfo(const String& path) = 0;
-		virtual DataStream* newStream(const String& name) = 0;
-		virtual void deleteStream(DataStream* stream) = 0;
-		//@}
+        //! Data stream management
+        //@{
+        virtual bool exists(const String& name) = 0;
+        virtual DataInfo getInfo(const String& path) = 0;
+        virtual DataStream* newStream(const String& name) = 0;
+        virtual void deleteStream(DataStream* stream) = 0;
+        //@}
 
-	private:
-		String myName;
-	};
+    private:
+        String myName;
+    };
 
-	///////////////////////////////////////////////////////////////////////////////////////////////////
-	class OMICRON_API DataManager: public ReferenceType
-	{
-	public:
-		typedef Dictionary<String, Ref<DataSource> > SourceDictionary;
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    class OMICRON_API DataManager
+    {
+    public:
+        static DataManager* getInstance();
 
-		static DataManager* getInstance();
+        void cleanup();
 
-		//! Utility method for finding a file in one of the data sources.
-		static bool findFile(const String& name, String& outPath);
+        //! Utility method for finding a file in one of the data sources.
+        static bool findFile(const String& name, String& outPath);
 
-		//! Utility method for reading a text file
-		static String readTextFile(const String& name);
+        //! Utility method for reading a text file
+        static String readTextFile(const String& name);
 
-		//! Utility method for creating a path.
-		//! This method makes sure every directory name in the specified path exists. Every entry in the
-		//! path is considered a directory name, so if the path points to a file name, remove the file name
-		//! before calling this method.
-		//! @return true if the path has been created successfully.
-		static bool createPath(const String& path);
+        //! Utility method for creating a path.
+        //! This method makes sure every directory name in the specified path exists. Every entry in the
+        //! path is considered a directory name, so if the path points to a file name, remove the file name
+        //! before calling this method.
+        //! @return true if the path has been created successfully.
+        static bool createPath(const String& path);
 
-	public:
-		//! Data sources
-		//@{
-		void addSource(DataSource* source);
-		void removeSource(DataSource* source);
-		//! Removes all currently registered data sources.
-		void removeAllSources();
-		String getDataSourceNames();
-		//@}
+    public:
+        //! Data sources
+        //@{
+        void addSource(DataSource* source);
+        void removeSource(DataSource* source);
+        //! Removes all currently registered data sources.
+        void removeAllSources();
+        String getDataSourceNames();
+        //@}
 
-		//! Data streams
-		//@{
-		DataInfo getInfo(const String& path);
-		DataStream* createStream(const String& path);
-		DataStream* openStream(const String& path, DataStream::Mode mode);
-		void deleteStream(DataStream* stream);
-		//@}
+        //! Data streams
+        //@{
+        DataInfo getInfo(const String& path);
+        DataStream* createStream(const String& path);
+        DataStream* openStream(const String& path, DataStream::Mode mode);
+        void deleteStream(DataStream* stream);
+        //@}
 
-		void setCurrentPath(const String& path);
-		String getCurrentPath();
+        void setCurrentPath(const String& path);
+        String getCurrentPath();
 
-	private:
-		DataManager();
-		static DataManager* mysInstance;
+    private:
+        DataManager();
+        static DataManager* mysInstance;
 
-		FilesystemDataSource* myCurrentPath;
-		List<DataSource*> mySources;
-	};
+        FilesystemDataSource* myCurrentPath;
+        List< Ref<DataSource> > mySources;
+    };
 
-	///////////////////////////////////////////////////////////////////////////////////////////////////
-	inline String DataSource::getName()
-	{
-		return myName;
-	}
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    inline String DataSource::getName()
+    {
+        return myName;
+    }
 }; // namespace omicron
 
 #endif

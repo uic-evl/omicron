@@ -1,12 +1,12 @@
 /**************************************************************************************************
 * THE OMICRON PROJECT
  *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2014		Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2015		Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Alessandro Febretti		febret@gmail.com
  *  Arthur Nishimoto		anishimoto42@gmail.com
  *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2014, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2015, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted 
  * provided that the following conditions are met:
@@ -34,7 +34,7 @@ using namespace omicron;
 int main(int argc, char** argv)
 {
     omsg("OmicronSDK - oinputserver");
-    omsg("Copyright (C) 2010-2014 Electronic Visualization Laboratory\nUniversity of Illinois at Chicago");
+    omsg("Copyright (C) 2010-2015 Electronic Visualization Laboratory\nUniversity of Illinois at Chicago");
     omsg("======================================================");
     omsg("");
 

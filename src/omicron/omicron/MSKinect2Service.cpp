@@ -436,7 +436,7 @@ void MSKinectService::GenerateMocapEvent( IBody* body, Joint* joints )
 	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_HEAD, JointType_Head );
 
 	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_SHOULDER, JointType_ShoulderLeft );
-	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_ELBOW, JointType_ShoulderRight );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_ELBOW, JointType_ElbowLeft );
 	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_WRIST, JointType_WristLeft );
 	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_HAND, JointType_HandLeft );
 	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_FINGERTIP, JointType_HandTipLeft );

@@ -27,7 +27,6 @@ namespace omicron {
         static PSMoveService* New() { return new PSMoveService(); }
         
     public:
-        PSMoveService();
         
         virtual void setup(Setting& settings);
         virtual void poll();

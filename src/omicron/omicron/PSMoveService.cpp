@@ -70,6 +70,8 @@ void PSMoveService::checkForNewControllers()
         psmove_set_rumble(move, 0);
         psmove_update_leds(move);
         psmove_enable_orientation(move,PSMove_True);
+        auto hasOrientation = psmove_has_orientation(move);
+        std::cout<<hasOrientation<<std::endl;
         psmove_reset_orientation(move);
         auto *psMoveController = new PSMoveController;
         psMoveController->move = move;
@@ -101,6 +103,10 @@ void PSMoveService::poll()
         
         PSMoveController *controller = PSMovePair.second;
         auto move = controller->move;
+        
+        int res = psmove_poll(move);
+        if (!res)
+            continue;
         lockEvents();
         
         Event* evt = writeHead();
@@ -162,24 +168,24 @@ void PSMoveService::poll()
         // Re-map back to its current button state (if re-mapped for an up event)
         controller->myButtonState = curButtonState;
         float qx,qy,qz,qw;
-        psmove_get_orientation(move,&qx,&qy,&qz,&qw);
-        evt->setOrientation(qx,qy,qw,qz);
+        psmove_get_orientation(move,&qw,&qx,&qy,&qz);
+        evt->setOrientation(qw,qx,qy,qz);
         evt->setExtraDataType(Event::ExtraDataFloatArray);
         evt->setExtraDataFloat(0, analog);  // analog trigger
         evt->setExtraDataFloat(1, psmove_get_temperature_in_celsius(move));// temprature
         int x,y,z;
         psmove_get_accelerometer(move, &x, &y, &z);
-        evt->setExtraDataInt(0,x); //acceleration in x axixs
-        evt->setExtraDataInt(1,y); //acceleration in y axixs
-        evt->setExtraDataInt(2,z); //acceleration in z axixs
+        evt->setExtraDataFloat(2,x); //acceleration in x axixs
+        evt->setExtraDataFloat(3,y); //acceleration in y axixs
+        evt->setExtraDataFloat(4,z); //acceleration in z axixs
         psmove_get_gyroscope(move, &x, &y, &z);
-        evt->setExtraDataInt(3,x); //rotation around x axixs
-        evt->setExtraDataInt(4,y); //rotation around y axixs
-        evt->setExtraDataInt(5,z); //rotation around z axixs
+        evt->setExtraDataFloat(5,x); //rotation around x axixs
+        evt->setExtraDataFloat(6,y); //rotation around y axixs
+        evt->setExtraDataFloat(7,z); //rotation around z axixs
         psmove_get_magnetometer(move, &x, &y, &z);
-        evt->setExtraDataInt(6,x); //magnetometer in x axis
-        evt->setExtraDataInt(7,y); //magnetometer in y axis
-        evt->setExtraDataInt(8,z); //magnetometer in z axis
+        evt->setExtraDataFloat(8,x); //magnetometer in x axis
+        evt->setExtraDataFloat(9,y); //magnetometer in y axis
+        evt->setExtraDataFloat(10,z); //magnetometer in z axis
         
         unlockEvents();
     }

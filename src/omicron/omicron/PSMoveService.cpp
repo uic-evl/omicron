@@ -186,7 +186,10 @@ void PSMoveService::poll()
         evt->setExtraDataFloat(8,x); //magnetometer in x axis
         evt->setExtraDataFloat(9,y); //magnetometer in y axis
         evt->setExtraDataFloat(10,z); //magnetometer in z axis
-        
+        evt->setExtraDataFloat(11,qw); //orientation w
+        evt->setExtraDataFloat(12,qx); //orientation x
+        evt->setExtraDataFloat(13,qy); //orientation y
+        evt->setExtraDataFloat(14,qz); //orientation z
         unlockEvents();
     }
 }

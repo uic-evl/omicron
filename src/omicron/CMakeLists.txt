@@ -82,7 +82,6 @@ SET( headers
         ${CMAKE_SOURCE_DIR}/include/omicron/TouchGestureManager.h
 		${CMAKE_SOURCE_DIR}/include/omicron/MocapGestureManager.h
 		${CMAKE_SOURCE_DIR}/include/omicron/GestureService.h
-		
 		# eigenwrap
         ${CMAKE_SOURCE_DIR}/include/omicron/math/EigenWrappers.h
         ${CMAKE_SOURCE_DIR}/include/omicron/math/Math.h
@@ -105,6 +104,15 @@ set(OMICRON_USE_NETSERVICE true CACHE BOOL "Enable/disable Network input support
 if(OMICRON_USE_NETSERVICE)
 	set( srcs	 ${srcs} omicron/NetService.cpp )
 	set( headers ${headers} ${CMAKE_SOURCE_DIR}/include/omicron/NetService.h )
+endif()
+
+set(OMICRON_USE_PSMOVEAPI true CACHE BOOL "Enable/disable PSMOVE input support")
+if(OMICRON_USE_PSMOVEAPI)
+	find_package(PSMoveAPI REQUIRED)
+	set( srcs	 ${srcs} omicron/PSMoveService.cpp )
+	set( headers ${headers} ${CMAKE_SOURCE_DIR}/include/omicron/PSMoveService.h )
+	include_directories(${PSMOVE_INCLUDE_DIR})
+	
 endif()
 
 # Network input support    
@@ -322,6 +330,11 @@ if(OMICRON_USE_NATURAL_POINT)
 		target_link_libraries( omicron ${EXT_LIB_DIR}/NatNetLibStatic.lib)
 	endif(WIN32)
 endif(OMICRON_USE_NATURAL_POINT)
+
+if(OMICRON_USE_PSMOVEAPI)
+	target_link_libraries( omicron ${PSMOVE_LIBRARY_DIR})
+endif(OMICRON_USE_PSMOVEAPI)
+
 
 if(OMICRON_USE_OPTITRACK)
 	if(WIN32)

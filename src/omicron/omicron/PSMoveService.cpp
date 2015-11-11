@@ -71,7 +71,6 @@ void PSMoveService::checkForNewControllers()
         psmove_update_leds(move);
         psmove_enable_orientation(move,PSMove_True);
         auto hasOrientation = psmove_has_orientation(move);
-        std::cout<<hasOrientation<<std::endl;
         psmove_reset_orientation(move);
         auto *psMoveController = new PSMoveController;
         psMoveController->move = move;
@@ -99,9 +98,9 @@ void PSMoveService::poll()
     }
     lastt = curt;
     
-    for(auto PSMovePair:PSMoveInfo) {
+    for(PSMoveIter iterator = PSMoveInfo.begin();iterator!=PSMoveInfo.end();iterator++) {
         
-        PSMoveController *controller = PSMovePair.second;
+        PSMoveController *controller = iterator->second;
         auto move = controller->move;
         
         int res = psmove_poll(move);
@@ -197,9 +196,9 @@ void PSMoveService::poll()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void PSMoveService::dispose()
 {
-    for(auto moveController:PSMoveInfo){
-        psmove_disconnect(moveController.second->move);
-        delete moveController.second;
+    for(PSMoveIter iterator = PSMoveInfo.begin();iterator!=PSMoveInfo.end();iterator++) {
+        psmove_disconnect(iterator->second->move);
+        delete iterator->second;
     }
     PSMoveInfo.clear();
     mysInstance = NULL;

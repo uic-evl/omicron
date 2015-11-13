@@ -122,7 +122,7 @@ void PSMoveService::poll()
         // Shoulder Button
         if(psmove_get_buttons(move) & Btn_T) curButtonState |= Event::Button7;
         // PSMOVE Button
-        if(psmove_get_buttons(move) & Btn_START) curButtonState |= Event::Button5;
+        if(psmove_get_buttons(move) & Btn_MOVE) curButtonState |= Event::Button5;
         // Select Button
         if(psmove_get_buttons(move) & Btn_SELECT) curButtonState |= Event::SpecialButton1;
         // Start Button

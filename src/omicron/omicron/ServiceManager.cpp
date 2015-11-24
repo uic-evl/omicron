@@ -90,7 +90,7 @@
 	#include "omicron/ThinkGearService.h"
 #endif
 #ifdef OMICRON_USE_PSMOVEAPI
-    #include "omicron/PSmoveService.h"
+    #include "omicron/PSMoveService.h"
 #endif
 using namespace omicron;
 using namespace std;

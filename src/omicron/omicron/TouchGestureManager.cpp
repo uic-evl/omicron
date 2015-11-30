@@ -775,13 +775,15 @@ void TouchGestureManager::generateZoomEvent( Event::Type eventType, Touch touch,
 		evt->setExtraDataType(Event::ExtraDataFloatArray);
 		evt->setExtraDataFloat(0, touch.xWidth);
 		evt->setExtraDataFloat(1, touch.yWidth);
-		evt->setExtraDataFloat(2, zoomDelta);
+		evt->setExtraDataFloat(2, touch.initXPos);
+		evt->setExtraDataFloat(3, touch.initYPos);
+		evt->setExtraDataFloat(4, zoomDelta);
 
 		switch(eventType)
 		{
-			case( Event::Down ): evt->setExtraDataFloat(3, 1); break;
-			case( Event::Move ): evt->setExtraDataFloat(3, 2); break;
-			case( Event::Up ): evt->setExtraDataFloat(3, 3); break;
+			case( Event::Down ): evt->setExtraDataFloat(5, 1); break;
+			case( Event::Move ): evt->setExtraDataFloat(5, 2); break;
+			case( Event::Up ): evt->setExtraDataFloat(5, 3); break;
 		}
 
 		pqsInstance->unlockEvents();

@@ -49,6 +49,9 @@ struct Touch{
 	int prevPosResetTime;
 	int prevPosTimer;
 
+	float initXPos;
+	float initYPos;
+
 	int idleTime;
 
 	// Gestures
@@ -136,6 +139,7 @@ namespace omicron {
 
 	public:
 		TouchGestureManager();
+		void setup(Setting&);
 		void registerPQService(Service*);
 		void setMaxTouchIDs(int);
 

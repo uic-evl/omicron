@@ -70,6 +70,7 @@
 #cmakedefine OMICRON_USE_OPTITRACK
 #cmakedefine OMICRON_USE_PQLABS
 #cmakedefine OMICRON_USE_DIRECTINPUT
+#cmakedefine OMICRON_USE_PSMOVEAPI
 #cmakedefine OMICRON_USE_VRPN
 #cmakedefine OMICRON_USE_THINKGEAR
 #cmakedefine OMICRON_USE_OSC

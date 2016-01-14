@@ -64,7 +64,11 @@ void PQService::setup(Setting& settings)
 	{
 		useGestureManager = settings["useGestureManager"];
 		if( useGestureManager )
+		{
 			omsg("PQService: Gesture Manager Enabled");
+			touchGestureManager = new TouchGestureManager();
+			touchGestureManager->setup(settings);
+		}
 	}
 
 	if(settings.exists("normalizeData"))
@@ -125,7 +129,6 @@ int PQService::init()
 
 	// initialize the handle functions of gestures;
 	if( useGestureManager ){
-		touchGestureManager = new TouchGestureManager();
 		touchGestureManager->registerPQService(mysInstance);
 	}
 

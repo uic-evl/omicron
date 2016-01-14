@@ -64,7 +64,7 @@ void NaturalPointService::setup(Setting& settings)
 
 	if( settings.exists( "localIP" ) )
 	{
-		strcpy( serverIP, settings[ "localIP" ] );
+		strcpy( localIP, settings[ "localIP" ] );
 	}
 
 	if( settings.exists( "castingType" ) )

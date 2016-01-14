@@ -1,0 +1,104 @@
+﻿<grammar version="1.0" xml:lang="en-US" root="rootRule" tag-format="semantics/1.0-literals" xmlns="http://www.w3.org/2001/06/grammar">
+  <rule id="rootRule">
+    <one-of>
+      <item>
+        <tag>FORWARD</tag>
+        <one-of>
+          <item> forwards </item>
+          <item> forward </item>
+          <item> straight </item>
+        </one-of>
+      </item>
+      <item>
+        <tag>BACKWARD</tag>
+        <one-of>
+          <item> backward </item>
+          <item> backwards </item>
+          <item> back </item>
+        </one-of>
+      </item>
+      <item>
+        <tag>LEFT</tag>
+        <one-of>
+          <item> turn left </item>
+        </one-of>
+      </item>
+      <item>
+        <tag>RIGHT</tag>
+        <one-of>
+          <item> turn right </item>
+        </one-of>
+      </item>
+	  
+	  <item>
+        <tag>RED ALERT</tag>
+        <one-of>
+          <item> red alert </item>
+		  <item> battle stations </item>
+        </one-of>
+      </item>
+	  
+	  <item>
+        <tag>CONDITION GREEN</tag>
+        <one-of>
+          <item> cancel red alert </item>
+		  <item> condition green </item>
+        </one-of>
+      </item>
+	  
+	  <item>
+        <tag>YELLOW ALERT</tag>
+        <one-of>
+          <item> yellow alert </item>
+        </one-of>
+      </item>
+	  
+	  <item>
+        <tag>BRIDGE</tag>
+        <one-of>
+          <item> main bridge </item>
+          <item> bridge </item>
+		  <item> deck A </item>
+		  <item> A deck </item>
+        </one-of>
+      </item>
+	  
+	  <item>
+        <tag>OFFICER LOUNGE</tag>
+        <one-of>
+          <item> officer's lounge </item>
+		  <item> deck C </item>
+		  <item> C deck </item>
+        </one-of>
+      </item>
+	  
+	  <item>
+        <tag>TRANSPORTER ROOM</tag>
+        <one-of>
+          <item> transporter room </item>
+		  <item> deck E </item>
+		  <item> E deck </item>
+        </one-of>
+      </item>
+	  
+	  <item>
+        <tag>CLEAR MOORINGS</tag>
+        <one-of>
+          <item> clear moorings </item>
+		  <item> clear all moorings </item>
+        </one-of>
+      </item>
+	  
+	  <item>
+        <tag>SET MARKER</tag>
+        <one-of>
+          <item> set marker </item>
+		  <item> place marker </item>
+		  <item> drop marker </item>
+		  <item> add marker </item>
+        </one-of>
+      </item>
+	  
+    </one-of>
+  </rule>
+</grammar>

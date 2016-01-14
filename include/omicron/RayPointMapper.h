@@ -38,7 +38,7 @@
 
 namespace omicron
 {
-    class RayPointMapper: public ReferenceType
+    class OMICRON_API RayPointMapper: public ReferenceType
     {
     public:
         //! Creates a ray to point mapper based on the specified settings.

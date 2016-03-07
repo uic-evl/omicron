@@ -500,7 +500,7 @@ namespace omicronConnector
         ConnectSocket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
         // Connect to server
-        int result = ::connect(ConnectSocket, res->ai_addr, res->ai_addrlen);
+        int result = ::connect(ConnectSocket, res->ai_addr, (int)res->ai_addrlen);
 
         if (result == -1) 
         {

@@ -12,7 +12,8 @@ include(${CMAKE_SOURCE_DIR}/external/UseEigen.cmake)
 
 ###############################################################################
 # Options
-set(OMICRON_BUILD_EXAMPLES true CACHE BOOL "Enable building of omicron examples.")
+set(OMICRON_BUILD_EXAMPLES false CACHE BOOL "Enable building of omicron examples.")
+set(OMICRON_BUILD_APPS false CACHE BOOL "Enable building of additional omicron apps.")
 
 ###############################################################################
 # Set include paths
@@ -23,7 +24,9 @@ include_directories(
   )
 
 # Add connector examples before including pch support, so connector examples won't depend on omicron precompiled headers.
-add_subdirectory(apps/connectorClient)
+if(OMICRON_BUILD_EXAMPLES)
+    add_subdirectory(apps/connectorClient)
+endif()
 
 # From this point on, enabl pch support.
 include(UsePch)
@@ -33,29 +36,33 @@ include(UsePch)
 # TODO: should this be moved inside then omega OPENNI module block?
 if(WIN32)
 	include_directories($ENV{PROGRAMFILES}/OpenNI/Include)
-endif(WIN32)
+endif()
 
 # Add the core omega project
 add_subdirectory(omicron)
 
 # oinputserver currently works only on Windows (uses WINSOCK)
 if(WIN32)
-	add_subdirectory(apps/sageinputserver)
-	add_subdirectory(apps/legacy-oinputserver)
-endif(WIN32)
-add_subdirectory(apps/oinputserver)
-add_subdirectory(apps/eventlogger)
-add_subdirectory(apps/ocachesync)
-add_subdirectory(apps/ocachesrv)
+    if(OMICRON_BUILD_APPS)
+        add_subdirectory(apps/sageinputserver)
+        add_subdirectory(apps/legacy-oinputserver)
+    endif()
+endif()
+if(OMICRON_BUILD_APPS)
+    add_subdirectory(apps/oinputserver)
+    add_subdirectory(apps/eventlogger)
+    add_subdirectory(apps/ocachesync)
+    add_subdirectory(apps/ocachesrv)
+endif()
 
-if(OMICRON_USE_SOUND)
+if(OMICRON_USE_SOUND AND OMICRON_BUILD_EXAMPLES)
 	add_subdirectory(apps/soundtest)
-endif(OMICRON_USE_SOUND)
+endif()
 
 if(OMICRON_BUILD_EXAMPLES)
 	omicron_add_example(localService)
 	omicron_add_example(remoteService)
-endif(OMICRON_BUILD_EXAMPLES)
+endif()
 
 configure_file(${CMAKE_SOURCE_DIR}/CMakeModules/UseOmicron.cmake.in ${CMAKE_BINARY_DIR}/UseOmicron.cmake)
 

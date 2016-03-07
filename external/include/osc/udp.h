@@ -235,8 +235,8 @@ struct UdpSocket {
     }
 
     /* now we should be able to read without blocking.. */
-    socklen_t len = remote_addr.maxLen();
-    int nread = (int)recvfrom(handle, &buffer[0], buffer.size(), 0,
+    socklen_t len = (socklen_t)remote_addr.maxLen();
+    int nread = (int)recvfrom(handle, &buffer[0], (int)buffer.size(), 0,
                               &remote_addr.addr(), &len);
     if (nread < 0) {       
       // maybe here we should differentiate EAGAIN/EINTR/EWOULDBLOCK from real errors
@@ -282,9 +282,9 @@ struct UdpSocket {
     do {
       int res;
       if (isBound()) {
-        res = sendto(handle, (const char*)ptr, sz, 0, &addr.addr(), addr.actualLen());
+        res = sendto(handle, (const char*)ptr, sz, 0, &addr.addr(), (int)addr.actualLen());
       } else {
-        res = send(handle, (const char*)ptr, sz, 0);
+        res = send(handle, (const char*)ptr, (int)sz, 0);
         //        res = write(handle, ptr, sz);
       }
 #ifdef WIN32
@@ -343,17 +343,17 @@ private:
         continue;
 
       if (binding) {
-        if (bind(handle, rp->ai_addr, rp->ai_addrlen) != 0) {
+        if (bind(handle, rp->ai_addr, (int)rp->ai_addrlen) != 0) {
           close();
         } else {
-          socklen_t len = local_addr.maxLen();
+          socklen_t len = (socklen_t)local_addr.maxLen();
           if (getsockname(handle, &local_addr.addr(), &len) == 0) {
             /* great */
           }
           break;
         }
       } else {
-        if (connect(handle, rp->ai_addr, rp->ai_addrlen) != 0) {
+        if (connect(handle, rp->ai_addr, (int)rp->ai_addrlen) != 0) {
           close();
         } else {
           assert(rp->ai_addrlen <= sizeof remote_addr);

@@ -581,7 +581,7 @@ namespace omicron
     {
         oassert(myExtraDataType == ExtraDataString);
         strcpy((char*)myExtraData, value.c_str());
-        myExtraDataItems = value.size();
+        myExtraDataItems = (int)value.size();
         myExtraData[myExtraDataItems] = '\0';
     }
 

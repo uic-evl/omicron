@@ -40,13 +40,13 @@ int idleTimeout = 1600; // Time before a non-moving touch is considered idle (sh
 float minPreviousPosTime = 1500; // Time before prevPos of a touch is updated
 
 // Distance parameters (ratio of screen size)
-float touchGroupInitialSize = 0.5; // Desktop 0.5, Cyber-Commons = 0.2?
-float touchGroupLongRangeDiameter = 0.6; // Desktop 0.6, Cyber-Commons = 0.35?
-float minimumZoomDistance = 0.1; // Minimum distance between two touches to be considered for zoom gesture (differentiates between clicks and zooms)
-float holdToSwipeThreshold = 0.02; // Minimum distance before a multi-touch hold gesture is considered a swipe
-float clickMaxDistance = 0.02; // Maximum distance a touch group can be from it's initial point to be considered for a click event
+float touchGroupInitialSize = 0.5f; // Desktop 0.5, Cyber-Commons = 0.2?
+float touchGroupLongRangeDiameter = 0.6f; // Desktop 0.6, Cyber-Commons = 0.35?
+float minimumZoomDistance = 0.1f; // Minimum distance between two touches to be considered for zoom gesture (differentiates between clicks and zooms)
+float holdToSwipeThreshold = 0.02f; // Minimum distance before a multi-touch hold gesture is considered a swipe
+float clickMaxDistance = 0.02f; // Maximum distance a touch group can be from it's initial point to be considered for a click event
 
-float minPreviousPosDistance = 0.002; // Min distance for touch prevPos to be updated (min distance for idle touch points to become active)
+float minPreviousPosDistance = 0.002f; // Min distance for touch prevPos to be updated (min distance for idle touch points to become active)
 
 float zoomGestureMultiplier = 10;
 
@@ -386,7 +386,7 @@ void TouchGroup::generateGestures(){
 		centerTouch.yWidth = t.yWidth;
 
 		// Big touch
-		float bigTouchMinSize = 0.05;
+		float bigTouchMinSize = 0.05f;
 		if( t.xWidth + t.yWidth > 0 )
 		{
 			if( t.xWidth > bigTouchMinSize )
@@ -504,7 +504,7 @@ void TouchGroup::generateGestures(){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Returns the number of touches in the group
 int TouchGroup::getTouchCount(){
-	return touchList.size();
+	return (int)touchList.size();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -569,13 +569,13 @@ void TouchGestureManager::setup( Setting& settings )
 	minPreviousPosTime = Config::getIntValue("minPreviousPosTime", settings, 1500); // Time before prevPos of a touch is updated
 
 	// Distance parameters (ratio of screen size)
-	touchGroupInitialSize = Config::getFloatValue("touchGroupInitialSize", settings, 0.5); // Desktop 0.5, Cyber-Commons = 0.2?
-	touchGroupLongRangeDiameter = Config::getFloatValue("touchGroupLongRangeDiameter", settings, 0.6); // Desktop 0.6, Cyber-Commons = 0.35?
-	minimumZoomDistance = Config::getFloatValue("minimumZoomDistance", settings, 0.1); // Minimum distance between two touches to be considered for zoom gesture (differentiates between clicks and zooms)
-	holdToSwipeThreshold = Config::getFloatValue("holdToSwipeThreshold", settings, 0.02); // Minimum distance before a multi-touch hold gesture is considered a swipe
-	clickMaxDistance = Config::getFloatValue("clickMaxDistance", settings, 0.02); // Maximum distance a touch group can be from it's initial point to be considered for a click event
+	touchGroupInitialSize = Config::getFloatValue("touchGroupInitialSize", settings, 0.5f); // Desktop 0.5, Cyber-Commons = 0.2?
+	touchGroupLongRangeDiameter = Config::getFloatValue("touchGroupLongRangeDiameter", settings, 0.6f); // Desktop 0.6, Cyber-Commons = 0.35?
+	minimumZoomDistance = Config::getFloatValue("minimumZoomDistance", settings, 0.1f); // Minimum distance between two touches to be considered for zoom gesture (differentiates between clicks and zooms)
+	holdToSwipeThreshold = Config::getFloatValue("holdToSwipeThreshold", settings, 0.02f); // Minimum distance before a multi-touch hold gesture is considered a swipe
+	clickMaxDistance = Config::getFloatValue("clickMaxDistance", settings, 0.02f); // Maximum distance a touch group can be from it's initial point to be considered for a click event
 
-	minPreviousPosDistance = Config::getFloatValue("minPreviousPosDistance", settings, 0.002); // Min distance for touch prevPos to be updated (min distance for idle touch points to become active)
+	minPreviousPosDistance = Config::getFloatValue("minPreviousPosDistance", settings, 0.002f); // Min distance for touch prevPos to be updated (min distance for idle touch points to become active)
 
 	zoomGestureMultiplier = Config::getFloatValue("zoomGestureMultiplier", settings, 10);
 }

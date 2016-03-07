@@ -282,7 +282,7 @@ struct UdpSocket {
     do {
       int res;
       if (isBound()) {
-        res = sendto(handle, (const char*)ptr, (int)sz, 0, &addr.addr(), (int)addr.actualLen());
+        res = sendto(handle, (const char*)ptr, sz, 0, &addr.addr(), (int)addr.actualLen());
       } else {
         res = send(handle, (const char*)ptr, (int)sz, 0);
         //        res = write(handle, ptr, sz);

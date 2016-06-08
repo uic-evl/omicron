@@ -69,21 +69,25 @@ int main(int argc, char** argv)
         // Get events
         int av = sm->getAvailableEvents();
         //ofmsg("------------------------loop %1%  av %2%", %i++ %av);
-        if(av != 0)
-        {
-            // TODO: Instead of copying the event list, we can lock the main one.
-            Event evts[OMICRON_MAX_EVENTS];
-            sm->getEvents(evts, OMICRON_MAX_EVENTS);
-            for( int evtNum = 0; evtNum < av; evtNum++)
-            {
-                app.handleEvent(evts[evtNum]);
-            }
+		if (av != 0)
+		{
+			sm->lockEvents(); // Lock the main event list
+			for( int evtNum = 0; evtNum < av; evtNum++)
+			{
+				// Get the event
+				Event* e = sm->getEvent(evtNum);
+				
+				// Send to oinputserver to be sent
+				Event evt;
+				memcpy(&evt, e, sizeof(Event));
+				app.handleEvent(evt);
+
+				// Mark the original event as processed
+				e->setProcessed();
+				
+			}
+			sm->unlockEvents();
         }
-#ifdef WIN32
-        Sleep(1);
-#else
-        usleep(1000);
-#endif	
     }
 
     sm->stop();

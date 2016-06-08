@@ -108,7 +108,7 @@ public:
 
 protected:
     char* createOmicronEventPacket(const Event*);
-    void sendToClients(char*);
+    void sendToClients(char*, int);
     void createClient(const char*,int, bool, SOCKET);
 private:
     enum dataMode { omicron, omicron_legacy };
@@ -132,6 +132,7 @@ private:
 
     bool showEventStream;
     bool showStreamSpeed;
+	bool showEventMessages;
     int lastOutgoingEventTime;
     int eventCount;
 

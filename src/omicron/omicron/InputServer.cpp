@@ -192,7 +192,7 @@ char* InputServer::createOmicronEventPacket(const Event* evt)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-void InputServer::sendToClients(char* eventPacket)
+void InputServer::sendToClients(char* eventPacket, int priority)
 {
     std::map<char*,NetClient*>::iterator itr = netClients.begin();
     while( itr != netClients.end() )
@@ -205,7 +205,14 @@ void InputServer::sendToClients(char* eventPacket)
         }
         else
         {
-            client->sendEvent(eventPacket, DEFAULT_BUFLEN);
+			if (priority == 0) // UDP
+			{
+				client->sendEvent(eventPacket, DEFAULT_BUFLEN);
+			}
+			else if (priority == 1) // TCP
+			{
+				client->sendMsg(eventPacket, DEFAULT_BUFLEN);
+			}
         }
         itr++;
     }
@@ -268,46 +275,22 @@ void InputServer::handleEvent(const Event& evt)
         }
     }
 
-    if( showEventStream )
-        printf("oinputserver: Event %d type: %d sent at pos %f %f\n", evt.getSourceId(), evt.getType(), evt.getPosition().x(), evt.getPosition().y() );
-        
-    std::map<char*,NetClient*> activeClients;
+    
+    
+	if (evt.getType() == Event::Type::Update || evt.getType() == Event::Type::Move)
+	{
+		if (showEventStream)
+			printf("oinputserver: Event %d type: %d sent at pos %f %f\n", evt.getSourceId(), evt.getType(), evt.getPosition().x(), evt.getPosition().y());
+		sendToClients(eventPacket, 0);
+	}
+	else
+	{
+		sendToClients(eventPacket, 0); // Also send to udp stream for legacy clients
+		if (showEventMessages)
+			printf("oinputserver: Event %d type: %d sent at pos %f %f\n", evt.getSourceId(), evt.getType(), evt.getPosition().x(), evt.getPosition().y());
+		sendToClients(eventPacket, 1); // Send to TCP clients expecting reliable events
 
-    std::map<char*,NetClient*>::iterator itr = netClients.begin();
-    while( itr != netClients.end() )
-    {
-        NetClient* client = itr->second;
-            
-        if( client->isLegacy() )
-        {
-            //client->sendEvent(legacyPacket, 512);
-        }
-        else
-        {
-            // Send an empty message to check if the client is still here.
-            //client->sendMsg("",1);
-            client->sendEvent(eventPacket, offset);
-        }
-        /*
-        if( checkForDisconnectedClients )
-        {
-            // If client is still connected add to active list
-            if( client->isConnected() )
-            {
-                activeClients[itr->first] = client;
-            }
-            else // Client disconnected, remove from list
-            {
-                ofmsg("OInputServer: Client '%1%' Disconnected.", %itr->first);
-                delete client;
-            }
-        }
-        */
-        itr++;
-    }
-
-    //if( checkForDisconnectedClients )
-    //    netClients = activeClients;
+	}
 }
     
 ///////////////////////////////////////////////////////////////////////////////
@@ -532,6 +515,7 @@ void InputServer::startConnection(Config* cfg)
     checkForDisconnectedClients = Config::getBoolValue("checkForDisconnectedClients", sCfg, false );
     showEventStream = Config::getBoolValue("showEventStream", sCfg, false );
     showStreamSpeed = Config::getBoolValue("showStreamSpeed", sCfg, false );
+	showEventMessages = Config::getBoolValue("showEventMessages", sCfg, false);
 
     if( checkForDisconnectedClients )
         omsg("Check for disconnected clients enabled.");

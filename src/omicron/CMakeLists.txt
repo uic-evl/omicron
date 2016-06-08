@@ -325,7 +325,11 @@ endif()
 
 ###############################################################################
 # Setup module-specific link info
-set(EXT_LIB_DIR ${CMAKE_SOURCE_DIR}/external/libs32)
+if(OMICRON_ARCH_64)
+	set(EXT_LIB_DIR ${CMAKE_SOURCE_DIR}/external/libs64)
+elseif(OMICRON_ARCH_32)
+	set(EXT_LIB_DIR ${CMAKE_SOURCE_DIR}/external/libs32)
+endif()
 
 if(OMICRON_USE_NATURAL_POINT)
     if(WIN32)

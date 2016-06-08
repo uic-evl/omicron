@@ -148,10 +148,14 @@ void XInputService::poll()
 		if(_controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) curButtonState |= Event::Button6;
 
 		float analog4 = _controllerState.Gamepad.bLeftTrigger / 255.0f;
+		float analog5 = _controllerState.Gamepad.bRightTrigger / 255.0f;
 
 		// Analog 4 (Wand L2)
 		if( analog4 > 0.5 )
 			curButtonState |= Event::Button7;
+
+		if (analog5 > 0.5)
+			curButtonState |= Event::SpecialButton3;
 
 		// Right Shoulder Button (R1)
 		if(_controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) curButtonState |= Event::Button8;
@@ -166,9 +170,6 @@ void XInputService::poll()
 		if(_controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) curButtonState |= Event::SpecialButton1;
 		// Start Button
 		if(_controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_START) curButtonState |= Event::SpecialButton2;
-		
-		// PS Button
-		//if(js.rgbButtons[12] & 0x80) curButtonState |= Event::SpecialButton3;
 
 		if(_controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) curButtonState |= Event::ButtonUp;
 		if(_controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) curButtonState |= Event::ButtonRight;

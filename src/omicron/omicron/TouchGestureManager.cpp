@@ -132,7 +132,6 @@ void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID,
 		idleTouchList.erase( touchID );
 		movingTouchList.erase( touchID );
 		ofmsg("TouchGroup %1% removed touch ID %2% new size: %3%", %ID %touchID %getTouchCount() );
-
 	} else {
 
 		Touch t;
@@ -238,8 +237,8 @@ void TouchGroup::process(){
 	touchListLock->lock();
 
 	// Reset group center position
-	xPos = 0;
-	yPos = 0;
+	float newCenterX = 0;
+	float newCenterY = 0;
 
 	map<int,Touch> activeTouchList;
 	idleTouchList.clear();
@@ -254,8 +253,8 @@ void TouchGroup::process(){
 		int lastTouchUpdate = curTime-t.timestamp;
 		if( lastTouchUpdate < touchTimeout )
 		{
-			xPos += t.xPos;
-			yPos += t.yPos;
+			newCenterX += t.xPos;
+			newCenterY += t.yPos;
 
 			// Determine if touch is idle
 			t.prevPosTimer = curTime - t.prevPosResetTime;
@@ -293,8 +292,8 @@ void TouchGroup::process(){
 	// Swap oldlist with active list
 	touchList = activeTouchList;
 
-	xPos /= touchList.size();
-	yPos /= touchList.size();
+	newCenterX /= touchList.size();
+	newCenterY /= touchList.size();
 
 	touchListLock->unlock();
 
@@ -310,22 +309,22 @@ void TouchGroup::process(){
 			if( distFromInitPos <= clickMaxDistance && !doubleClickTriggered && !bigTouchGestureTriggered )
 			{
 				ofmsg("Touchgroup %1% click event", %ID);
-				gestureManager->generatePQServiceEvent( Event::Down, centerTouch, GESTURE_SINGLE_CLICK );
+				gestureManager->generatePQServiceEvent( Event::Down, touchList, ID, GESTURE_SINGLE_TOUCH );
 			}
 			setRemove();
 		}
 		return;
 	}
 
-	centerTouch.xPos = xPos;
-	centerTouch.yPos = yPos;
+	centerTouch.xPos = newCenterX;
+	centerTouch.yPos = newCenterY;
 	centerTouch.initXPos = init_xPos;
 	centerTouch.initYPos = init_yPos;
 
 	// Double click should be the last gesture a touch group will generate
 	// to prevent an accidental drag or zoom
 	if( !doubleClickTriggered )
-		gestureManager->generatePQServiceEvent( Event::Move, centerTouch, gestureFlag );
+		gestureManager->generatePQServiceEvent(Event::Move, touchList, ID, gestureFlag);
 
 	// Determine the farthest point from the group center (thumb?)
 	int farthestTouchID = -1;
@@ -426,12 +425,12 @@ void TouchGroup::generateGestures(){
       zoomDistance = farthestTouchDistance;
       zoomLastDistance = initialZoomDistance;
       
-      gestureManager->generateZoomEvent( Event::Down, centerTouch, 0 );
+	  gestureManager->generateZoomEvent(Event::Down, touchList[ID], 0);
 	  ofmsg("TouchGroup ID: %1% zoom start", %ID);
     } else if( touchList.size() != 2 && zoomGestureTriggered ){
       zoomGestureTriggered = false;
       
-       gestureManager->generateZoomEvent( Event::Up, centerTouch, 0 );
+	  gestureManager->generateZoomEvent(Event::Up, touchList[ID], 0);
 	   ofmsg("TouchGroup ID: %1% zoom end", %ID);
     }
 
@@ -444,7 +443,7 @@ void TouchGroup::generateGestures(){
 		
 		if( zoomDelta != 0 )
 		{
-			gestureManager->generateZoomEvent( Event::Move, centerTouch, zoomDelta );
+			gestureManager->generateZoomEvent(Event::Move, touchList[ID], zoomDelta);
 			ofmsg("TouchGroup ID: %1% zoom delta: %2%", %ID %zoomDelta);
 		}
 	}
@@ -757,6 +756,61 @@ void TouchGestureManager::generatePQServiceEvent( Event::Type eventType, Touch t
 		pqsInstance->unlockEvents();
 		
 	} else {
+		printf("TouchGestureManager: No PQService Registered\n");
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void TouchGestureManager::generatePQServiceEvent(Event::Type eventType, map<int, Touch> touchList, int mainId, int gesture)
+{
+	if (pqsInstance){
+		pqsInstance->lockEvents();
+
+		Event* evt = pqsInstance->writeHead();
+
+		Touch touch = touchList[mainId];
+
+		switch (eventType)
+		{
+		case Event::Down:
+			evt->reset(Event::Down, Service::Pointer, touch.ID);
+			break;
+		case Event::Move:
+			evt->reset(Event::Move, Service::Pointer, touch.ID);
+			break;
+		case Event::Up:
+			evt->reset(Event::Up, Service::Pointer, touch.ID);
+			break;
+		}
+		evt->setPosition(Vector3f(touch.xPos, touch.yPos, 0));
+		evt->setFlags(gesture);
+
+		evt->setExtraDataType(Event::ExtraDataFloatArray);
+		evt->setExtraDataFloat(0, touch.xWidth);
+		evt->setExtraDataFloat(1, touch.yWidth);
+		evt->setExtraDataFloat(2, touch.initXPos);
+		evt->setExtraDataFloat(3, touch.initYPos);
+		evt->setExtraDataFloat(4, touchList.size()-1); // Do not include self in count
+
+		map<int, Touch>::iterator it;
+		int extraDataIndex = 5;
+		for (it = touchList.begin(); it != touchList.end(); it++)
+		{
+			Touch t = (*it).second;
+			if (t.ID != touch.ID) // Does not include itself in this list
+			{
+				evt->setExtraDataFloat(extraDataIndex++, t.ID);
+				evt->setExtraDataFloat(extraDataIndex++, t.xPos);
+				evt->setExtraDataFloat(extraDataIndex++, t.yPos);
+			}
+		}
+
+		
+
+		pqsInstance->unlockEvents();
+
+	}
+	else {
 		printf("TouchGestureManager: No PQService Registered\n");
 	}
 }

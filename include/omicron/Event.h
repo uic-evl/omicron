@@ -39,6 +39,7 @@
 
 #include "osystem.h"
 #include "Service.h"
+#include <string>
 
 // This makes omicronConnectorClient.h only define the EventBase and EventData classes.
 #define OMICRON_CONNECTOR_LEAN_AND_MEAN
@@ -620,7 +621,7 @@ namespace omicron
             oerror("Event::getExtraDataSize: unknown extra data type");
         }
 
-        // Default: return data length
+        // Default: return data lengthp
         return myExtraDataItems;
     }
 
@@ -629,9 +630,9 @@ namespace omicron
     {
         if(myServiceType == Service::Keyboard && myType == Down)
         {
-            if(isascii(mySourceId))
+            if(getExtraDataType() == ExtraDataString)
             {
-                *c = (char)mySourceId;
+                *c = getExtraDataString()[0];
                 return true;
             }
         }

@@ -301,7 +301,7 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 
 		if( debugRawPQInfo )
 		{
-			ofmsg("PQService: Incoming touch point ID: %1% at (%2%,%3%) size: (%4%,%5%)", %touch.ID %tp.x %tp.y %tp.dx %tp.dx );
+			ofmsg("PQService: Incoming touch point ID: %1% type: %6% at (%2%,%3%) size: (%4%,%5%)", %touch.ID %tp.x %tp.y %tp.dx %tp.dy %tp.point_event);
 		}
 
 		touch.xPos = tp.x / (float)serverResolution[0] + screenOffset[0];
@@ -310,11 +310,6 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 		touch.yWidth = tp.dy / (float)serverResolution[1];
 
 		touch.timestamp = timestamp;
-
-		if( isDebugEnabled() )
-		{
-			ofmsg("PQService: New touch created ID: %1% at (%2%,%3%) size: (%4%,%5%)", %touch.ID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth );
-		}
 
 		// Process touch gestures (this is done outside event creation
 		// for the case touchGestureManager needs to create an event)
@@ -348,20 +343,33 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 			{
 				case TP_DOWN:
 					evt->reset(Event::Down, Service::Pointer, nextID);
+					if (isDebugEnabled())
+					{
+						ofmsg("PQService: Touch ID: %1% as DOWN event at (%2%,%3%) size: (%4%,%5%)", %nextID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth);
+					}
 					touchID[tp.id] = nextID;
 					if( nextID < maxTouches - 100 ){
 						nextID++;
 					} else {
 						nextID = 0;
 					}
+					
 					break;
 				case TP_MOVE:
 					evt->reset(Event::Move, Service::Pointer, touch.ID);
 					touchlist[touch.ID] = touch;
+					if (isDebugEnabled())
+					{
+						ofmsg("PQService: Touch ID: %1% as MOVE event at (%2%,%3%) size: (%4%,%5%)", %nextID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth);
+					}
 					break;
 				case TP_UP:
 					evt->reset(Event::Up, Service::Pointer, touch.ID);
 					touchlist.erase( touch.ID );
+					if (isDebugEnabled())
+					{
+						ofmsg("PQService: Touch ID: %1% as UP event at (%2%,%3%) size: (%4%,%5%)", %nextID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth);
+					}
 					break;
 			}
 

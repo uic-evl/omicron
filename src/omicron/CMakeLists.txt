@@ -325,7 +325,11 @@ endif()
 
 ###############################################################################
 # Setup module-specific link info
-set(EXT_LIB_DIR ${CMAKE_SOURCE_DIR}/external/libs32)
+if(OMICRON_ARCH_64)
+	set(EXT_LIB_DIR ${CMAKE_SOURCE_DIR}/external/libs64)
+elseif(OMICRON_ARCH_32)
+	set(EXT_LIB_DIR ${CMAKE_SOURCE_DIR}/external/libs32)
+endif()
 
 if(OMICRON_USE_NATURAL_POINT)
     if(WIN32)
@@ -401,7 +405,7 @@ endif(OMICRON_USE_KINECT_FOR_WINDOWS)
 if(OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO)
     if(WIN32)
         target_link_libraries( omicron ${EXT_LIB_DIR}/sapi.lib)
-        configure_file(${EXT_LIB_DIR}/Microsoft.Speech.dll ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG} COPYONLY)
+        configure_file(${CMAKE_SOURCE_DIR}/external/libs32/Microsoft.Speech.dll ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG} COPYONLY)
         target_link_libraries( omicron Msdmo.lib )
         target_link_libraries( omicron dmoguids.lib )
         target_link_libraries( omicron amstrmid.lib )

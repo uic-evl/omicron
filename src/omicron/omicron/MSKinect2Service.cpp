@@ -1,11 +1,11 @@
 /**************************************************************************************************
 * THE OMICRON PROJECT
 *-------------------------------------------------------------------------------------------------
-* Copyright 2010-2015		Electronic Visualization Laboratory, University of Illinois at Chicago
+* Copyright 2010-2016		Electronic Visualization Laboratory, University of Illinois at Chicago
 * Authors:										
 *  Arthur Nishimoto		anishimoto42@gmail.com
 *-------------------------------------------------------------------------------------------------
-* Copyright (c) 2010-2015, Electronic Visualization Laboratory, University of Illinois at Chicago
+* Copyright (c) 2010-2016, Electronic Visualization Laboratory, University of Illinois at Chicago
 * All rights reserved.
 * Redistribution and use in source and binary forms, with or without modification, are permitted 
 * provided that the following conditions are met:
@@ -114,7 +114,7 @@ std::wstring MSKinectService::StringToWString(const std::string& s)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void MSKinectService::initialize() 
+void MSKinectService::initialize()
 {
 	mysInstance = this;
 
@@ -122,7 +122,9 @@ void MSKinectService::initialize()
 
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
 	if (enableKinectAudio)
+	{
 		InitializeAudioStream();
+	}
 #endif
 }
 
@@ -133,7 +135,9 @@ void MSKinectService::poll()
 
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
 	if( enableKinectAudio )
+	{
 		pollSpeech();
+	}
 #endif
 }
 
@@ -181,7 +185,9 @@ void MSKinectService::pollSpeech()
 {
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
 	if (enableKinectAudio)
+	{
 		ProcessSpeech();
+	}
 #endif
 }
 

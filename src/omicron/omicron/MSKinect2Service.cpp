@@ -121,7 +121,8 @@ void MSKinectService::initialize()
 	InitializeDefaultKinect();
 
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
-	InitializeAudioStream();
+	if (enableKinectAudio)
+		InitializeAudioStream();
 #endif
 }
 
@@ -179,7 +180,8 @@ void MSKinectService::pollBody()
 void MSKinectService::pollSpeech() 
 {
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
-	ProcessSpeech();
+	if (enableKinectAudio)
+		ProcessSpeech();
 #endif
 }
 

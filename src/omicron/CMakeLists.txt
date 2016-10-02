@@ -430,12 +430,19 @@ if(OMICRON_USE_VRPN)
 endif(OMICRON_USE_VRPN)
 
 if(OMICRON_USE_THINKGEAR)
-    if(WIN32)
-        target_link_libraries( omicron ${EXT_LIB_DIR}/thinkgear.lib)
-        # Copy the dll into the destination bin directory
-        configure_file(${EXT_LIB_DIR}/thinkgear.dll ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG} COPYONLY)
-        configure_file(${EXT_LIB_DIR}/thinkgear.dll ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE} COPYONLY)
-    endif(WIN32)
+	if(WIN32)
+		if(OMICRON_ARCH_32)
+			target_link_libraries( omicron ${EXT_LIB_DIR}/thinkgear.lib)
+			# Copy the dll into the destination bin directory
+			configure_file(${EXT_LIB_DIR}/thinkgear.dll ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG} COPYONLY)
+			configure_file(${EXT_LIB_DIR}/thinkgear.dll ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE} COPYONLY)
+		elseif(OMICRON_ARCH_64)
+			target_link_libraries( omicron ${EXT_LIB_DIR}/thinkgear64.lib)
+			# Copy the dll into the destination bin directory
+			configure_file(${EXT_LIB_DIR}/thinkgear64.dll ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG} COPYONLY)
+			configure_file(${EXT_LIB_DIR}/thinkgear64.dll ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE} COPYONLY)
+		endif()
+	endif(WIN32)
 endif(OMICRON_USE_THINKGEAR)
 
 ###############################################################################

@@ -20,18 +20,6 @@ vrpn_XInputGamepad::vrpn_XInputGamepad(const char *name, vrpn_Connection *c, uns
 	_motorSpeed[0] = 0;
 	_motorSpeed[1] = 0;
 
-	if (register_autodeleted_handler(request_m_id,
-	 handle_request_message, this, d_sender_id)) {
-		fprintf(stderr, "vrpn_XInputGamepad: Can't register request-single handler\n");
-		return;
-	}
-
-	if (register_autodeleted_handler(request_channels_m_id,
-	 handle_request_channels_message, this, d_sender_id)) {
-		fprintf(stderr, "vrpn_XInputGamepad: Can't register request-multiple handler\n");
-		return;
-	}
-
 	if (register_autodeleted_handler(
 	 d_connection->register_message_type(vrpn_dropped_last_connection),
 	 handle_last_connection_dropped, this)) {
@@ -234,83 +222,6 @@ void vrpn_XInputGamepad::report_changes(vrpn_uint32 class_of_service) {
 
 	vrpn_Analog::report_changes(class_of_service);
 	vrpn_Button::report_changes();
-}
-
-// Static callback
-int VRPN_CALLBACK vrpn_XInputGamepad::handle_request_message(void *selfPtr,
-	vrpn_HANDLERPARAM data)
-{
-    const char *bufptr = data.buffer;
-    vrpn_int32 chan_num;
-    vrpn_int32 pad;
-    vrpn_float64 value;
-	vrpn_XInputGamepad *me = (vrpn_XInputGamepad *) selfPtr;
-
-    // Read the parameters from the buffer
-    vrpn_unbuffer(&bufptr, &chan_num);
-    vrpn_unbuffer(&bufptr, &pad);
-    vrpn_unbuffer(&bufptr, &value);
-
-    // Set the appropriate value, if the channel number is in the
-    // range of the ones we have.
-	if ( (chan_num < 0) || (chan_num >= me->o_num_channel) ) {
-		fprintf(stderr,"vrpn_Analog_Output_Server::handle_request_message(): Index out of bounds\n");
-		char msg[1024];
-		sprintf( msg, "Error:  (handle_request_message):  channel %d is not active.  Squelching.", chan_num );
-		me->send_text_message( msg, data.msg_time, vrpn_TEXT_ERROR );
-		return 0;
-	}
-	me->o_channel[chan_num] = value;
-
-	float magnitude = static_cast<float>(value);
-	magnitude = (magnitude < 0) ? 0 : (magnitude > 1) ? 1 : magnitude;
-
-	me->_motorSpeed[chan_num] = static_cast<WORD>(magnitude * 65535);
-	me->update_vibration();
-
-    return 0;
-}
-
-// Static callback
-int VRPN_CALLBACK vrpn_XInputGamepad::handle_request_channels_message(void *selfPtr,
-	vrpn_HANDLERPARAM data)
-{
-	const char *bufptr = data.buffer;
-	vrpn_int32 chan_num;
-	vrpn_int32 pad;
-	vrpn_XInputGamepad *me = (vrpn_XInputGamepad *) selfPtr;
-	int i;
-
-	// Read the parameters from the buffer
-	vrpn_unbuffer(&bufptr, &chan_num);
-	vrpn_unbuffer(&bufptr, &pad);
-
-	if (chan_num > me->o_num_channel) {
-		char msg[1024];
-		sprintf( msg, "Error:  (handle_request_channels_message):  channels above %d not active; "
-			"bad request up to channel %d.  Squelching.", me->o_num_channel, chan_num );
-		me->send_text_message( msg, data.msg_time, vrpn_TEXT_ERROR );
-		chan_num = me->o_num_channel;
-	}
-	if (chan_num < 0) {
-		char msg[1024];
-		sprintf( msg, "Error:  (handle_request_channels_message):  invalid channel %d.  Squelching.", chan_num );
-		me->send_text_message( msg, data.msg_time, vrpn_TEXT_ERROR );
-		return 0;
-	}
-	for (i = 0; i < chan_num; i++) {
-		vrpn_float64 value;
-		vrpn_unbuffer(&bufptr, &value);
-
-		float magnitude = static_cast<float>(value);
-		magnitude = (magnitude < 0) ? 0 : (magnitude > 1) ? 1 : magnitude;
-
-		me->_motorSpeed[chan_num] = static_cast<WORD>(magnitude * 65535);
-	}
-
-	me->update_vibration();
-
-	return 0;
 }
 
 // Static callback

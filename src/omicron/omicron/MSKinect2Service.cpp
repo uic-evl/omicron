@@ -695,6 +695,8 @@ HRESULT MSKinectService::LoadSpeechGrammar()
         // Populate recognition grammar from file
         hr = m_pSpeechGrammar->LoadCmdFromFile(grammarStr, SPLO_STATIC);
     }
+	
+	//HRESULT hr = m_pSpeechGrammar->LoadDictation(NULL, SPLO_STATIC);
 
     return hr;
 }

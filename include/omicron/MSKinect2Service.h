@@ -171,8 +171,10 @@ private:
 	HRESULT                 InitializeAudioStream();
     HRESULT                 CreateSpeechRecognizer();
     HRESULT                 LoadSpeechGrammar();
+	HRESULT                 LoadSpeechDictation();
 	HRESULT                 StartSpeechRecognition();
     void                    ProcessSpeech();
+	void                    ProcessSpeechDictation();
 	void					GenerateSpeechEvent( String, float );
 #endif
 
@@ -234,6 +236,8 @@ private:
 	bool debugInfo;
 	bool caveSimulator;
 	bool enableKinectAudio;
+	bool enableKinectSpeechGrammar;
+	bool enableKinectSpeechDictation;
 	int caveSimulatorHeadID;
 	int caveSimulatorWandID;
 	Vector3f kinectOriginOffset;
@@ -257,10 +261,12 @@ private:
     ISpRecognizer*          m_pSpeechRecognizer;
 
     // Speech recognizer context
-    ISpRecoContext*         m_pSpeechContext;
+	ISpRecoContext*         m_pSpeechContext;
+	ISpRecoContext*         m_pSpeechDictationContext;
 
     // Speech grammar
     ISpRecoGrammar*         m_pSpeechGrammar;
+	ISpRecoGrammar*         m_cpDictationGrammar;
 
     // Event triggered when we detect speech recognition
     HANDLE                  m_hSpeechEvent;

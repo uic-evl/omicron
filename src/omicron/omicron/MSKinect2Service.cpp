@@ -1,11 +1,11 @@
 /**************************************************************************************************
 * THE OMICRON PROJECT
 *-------------------------------------------------------------------------------------------------
-* Copyright 2010-2015		Electronic Visualization Laboratory, University of Illinois at Chicago
+* Copyright 2010-2016		Electronic Visualization Laboratory, University of Illinois at Chicago
 * Authors:										
 *  Arthur Nishimoto		anishimoto42@gmail.com
 *-------------------------------------------------------------------------------------------------
-* Copyright (c) 2010-2015, Electronic Visualization Laboratory, University of Illinois at Chicago
+* Copyright (c) 2010-2016, Electronic Visualization Laboratory, University of Illinois at Chicago
 * All rights reserved.
 * Redistribution and use in source and binary forms, with or without modification, are permitted 
 * provided that the following conditions are met:
@@ -79,6 +79,8 @@ void MSKinectService::setup(Setting& settings)
 	debugInfo = Config::getBoolValue("debug", settings, false);
 
 	enableKinectAudio = Config::getBoolValue("enableKinectSpeech", settings, false);
+	enableKinectSpeechGrammar = Config::getBoolValue("useGrammar", settings, true);
+	enableKinectSpeechDictation = Config::getBoolValue("useDictation", settings, false);
 
 	caveSimulator = Config::getBoolValue("caveSimulator", settings, false);
 	caveSimulatorHeadID = Config::getIntValue("caveSimulatorHeadID", settings, 0);
@@ -114,14 +116,17 @@ std::wstring MSKinectService::StringToWString(const std::string& s)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void MSKinectService::initialize() 
+void MSKinectService::initialize()
 {
 	mysInstance = this;
 
 	InitializeDefaultKinect();
 
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
-	InitializeAudioStream();
+	if (enableKinectAudio)
+	{
+		InitializeAudioStream();
+	}
 #endif
 }
 
@@ -132,7 +137,9 @@ void MSKinectService::poll()
 
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
 	if( enableKinectAudio )
+	{
 		pollSpeech();
+	}
 #endif
 }
 
@@ -179,7 +186,13 @@ void MSKinectService::pollBody()
 void MSKinectService::pollSpeech() 
 {
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
-	ProcessSpeech();
+	if (enableKinectAudio)
+	{
+		if (enableKinectSpeechGrammar)
+			ProcessSpeech();
+		if (enableKinectSpeechDictation)
+			ProcessSpeechDictation();
+	}
 #endif
 }
 
@@ -436,7 +449,7 @@ void MSKinectService::GenerateMocapEvent( IBody* body, Joint* joints )
 	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_HEAD, JointType_Head );
 
 	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_SHOULDER, JointType_ShoulderLeft );
-	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_ELBOW, JointType_ShoulderRight );
+	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_ELBOW, JointType_ElbowLeft );
 	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_WRIST, JointType_WristLeft );
 	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_HAND, JointType_HandLeft );
 	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_LEFT_FINGERTIP, JointType_HandTipLeft );
@@ -534,99 +547,100 @@ HRESULT MSKinectService::InitializeAudioStream()
 {
 	HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
 
-    hr = S_OK;
-    IAudioSource* pAudioSource = NULL;
-    IAudioBeamList* pAudioBeamList = NULL;
+	hr = S_OK;
 
-    hr = GetDefaultKinectSensor(&kinectSensor);
+	IAudioSource* pAudioSource = NULL;
+	IAudioBeamList* pAudioBeamList = NULL;
 
-    if (FAILED(hr))
-    {
-       omsg("MSKinect2Service: Failed getting default sensor!");
-       return hr;
-    }
+	hr = GetDefaultKinectSensor(&kinectSensor);
 
-    hr = kinectSensor->Open();
+	if (FAILED(hr))
+	{
+		omsg("MSKinect2Service: Failed getting default sensor!");
+		return hr;
+	}
 
-    if (SUCCEEDED(hr))
-    {
-        hr = kinectSensor->get_AudioSource(&pAudioSource);
-    }
+	hr = kinectSensor->Open();
 
-    if (SUCCEEDED(hr))
-    {
-        hr = pAudioSource->get_AudioBeams(&pAudioBeamList);
-    }
+	if (SUCCEEDED(hr))
+	{
+		hr = kinectSensor->get_AudioSource(&pAudioSource);
+	}
 
-    if (SUCCEEDED(hr))
-    {        
-        hr = pAudioBeamList->OpenAudioBeam(0, &m_pAudioBeam);
-    }
+	if (SUCCEEDED(hr))
+	{
+		hr = pAudioSource->get_AudioBeams(&pAudioBeamList);
+	}
 
-    if (SUCCEEDED(hr))
-    {        
-        hr = m_pAudioBeam->OpenInputStream(&m_pAudioStream);
-        m_p16BitAudioStream = new KinectAudioStream(m_pAudioStream);
-    }
+	if (SUCCEEDED(hr))
+	{
+		hr = pAudioBeamList->OpenAudioBeam(0, &m_pAudioBeam);
+	}
 
-    if (FAILED(hr))
-    {
-        omsg("MSKinect2Service: Failed opening an audio stream!");
-        return hr;
-    }
+	if (SUCCEEDED(hr))
+	{
+		hr = m_pAudioBeam->OpenInputStream(&m_pAudioStream);
+		m_p16BitAudioStream = new KinectAudioStream(m_pAudioStream);
+	}
 
-    hr = CoCreateInstance(CLSID_SpStream, NULL, CLSCTX_INPROC_SERVER, __uuidof(ISpStream), (void**)&m_pSpeechStream);
+	if (FAILED(hr))
+	{
+		omsg("MSKinect2Service: Failed opening an audio stream!");
+		return hr;
+	}
 
-    // Audio Format for Speech Processing
-    WORD AudioFormat = WAVE_FORMAT_PCM;
-    WORD AudioChannels = 1;
-    DWORD AudioSamplesPerSecond = 16000;
-    DWORD AudioAverageBytesPerSecond = 32000;
-    WORD AudioBlockAlign = 2;
-    WORD AudioBitsPerSample = 16;
+	hr = CoCreateInstance(CLSID_SpStream, NULL, CLSCTX_INPROC_SERVER, __uuidof(ISpStream), (void**)&m_pSpeechStream);
 
-    WAVEFORMATEX wfxOut = {AudioFormat, AudioChannels, AudioSamplesPerSecond, AudioAverageBytesPerSecond, AudioBlockAlign, AudioBitsPerSample, 0};
+	// Audio Format for Speech Processing
+	WORD AudioFormat = WAVE_FORMAT_PCM;
+	WORD AudioChannels = 1;
+	DWORD AudioSamplesPerSecond = 16000;
+	DWORD AudioAverageBytesPerSecond = 32000;
+	WORD AudioBlockAlign = 2;
+	WORD AudioBitsPerSample = 16;
 
-    if (SUCCEEDED(hr))
-    {
+	WAVEFORMATEX wfxOut = { AudioFormat, AudioChannels, AudioSamplesPerSecond, AudioAverageBytesPerSecond, AudioBlockAlign, AudioBitsPerSample, 0 };
 
-        m_p16BitAudioStream->SetSpeechState(true);        
-        hr = m_pSpeechStream->SetBaseStream(m_p16BitAudioStream, SPDFID_WaveFormatEx, &wfxOut);
-    }
+	if (SUCCEEDED(hr))
+	{
 
-    if (SUCCEEDED(hr))
-    {
-        hr = CreateSpeechRecognizer();
-    }
+		m_p16BitAudioStream->SetSpeechState(true);
+		hr = m_pSpeechStream->SetBaseStream(m_p16BitAudioStream, SPDFID_WaveFormatEx, &wfxOut);
+	}
 
-    if (FAILED(hr))
-    {
-        omsg("MSKinect2Service: Could not create speech recognizer. Please ensure that Microsoft Speech SDK and other sample requirements are installed.");
-        return hr;
-    }
+	if (SUCCEEDED(hr))
+	{
+		hr = CreateSpeechRecognizer();
+	}
 
-    hr = LoadSpeechGrammar();
+	if (FAILED(hr))
+	{
+		omsg("MSKinect2Service: Could not create speech recognizer. Please ensure that Microsoft Speech SDK and other sample requirements are installed.");
+		return hr;
+	}
 
-    if (FAILED(hr))
-    {
-        omsg("MSKinect2Service: Could not load speech grammar. Please ensure that grammar configuration file was properly deployed.");
-        return hr;
-    }
+	if (enableKinectSpeechGrammar)
+	{
+		hr = LoadSpeechGrammar();
+		hr = StartSpeechRecognition();
 
-    hr = StartSpeechRecognition();
+		if (FAILED(hr))
+		{
+			omsg("MSKinect2Service: Could not start recognizing speech.");
+			return hr;
+		}
 
-    if (FAILED(hr))
-    {
-        omsg("MSKinect2Service: Could not start recognizing speech.");
-        return hr;
-    }
+		omsg("MSKinect2Service: Speech recognition started.");
+		m_bSpeechActive = true;
+	}
 
-	omsg("MSKinect2Service: Speech recognition started.");
-    m_bSpeechActive = true;
+	if (enableKinectSpeechDictation)
+	{
+		hr = LoadSpeechDictation();
+	}
 
     SafeRelease(pAudioBeamList);
     SafeRelease(pAudioSource);
-
     return hr;
 }
 
@@ -688,7 +702,74 @@ HRESULT MSKinectService::LoadSpeechGrammar()
         hr = m_pSpeechGrammar->LoadCmdFromFile(grammarStr, SPLO_STATIC);
     }
 
+	if (FAILED(hr))
+	{
+		omsg("MSKinect2Service: Could not load speech grammar. Please ensure that grammar configuration file was properly deployed.");
+	}
     return hr;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// <summary>
+/// Load speech recognition dictation into recognizer.
+/// </summary>
+/// <returns>
+/// <para>S_OK on success, otherwise failure code.</para>
+/// </returns>
+HRESULT MSKinectService::LoadSpeechDictation()
+{
+	HRESULT hr = S_OK;
+	CComPtr<ISpRecognizer> cpRecoEngine;
+	hr = cpRecoEngine.CoCreateInstance(CLSID_SpInprocRecognizer);
+
+	if (SUCCEEDED(hr))
+	{
+		hr = cpRecoEngine->CreateRecoContext(&m_pSpeechDictationContext);
+	}
+
+	if (SUCCEEDED(hr))
+	{
+		// This specifies which of the recognition events are going to trigger notifications.
+		// Here, all we are interested in is the beginning and ends of sounds, as well as
+		// when the engine has recognized something
+		const ULONGLONG ullInterest = SPFEI(SPEI_RECOGNITION);
+		m_pSpeechDictationContext->SetInterest(ullInterest, ullInterest);
+	}
+
+	// create default audio object
+	CComPtr<ISpAudio> cpAudio;
+	SpCreateDefaultObjectFromCategoryId(SPCAT_AUDIOIN, &cpAudio);
+
+	// set the input for the engine
+	cpRecoEngine->SetInput(cpAudio, TRUE);
+	hr = cpRecoEngine->SetRecoState(SPRST_ACTIVE);
+
+	if (SUCCEEDED(hr))
+	{
+		// Specifies that the grammar we want is a dictation grammar.
+		// Initializes the grammar (m_cpDictationGrammar)
+		hr = m_pSpeechDictationContext->CreateGrammar(0, &m_cpDictationGrammar);
+	}
+	if (SUCCEEDED(hr))
+	{
+		hr = m_cpDictationGrammar->LoadDictation(NULL, SPLO_STATIC);
+	}
+	if (SUCCEEDED(hr))
+	{
+		hr = m_cpDictationGrammar->SetDictationState(SPRS_ACTIVE);
+	}
+	if (FAILED(hr))
+	{
+		omsg("MSKinect2Service: Could not load dictation grammar.");
+		m_cpDictationGrammar->Release();
+	}
+	else if (SUCCEEDED(hr))
+	{
+		omsg("MSKinect2Service: Dictation grammar loaded.");
+	}
+
+	
+	return hr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -785,8 +866,51 @@ void MSKinectService::ProcessSpeech()
 
         m_pSpeechContext->GetEvents(1, &curEvent, &fetched);
     }
-
     return;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// <summary>
+/// Process recently triggered speech recognition events.
+/// </summary>
+void MSKinectService::ProcessSpeechDictation()
+{
+	SPEVENT curEvent = { SPEI_UNDEFINED, SPET_LPARAM_IS_UNDEFINED, 0, 0, 0, 0 };
+	ULONG fetched = 0;
+	HRESULT hr = S_OK;
+
+	m_pSpeechDictationContext->GetEvents(1, &curEvent, &fetched);
+	while (fetched > 0)
+	{
+		switch (curEvent.eEventId)
+		{
+		case SPEI_RECOGNITION:
+			if (SPET_LPARAM_IS_OBJECT == curEvent.elParamType)
+			{
+				// this is an ISpRecoResult
+				ISpRecoResult* result = reinterpret_cast<ISpRecoResult*>(curEvent.lParam);
+				SPPHRASE* pPhrase = NULL;
+
+				LPWSTR speechWString = L"";
+
+				hr = result->GetText(SP_GETWHOLEPHRASE, SP_GETWHOLEPHRASE, TRUE, &speechWString, NULL);
+				if (SUCCEEDED(hr))
+				{
+					std::wstring wstr = speechWString;
+					String speechString;
+					speechString.resize(wstr.size()); //make enough room in copy for the string 
+					std::copy(wstr.begin(), wstr.end(), speechString.begin()); //copy it
+
+					ofmsg("MSKinect2Service: Dictation speech recognized '%1%'", %speechString);
+					GenerateSpeechEvent(speechString, 1.0f);
+				}
+			}
+			break;
+		}
+
+		m_pSpeechDictationContext->GetEvents(1, &curEvent, &fetched);
+	}
+	return;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

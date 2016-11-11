@@ -25,7 +25,7 @@ namespace omicron{
 	protected:
 		// Handle requests to change rumble magnitude
 		static int VRPN_CALLBACK handle_request_message(void *selfPtr, vrpn_HANDLERPARAM data);
-		static int VRPN_CALLBACK handle_request_channels_message(void *selfPtr, vrpn_HANDLERPARAM data);
+		//static int VRPN_CALLBACK handle_request_channels_message(void *selfPtr, vrpn_HANDLERPARAM data);
 		static int VRPN_CALLBACK handle_last_connection_dropped(void *selfPtr, vrpn_HANDLERPARAM data);
 
 		// send report iff changed

@@ -49,6 +49,9 @@ struct Touch{
 	int prevPosResetTime;
 	int prevPosTimer;
 
+	float initXPos;
+	float initYPos;
+
 	int idleTime;
 
 	// Gestures
@@ -136,6 +139,7 @@ namespace omicron {
 
 	public:
 		TouchGestureManager();
+		void setup(Setting&);
 		void registerPQService(Service*);
 		void setMaxTouchIDs(int);
 
@@ -145,6 +149,7 @@ namespace omicron {
 		void setNextID( int ID );
 
 		void generatePQServiceEvent(Event::Type eventType, Touch touch, int advancedGesture);
+		void generatePQServiceEvent(Event::Type eventType, map<int, Touch> touchList, int masterId, int advancedGesture);
 		void generateZoomEvent(Event::Type eventType, Touch touch, float deltaDistance);
 	private:
 		Service* pqsInstance;

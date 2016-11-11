@@ -623,7 +623,7 @@ public:
   /** return the number of bytes of the osc packet -- will always be a
       multiple of 4 -- returns 0 if the construction of the packet has
       failed. */
-  uint32_t packetSize() { return err ? 0 : storage.size(); }
+  uint32_t packetSize() { return err ? 0 : (uint32_t)storage.size(); }
   
   /** return the bytes of the osc packet (NULL if the construction of the packet has failed) */
   char *packetData() { return err ? 0 : storage.begin(); }

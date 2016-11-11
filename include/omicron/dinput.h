@@ -40,7 +40,7 @@ extern "C" {
 #define DIRECTINPUT_HEADER_VERSION  0x0800
 #ifndef DIRECTINPUT_VERSION
 #define DIRECTINPUT_VERSION         DIRECTINPUT_HEADER_VERSION
-#pragma message(__FILE__ ": DIRECTINPUT_VERSION undefined. Defaulting to version 0x0800")
+//#pragma message(__FILE__ ": DIRECTINPUT_VERSION undefined. Defaulting to version 0x0800")
 #endif
 
 #ifndef DIJ_RINGZERO

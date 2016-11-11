@@ -80,7 +80,11 @@ namespace omicron
 };
 
 #define odbg(str) omsg(str);
+#ifndef NDEBUG
 #define oassert(c) if(!(c)) { omicron::oabort(__FILE__, __LINE__, #c); }
+#else
+#define oassert(c)
+#endif
 
 
 #endif

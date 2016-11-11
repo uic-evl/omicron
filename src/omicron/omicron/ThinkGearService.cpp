@@ -70,7 +70,7 @@ void ThinkGearService::initialize()
 	mysInstance = this;
 
 	// Get ThinkGear driver version
-	driverVersion = TG_GetDriverVersion();
+	driverVersion = TG_GetVersion();
 
 	// Get the connection ID handle for ThinkGear
 	connectionID = TG_GetNewConnectionId();
@@ -122,13 +122,6 @@ void ThinkGearService::initialize()
 		printf("ThinkGearService: Connected on com port '%s'. Baud rate: %d\n", comPortName, baudRate);
 		printf("ThinkGearService: Connecting to device (~10 seconds)... \n");
 	}
-
-	
-	errorCode = TG_EnableBlinkDetection( connectionID, true );
-	if( errorCode < 0 ) {
-        printf("ThinkGearService: Failed enable blink detection. Error code: %d \n", errorCode);
-		return;
-	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -166,7 +159,7 @@ void ThinkGearService::generateEvent( int myConnectionID )
 	deviceStatus += TG_GetValueStatus(myConnectionID, TG_DATA_BETA2);
 	deviceStatus += TG_GetValueStatus(myConnectionID, TG_DATA_GAMMA1);
 	deviceStatus += TG_GetValueStatus(myConnectionID, TG_DATA_GAMMA2);
-	deviceStatus += TG_GetValueStatus(myConnectionID, TG_DATA_BLINK_STRENGTH);
+	deviceStatus += TG_GetValueStatus(myConnectionID, 0);
 
 	if( deviceStatus == 0 ) // No change in device, no new event
 		return;
@@ -183,7 +176,7 @@ void ThinkGearService::generateEvent( int myConnectionID )
 	float beta2 = TG_GetValue(myConnectionID, TG_DATA_BETA2);
 	float gamma1 = TG_GetValue(myConnectionID, TG_DATA_GAMMA1);
 	float gamma2 = TG_GetValue(myConnectionID, TG_DATA_GAMMA2);
-	float blinkStrength = TG_GetValue(myConnectionID, TG_DATA_BLINK_STRENGTH);
+	float blinkStrength = TG_GetValue(myConnectionID, 0);
 	
 	int eventSum = signal + attention + meditation + delta + theta;
 

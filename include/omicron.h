@@ -24,5 +24,6 @@
 #include "omicron/Tcp.h"
 #include "omicron/Timer.h"
 #include "omicron/xml/tinyxml.h"
+#include "omicron/RayPointMapper.h"
 
 #endif

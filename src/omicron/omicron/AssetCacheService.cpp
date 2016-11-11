@@ -99,12 +99,12 @@ void AssetCacheConnection::handleData()
         if(!DataManager::findFile(fileName, fullFilePath))
         {
             ofmsg("File not found sending request for %1%", %myBuffer);
-            sendMessage("CHCR", (void*)myBuffer, strlen(myBuffer));
+            sendMessage("CHCR", (void*)myBuffer, (int)strlen(myBuffer));
         }
         else
         {
             // File found, request timestamp
-            sendMessage("CHSR", (void*)myBuffer, strlen(myBuffer));
+            sendMessage("CHSR", (void*)myBuffer, (int)strlen(myBuffer));
             ofmsg("File found sending timestamp request for %1%", %myBuffer);
         }
     }
@@ -131,7 +131,7 @@ void AssetCacheConnection::handleData()
             if(remoteTimestamp > timestamp)
             {
                 ofmsg("Requesting newer version of file: %1%", %args[0]);
-                sendMessage("CHCR", (void*)args[0].c_str(), args[0].size());
+                sendMessage("CHCR", (void*)args[0].c_str(), (int)args[0].size());
             }
             else
             {
@@ -206,7 +206,7 @@ void AssetCacheConnection::handleData()
             if(f != NULL)
             {
                 // Read the file in blocks.
-                unsigned int count = 0; 
+                size_t count = 0; 
                 while(count < fileSize)
                 { 
                     unsigned int nextBlock = buff_size;

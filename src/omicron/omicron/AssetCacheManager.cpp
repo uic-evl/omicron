@@ -42,87 +42,87 @@ namespace omicron {
 class CacheConnection: public TcpConnection
 {
 public:
-	CacheConnection(const ConnectionInfo& info): TcpConnection(info), done(false)
-	{}
+    CacheConnection(const ConnectionInfo& info): TcpConnection(info), done(false)
+    {}
 
-	virtual void handleConnected()
-	{
-		omsg("Connected: setting cache");
+    virtual void handleConnected()
+    {
+        omsg("Connected: setting cache");
 
-		String& cacheName = myAssetCacheManager->myCacheName;
+        String& cacheName = myAssetCacheManager->myCacheName;
 
-		sendMessage("CHCS", (void*)cacheName.c_str(), cacheName.size());
+        sendMessage("CHCS", (void*)cacheName.c_str(), cacheName.size());
 
-		// If we are not in overwrite mode, ask for files
-		if(!myAssetCacheManager->isForceOverwriteEnabled())
-		{
-			foreach(String file, myAssetCacheManager->myFileList)
-			{
-				sendMessage("CHCA", (void*)file.c_str(), file.size());
-			}
-			// Tell the server we are done requesting files. The server will either reply 
-			// with a done message too if no cache sync is needed, or it will send us file
-			// requests for each file it is missing.
-			sendMessage("CHCD", NULL, 0);
-		}
-		else
-		{
-			omsg("Force push");
-			// If we are, just push files.
-			foreach(String file, myAssetCacheManager->myFileList)
-			{
-				ofmsg(" Push files: %1%", %file);
-				sendMessage("CHCP", (void*)file.c_str(), strlen(file.c_str()));
-				sendFile(file.c_str());
-			}
-			//sendMessage("CHCD", NULL, 0);
-		}
-	}
+        // If we are not in overwrite mode, ask for files
+        if(!myAssetCacheManager->isForceOverwriteEnabled())
+        {
+            foreach(String file, myAssetCacheManager->myFileList)
+            {
+                sendMessage("CHCA", (void*)file.c_str(), file.size());
+            }
+            // Tell the server we are done requesting files. The server will either reply 
+            // with a done message too if no cache sync is needed, or it will send us file
+            // requests for each file it is missing.
+            sendMessage("CHCD", NULL, 0);
+        }
+        else
+        {
+            omsg("Force push");
+            // If we are, just push files.
+            foreach(String file, myAssetCacheManager->myFileList)
+            {
+                ofmsg(" Push files: %1%", %file);
+                sendMessage("CHCP", (void*)file.c_str(), strlen(file.c_str()));
+                sendFile(file.c_str());
+            }
+            //sendMessage("CHCD", NULL, 0);
+        }
+    }
 
-	virtual void handleData()
-	{
-		// Read message header.
-		char header[4];
-		read(myBuffer, 4);
-		memcpy(header, myBuffer, 4);
+    virtual void handleData()
+    {
+        // Read message header.
+        char header[4];
+        read(myBuffer, 4);
+        memcpy(header, myBuffer, 4);
 
-		//ofmsg("DATA: %1%%2%%3%%4%", %myBuffer[0] %myBuffer[1] %myBuffer[2] %myBuffer[3]);
+        //ofmsg("DATA: %1%%2%%3%%4%", %myBuffer[0] %myBuffer[1] %myBuffer[2] %myBuffer[3]);
 
-		// Read data length.
-		int dataSize;
-		read(myBuffer, 4);
-		memcpy(&dataSize, myBuffer, 4);
+        // Read data length.
+        int dataSize;
+        read(myBuffer, 4);
+        memcpy(&dataSize, myBuffer, 4);
 
-		// Read data.
-		read(myBuffer, dataSize);
-		myBuffer[dataSize] = '\0';
+        // Read data.
+        read(myBuffer, dataSize);
+        myBuffer[dataSize] = '\0';
 
-		if(!strncmp(header, "CHCD", 4)) 
-		{
-			omsg("Done message received");
-			// DOne.
-			done = true;
-			waitClose();
-		}
-		if(!strncmp(header, "CHCR", 4)) 
-		{
-			// File request.
-			ofmsg("File requested: %1%", %myBuffer);
-			// Send file name
-			sendMessage("CHCP", (void*)myBuffer, strlen(myBuffer));
+        if(!strncmp(header, "CHCD", 4)) 
+        {
+            omsg("Done message received");
+            // DOne.
+            done = true;
+            waitClose();
+        }
+        if(!strncmp(header, "CHCR", 4)) 
+        {
+            // File request.
+            ofmsg("File requested: %1%", %myBuffer);
+            // Send file name
+            sendMessage("CHCP", (void*)myBuffer, strlen(myBuffer));
 
-			sendFile(myBuffer);
-		}
-		if(!strncmp(header, "CHSR", 4)) 
-		{
-		    // Send file data.
-		    String fullPath;
-		    if(DataManager::findFile(myBuffer, fullPath))
-		    {
-			    struct stat st;
-			    stat(fullPath.c_str(), &st);
-			    int timestamp = st.st_mtime;
-			    // File stat request.
+            sendFile(myBuffer);
+        }
+        if(!strncmp(header, "CHSR", 4)) 
+        {
+            // Send file data.
+            String fullPath;
+            if(DataManager::findFile(myBuffer, fullPath))
+            {
+                struct stat st;
+                stat(fullPath.c_str(), &st);
+                int timestamp = st.st_mtime;
+                // File stat request.
                 String msg = ostr("%1%,%2%", %myBuffer %timestamp);
                 sendMessage("CHST", (void*)msg.c_str(), msg.size());
             }
@@ -130,96 +130,96 @@ public:
             {
                 ofwarn("AssetCacheManager: file stat request failed, fine not found: %1%", %myBuffer);
             }
-		}
-	}
+        }
+    }
 
-	virtual void handleError(const ConnectionError& err)
-	{
-		TcpConnection::handleError(err);
-		done = true;
-	}
+    virtual void handleError(const ConnectionError& err)
+    {
+        TcpConnection::handleError(err);
+        done = true;
+    }
 
-	void sendMessage(const char* header, void* data, int size)
-	{
-		//ofmsg("AssetCacheManager sent %1%", %header);
-		write((void*)header, 4);
-		write(&size, sizeof(int));
-		write(data, size);
-	}
+    void sendMessage(const char* header, void* data, size_t size)
+    {
+        //ofmsg("AssetCacheManager sent %1%", %header);
+        write((void*)header, 4);
+        write(&size, sizeof(int));
+        write(data, size);
+    }
 
-	void sendFile(const char* filename)
-	{
-		unsigned int datasize = 0;
-		// Send file data.
-		String fullPath;
-		if(DataManager::findFile(filename, fullPath))
-		{
-			// Get the file size.
-			FILE* f = fopen(fullPath.c_str(), "rb");
-			fseek(f, 0, SEEK_END);
-			unsigned int sz = ftell(f);
-			fclose(f);
-				
-			ofmsg("Sending file size: %1% bytes", %sz);
-			write(&sz, sizeof(unsigned int));
+    void sendFile(const char* filename)
+    {
+        unsigned int datasize = 0;
+        // Send file data.
+        String fullPath;
+        if(DataManager::findFile(filename, fullPath))
+        {
+            // Get the file size.
+            FILE* f = fopen(fullPath.c_str(), "rb");
+            fseek(f, 0, SEEK_END);
+            unsigned int sz = ftell(f);
+            fclose(f);
+                
+            ofmsg("Sending file size: %1% bytes", %sz);
+            write(&sz, sizeof(unsigned int));
 
-			const unsigned int buff_size = 16384; //size of the send buffer
+            const unsigned int buff_size = 16384; //size of the send buffer
 
-			FILE* file = fopen(fullPath.c_str(), "rb");
-			//std::fstream file(fullPath); //we open this file
+            FILE* file = fopen(fullPath.c_str(), "rb");
+            //std::fstream file(fullPath); //we open this file
 
-			char* buff = new char[buff_size]; //creating the buffer
-			unsigned int count = 0; //counter
-			while( !feof(file) ) 
-			{ 
-				memset(buff,0,buff_size); //cleanup the buffer
-				size_t len = fread(buff, 1, buff_size, file);
-				write(buff,len);
-				count+=len; //increment counter
-			}
+            char* buff = new char[buff_size]; //creating the buffer
+            size_t count = 0; //counter
+            while( !feof(file) ) 
+            { 
+                memset(buff,0,buff_size); //cleanup the buffer
+                size_t len = fread(buff, 1, buff_size, file);
+                write(buff,len);
+                count+=len; //increment counter
+            }
 
-			ofmsg("Sent bytes: %1%", %count);
+            ofmsg("Sent bytes: %1%", %count);
 
-			fclose(file); //close file
-			delete(buff);  //delete buffer
-		}
-		else
-		{
-			ofwarn("File not found! %1%", %myBuffer);
-			write(&datasize, sizeof(unsigned int));
-		}
-	}
+            fclose(file); //close file
+            delete(buff);  //delete buffer
+        }
+        else
+        {
+            ofwarn("File not found! %1%", %myBuffer);
+            write(&datasize, sizeof(unsigned int));
+        }
+    }
 
-	bool done;
-	AssetCacheManager* myAssetCacheManager;
-	char myBuffer[1024];
+    bool done;
+    AssetCacheManager* myAssetCacheManager;
+    char myBuffer[1024];
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 class CacheSyncThread: public Thread
 {
 public:
-	CacheSyncThread(AssetCacheManager* mng): myAssetCacheManager(mng)
-	{}
+    CacheSyncThread(AssetCacheManager* mng): myAssetCacheManager(mng)
+    {}
 
-	virtual void threadProc()
-	{
-		asio::io_service ioService;
-		Ref<CacheConnection> conn = new CacheConnection(ConnectionInfo(ioService));
-		conn->myAssetCacheManager = myAssetCacheManager;
-		conn->open(myAssetCacheManager->myCacheHosts.front(), myAssetCacheManager->myCachePort);
-		while(!conn->done)
-		{
-			ioService.run_one();
-			conn->poll();
-			osleep(10);
-		}
-		omsg("CacheSyncThread:threadProc(): END");
-		myAssetCacheManager->mySynching = false;
-	}
+    virtual void threadProc()
+    {
+        asio::io_service ioService;
+        Ref<CacheConnection> conn = new CacheConnection(ConnectionInfo(ioService));
+        conn->myAssetCacheManager = myAssetCacheManager;
+        conn->open(myAssetCacheManager->myCacheHosts.front(), myAssetCacheManager->myCachePort);
+        while(!conn->done)
+        {
+            ioService.run_one();
+            conn->poll();
+            osleep(10);
+        }
+        omsg("CacheSyncThread:threadProc(): END");
+        myAssetCacheManager->mySynching = false;
+    }
 
 private:
-	AssetCacheManager* myAssetCacheManager;
+    AssetCacheManager* myAssetCacheManager;
 };
 
 };
@@ -227,29 +227,29 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 AssetCacheManager::AssetCacheManager():
-	myCachePort(8090), myCacheName("defaultCache"), mySynching(false), myVerbose(false), myForceOverwrite(false)
+    myCachePort(8090), myCacheName("defaultCache"), mySynching(false), myVerbose(false), myForceOverwrite(false)
 {
-	myThread = new CacheSyncThread(this);
+    myThread = new CacheSyncThread(this);
 }
         
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 AssetCacheManager::~AssetCacheManager()
 {
-	myThread->stop();
-	delete myThread;
-	myThread = NULL;
+    myThread->stop();
+    delete myThread;
+    myThread = NULL;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void AssetCacheManager::addCacheHost(const String& host)
 {
-	myCacheHosts.push_back(host);
+    myCacheHosts.push_back(host);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void AssetCacheManager::clearCacheHosts()
 {
-	myCacheHosts.clear();
+    myCacheHosts.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -257,33 +257,33 @@ void AssetCacheManager::addFileToCacheList(const String& file)
 {
     // Convert forward to back slashes
     String ffile = StringUtils::replaceAll(file, "\\", "/");
-	myFileList.push_back(ffile);
+    myFileList.push_back(ffile);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void AssetCacheManager::clearCacheFileList()
 {
-	myFileList.clear();
+    myFileList.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void AssetCacheManager::sync()
 {
-	if(!mySynching)
-	{
-		startSync();
-		while(mySynching) osleep(500);
-	}
+    if(!mySynching)
+    {
+        startSync();
+        while(mySynching) osleep(500);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void AssetCacheManager::startSync()
 {
-	if(!mySynching)
-	{
-		mySynching = true;
-		myThread->start();
-	}
+    if(!mySynching)
+    {
+        mySynching = true;
+        myThread->start();
+    }
 }
 
 

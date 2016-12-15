@@ -269,28 +269,26 @@ endif()
     
 # VRPN module support
 if(WIN32)
-    if(OMICRON_TOOL_VS12)
-        set(OMICRON_USE_VRPN true CACHE BOOL "Enable/disable VRPN Client support")
-        if(OMICRON_USE_VRPN)
-            set( srcs	 ${srcs} omicron/VRPNService.cpp
-                         ${srcs} omicron/VRPNDevice.cpp
-                )
-            set( headers ${headers} ${CMAKE_SOURCE_DIR}/include/omicron/VRPNService.h
-                         ${CMAKE_SOURCE_DIR}/include/omicron/VRPNDevice.h
-                         ${CMAKE_SOURCE_DIR}/include/omicron/vrpn/vrpn_BaseClass.h
-                         ${CMAKE_SOURCE_DIR}/include/omicron/vrpn/vrpn_Configure.h
-                         ${CMAKE_SOURCE_DIR}/include/omicron/vrpn/vrpn_Connection.h
-                         ${CMAKE_SOURCE_DIR}/include/omicron/vrpn/vrpn_Shared.h
-                         ${CMAKE_SOURCE_DIR}/include/omicron/vrpn/vrpn_Tracker.h
-                         ${CMAKE_SOURCE_DIR}/include/omicron/vrpn/vrpn_Types.h
-                         
-                )
-            include_directories( ${CMAKE_SOURCE_DIR}/include/omicron/VRPNService.h
-                                 ${CMAKE_SOURCE_DIR}/include/omicron/VRPNDevice.h
-                                 ${CMAKE_SOURCE_DIR}/include/omicron/vrpn
-                )
-        endif()
-    endif()
+    set(OMICRON_USE_VRPN true CACHE BOOL "Enable/disable VRPN Client support")
+	if(OMICRON_USE_VRPN)
+		set( srcs	 ${srcs} omicron/VRPNService.cpp
+					 ${srcs} omicron/VRPNDevice.cpp
+			)
+		set( headers ${headers} ${CMAKE_SOURCE_DIR}/include/omicron/VRPNService.h
+					 ${CMAKE_SOURCE_DIR}/include/omicron/VRPNDevice.h
+					 ${CMAKE_SOURCE_DIR}/include/omicron/vrpn/vrpn_BaseClass.h
+					 ${CMAKE_SOURCE_DIR}/include/omicron/vrpn/vrpn_Configure.h
+					 ${CMAKE_SOURCE_DIR}/include/omicron/vrpn/vrpn_Connection.h
+					 ${CMAKE_SOURCE_DIR}/include/omicron/vrpn/vrpn_Shared.h
+					 ${CMAKE_SOURCE_DIR}/include/omicron/vrpn/vrpn_Tracker.h
+					 ${CMAKE_SOURCE_DIR}/include/omicron/vrpn/vrpn_Types.h
+					 
+			)
+		include_directories( ${CMAKE_SOURCE_DIR}/include/omicron/VRPNService.h
+							 ${CMAKE_SOURCE_DIR}/include/omicron/VRPNDevice.h
+							 ${CMAKE_SOURCE_DIR}/include/omicron/vrpn
+			)
+	endif()
 endif()
 
 # ThinkGear module support

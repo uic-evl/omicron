@@ -228,6 +228,12 @@ void VRPNService::generateTrackerEvent(vrpn_TRACKERCB t, int id, unsigned short 
      //float curt = (float)((double)clock() / CLOCKS_PER_SEC);
      //if(curt - lastt > mysInstance->myUpdateInterval)
      //{
+
+	if (isDebugEnabled())
+	{
+		ofmsg("VRPNService: Tracker Event Device ID %1% Position: %2% %3% %4%", %id %t.pos[0] %t.pos[1] %t.pos[2]);
+	}
+
          mysInstance->lockEvents();
          Event* evt = mysInstance->writeHead();
          evt->reset(Event::Update, Service::Mocap, id, getServiceId(), userId);

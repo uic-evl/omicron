@@ -154,8 +154,8 @@ private:
 	void pollBody();
 	void pollSpeech();
 
-	void ProcessBody(INT64, int, IBody**);
-	void GenerateMocapEvent( IBody*, Joint* );
+	void ProcessBody(INT64, int, IBody**, Vector4*);
+	void GenerateMocapEvent(IBody*, Joint*, Vector4*);
 	void SkeletonPositionToEvent( Joint*, Event*, Event::OmicronSkeletonJoint, JointType );
 
 	void UpdateTrackedSkeletonSelection( int mode );

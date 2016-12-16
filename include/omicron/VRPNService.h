@@ -1,13 +1,13 @@
 /******************************************************************************
  * THE OMICRON PROJECT
  *-----------------------------------------------------------------------------
- * Copyright 2010-2014		Electronic Visualization Laboratory, 
+ * Copyright 2010-2016		Electronic Visualization Laboratory, 
  *							University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto	    anishimoto42@gmail.com
  *  Alessandro Febretti		febret@gmail.com
  *-----------------------------------------------------------------------------
- * Copyright (c) 2010-2014, Electronic Visualization Laboratory,  
+ * Copyright (c) 2010-2016, Electronic Visualization Laboratory,  
  * University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, 
@@ -41,7 +41,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <vrpn_Tracker.h> // Remember to set Linker directories and Input/Dependencies to vrpn.lib
+#include <vrpn_tracker.h> // Remember to set Linker directories and Input/Dependencies to vrpn.lib
 #include <vrpn_Button.h>
 
 namespace omicron

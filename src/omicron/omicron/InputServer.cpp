@@ -64,53 +64,42 @@ private:
 public:
     NetClient( const char* address, int port, SOCKET clientSocket )
     {
-        clientAddress = address;
-        clientPort = port;
-
-        legacyMode = false;
-        connected = true;
-
-        // Create a UDP socket for sending data
-        sendSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-
-        // Set up the RecvAddr structure with the IP address of
-        // the receiver
-        recvAddr.sin_family = AF_INET;
-        recvAddr.sin_port = htons(port);
-        recvAddr.sin_addr.s_addr = inet_addr(address);
-        printf("NetClient %s:%i created...\n", address, port);
-
-        msgSocket = clientSocket;
+		createSocketConnection(address, port, false, clientSocket);
+		printf("NetClient %s:%i created...\n", address, port);
     }// CTOR
 
     NetClient( const char* address, int port, int legacy, SOCKET clientSocket )
     {
-        clientAddress = address;
-        clientPort = port;
-
-        legacyMode = legacy;
-        connected = true;
-
-        // Create a UDP socket for sending data
-        sendSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-
-        // Set up the RecvAddr structure with the IP address of
-        // the receiver
-        recvAddr.sin_family = AF_INET;
-        recvAddr.sin_port = htons(port);
-        recvAddr.sin_addr.s_addr = inet_addr(address);
-
-        msgSocket = clientSocket;
-
-        if( legacyMode )
-        {
-            printf("Legacy NetClient %s:%i created...\n", address, port);
-        }
-        else
-        {
-            printf("NetClient %s:%i created...\n", address, port);
-        }
+		createSocketConnection(address, port, legacy, clientSocket);
+		if (legacyMode)
+		{
+			printf("Legacy NetClient %s:%i created...\n", address, port);
+		}
+		else
+		{
+			printf("NetClient %s:%i created...\n", address, port);
+		}
     }// CTOR
+
+	void createSocketConnection(const char* address, int port, int legacy, SOCKET clientSocket)
+	{
+		clientAddress = address;
+		clientPort = port;
+
+		legacyMode = legacy;
+		connected = true;
+
+		// Create a UDP socket for sending data
+		sendSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+		// Set up the RecvAddr structure with the IP address of
+		// the receiver
+		recvAddr.sin_family = AF_INET;
+		recvAddr.sin_port = htons(port);
+		recvAddr.sin_addr.s_addr = inet_addr(address);
+
+		msgSocket = clientSocket;
+	}
 
     void sendEvent(char* eventPacket, int length)
     {
@@ -285,7 +274,7 @@ void InputServer::handleEvent(const Event& evt)
 	}
 	else
 	{
-		sendToClients(eventPacket, 0); // Also send to udp stream for legacy clients
+		//sendToClients(eventPacket, 0); // Also send to udp stream for legacy clients
 		if (showEventMessages)
 			printf("oinputserver: Event %d type: %d sent at pos %f %f\n", evt.getSourceId(), evt.getType(), evt.getPosition().x(), evt.getPosition().y());
 		sendToClients(eventPacket, 1); // Send to TCP clients expecting reliable events
@@ -779,6 +768,7 @@ void InputServer::createClient(const char* clientAddress, int dataPort, bool leg
         if( strcmp(p->first, addr) == 0 )
         {
             printf("OInputServer: NetClient already exists: %s \n", addr );
+			p->second->createSocketConnection(clientAddress, dataPort, legacy, clientSocket);
 
             // Check dataMode: if different, update client
             if( p->second->isLegacy() != legacy )

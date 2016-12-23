@@ -30,6 +30,51 @@
 
 using namespace omicron;
 
+double curTime;
+double lastEventTime = 0;
+double eventDelay = 0.1f;
+int currentID = 0;
+int eventState = 0;
+float posX, posY = 0;
+float angle = 0;
+void RandomTouchEventTest(InputServer app)
+{
+	curTime = clock() / (double)CLOCKS_PER_SEC;
+
+	Event evt;
+
+	if (curTime >= lastEventTime + eventDelay)
+	{
+		evt.reset(EventBase::Type::Up, Service::ServiceType::Pointer, currentID, 0, 0);
+		app.handleEvent(evt);
+
+		currentID++;
+		evt.reset(EventBase::Type::Down, Service::ServiceType::Pointer, currentID, 0, 0);
+		
+		posX = (rand() % 1000) / 1000.0;
+		posY = (rand() % 1000) / 1000.0;
+		angle = rand() & 360;
+		evt.setPosition(posX, posY);
+
+		evt.setExtraDataFloat(0, 100);
+		evt.setExtraDataFloat(1, 100);
+		lastEventTime = curTime;
+	}
+	else
+	{
+		evt.reset(EventBase::Type::Move, Service::ServiceType::Pointer, currentID, 0, 0);
+
+		//posX += 1 * cos(angle);
+		//posY += 1 * sin(angle);
+
+		evt.setPosition(posX, posY);
+		evt.setExtraDataFloat(0, 100);
+		evt.setExtraDataFloat(1, 100);
+	}
+
+	app.handleEvent(evt);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 int main(int argc, char** argv)
 {
@@ -88,6 +133,7 @@ int main(int argc, char** argv)
 			}
 			sm->unlockEvents();
         }
+		//RandomTouchEventTest(app);
     }
 
     sm->stop();
@@ -95,3 +141,4 @@ int main(int argc, char** argv)
     delete cfg;
     delete dm;
 }
+

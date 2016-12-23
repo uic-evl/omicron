@@ -342,17 +342,19 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 			switch(tp.point_event)
 			{
 				case TP_DOWN:
+					if (nextID < maxTouches - 100){
+						nextID++;
+					}
+					else {
+						nextID = 0;
+					}
 					evt->reset(Event::Down, Service::Pointer, nextID);
+					touchID[tp.id] = nextID;
 					if (isDebugEnabled())
 					{
 						ofmsg("PQService: Touch ID: %1% as DOWN event at (%2%,%3%) size: (%4%,%5%)", %nextID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth);
 					}
-					touchID[tp.id] = nextID;
-					if( nextID < maxTouches - 100 ){
-						nextID++;
-					} else {
-						nextID = 0;
-					}
+					
 					
 					break;
 				case TP_MOVE:
@@ -368,7 +370,7 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 					touchlist.erase( touch.ID );
 					if (isDebugEnabled())
 					{
-						ofmsg("PQService: Touch ID: %1% as UP event at (%2%,%3%) size: (%4%,%5%)", %nextID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth);
+						ofmsg("PQService: Touch ID: %1% as UP event at (%2%,%3%) size: (%4%,%5%)", %touch.ID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth);
 					}
 					break;
 			}

@@ -264,8 +264,6 @@ void InputServer::handleEvent(const Event& evt)
         }
     }
 
-    
-    
 	if (evt.getType() == Event::Type::Update || evt.getType() == Event::Type::Move)
 	{
 		if (showEventStream)
@@ -274,7 +272,7 @@ void InputServer::handleEvent(const Event& evt)
 	}
 	else
 	{
-		//sendToClients(eventPacket, 0); // Also send to udp stream for legacy clients
+		sendToClients(eventPacket, 0); // Also send to udp stream for legacy clients
 		if (showEventMessages)
 			printf("oinputserver: Event %d type: %d sent at pos %f %f\n", evt.getSourceId(), evt.getType(), evt.getPosition().x(), evt.getPosition().y());
 		sendToClients(eventPacket, 1); // Send to TCP clients expecting reliable events

@@ -86,8 +86,8 @@ public:
 	{
 		eventPacket = new char[256];
 		
-		itoa(evt.getServiceType(), eventPacket, 10); // Append input type
-		strcat( eventPacket, ":" );
+		itoa(evt.getTimestamp(), eventPacket, 10); // Append input type
+		strcat( eventPacket, ":q:" );
 		char floatChar[32];
 		
 		switch(evt.getServiceType())
@@ -97,9 +97,21 @@ public:
 			//printf("               at %f %f \n", x, y ); 
 
 			// Converts gesture type to char, appends to eventPacket
-			sprintf(floatChar,"%d",evt.getType());
-			strcat( eventPacket, floatChar );
-			strcat( eventPacket, "," ); // Spacer
+			//sprintf(floatChar,"%d",evt.getType());
+			//strcat( eventPacket, floatChar );
+			//strcat( eventPacket, "," ); // Spacer
+
+			// tacTile style dgram:
+			// 'timestamp:flag:id,x,y,w,h,gesture,intensity '
+			// long timestamp
+			// flag: TacTile tracker d,g,p,z 
+			//       PQLabs q: standard touch, l: gesture
+			// float x, y normalized positions
+			// float w, h normalized width/height
+			// int gesture (Note: different from Omicron)
+			//		0: Down
+			//		1: Move
+			//		2: Up
 
 			// Converts id to char, appends to eventPacket
 			sprintf(floatChar,"%d",evt.getSourceId());
@@ -125,6 +137,26 @@ public:
 				strcat( eventPacket, "," ); // Spacer
 				sprintf(floatChar,"%f", evt.getExtraDataFloat(1) );
 				strcat( eventPacket, floatChar );
+
+				// Converts eventType to TacTile gesture
+				if (evt.getType() == EventBase::Type::Down)
+				{
+					strcat(eventPacket, ","); // Spacer
+					strcat(eventPacket, "0");
+				}
+				else if (evt.getType() == EventBase::Type::Up)
+				{
+					strcat(eventPacket, ","); // Spacer
+					strcat(eventPacket, "2");
+				}
+				else // Move
+				{
+					strcat(eventPacket, ","); // Spacer
+					strcat(eventPacket, "1");
+				}
+
+				// Intensity
+				strcat(eventPacket, ",1.0");
 			} else { // Touch Gestures
 				// Converts value to char, appends to eventPacket
 				strcat( eventPacket, "," ); // Spacer
@@ -541,7 +573,7 @@ void main(int argc, char** argv)
 	bool testStream = false;
 	char* testPacket;
 
-	bool printOutput = true;
+	bool printOutput = false;
 
 	printf("OInputServer: Starting to listen for clients... \n");
 	while(true){

@@ -1,11 +1,11 @@
 /**************************************************************************************************
  * THE OMICRON PROJECT
  *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2015		Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2016		Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto		anishimoto42@gmail.com
  *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2015, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2016, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted 
  * provided that the following conditions are met:
@@ -376,6 +376,43 @@ void TouchGroup::generateGestures(){
 	ftime( &tb );
 	int curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
 
+	if (touchList.size() == 1)
+	{
+		gestureFlag = GESTURE_SINGLE_TOUCH;
+	}
+	// Basic 2-touch zoom
+	if (touchList.size() == 2 && !zoomGestureTriggered){
+		zoomGestureTriggered = true;
+
+		initialZoomDistance = farthestTouchDistance;
+		zoomDistance = farthestTouchDistance;
+		zoomLastDistance = initialZoomDistance;
+
+		gestureManager->generateZoomEvent(Event::Down, touchList[ID], 0);
+		ofmsg("TouchGroup ID: %1% zoom start", %ID);
+	}
+	else if (touchList.size() != 2 && zoomGestureTriggered){
+		zoomGestureTriggered = false;
+
+		gestureManager->generateZoomEvent(Event::Up, touchList[ID], 0);
+		ofmsg("TouchGroup ID: %1% zoom end", %ID);
+	}
+
+	if (zoomGestureTriggered)
+	{
+		zoomLastDistance = zoomDistance;
+		zoomDistance = farthestTouchDistance;
+
+		float zoomDelta = (zoomDistance - zoomLastDistance) * zoomGestureMultiplier;
+
+		if (zoomDelta != 0)
+		{
+			gestureManager->generateZoomEvent(Event::Move, touchList[ID], zoomDelta);
+			ofmsg("TouchGroup ID: %1% zoom delta: %2%", %ID %zoomDelta);
+		}
+	}
+
+	/*
 	// Single finger gestures
 	if( touchList.size() == 1 )
     {
@@ -417,6 +454,7 @@ void TouchGroup::generateGestures(){
 		gestureFlag = GESTURE_MULTI_TOUCH;
 	}
 
+	
 	// Basic 2-touch zoom
 	if( touchList.size() == 2 && idleTouchList.size() <= 1 && !zoomGestureTriggered){
       zoomGestureTriggered = true;
@@ -497,6 +535,7 @@ void TouchGroup::generateGestures(){
 
 		ofmsg("TouchGroup ID: %1% 3-finger gesture ended", %ID);
     }
+	*/
 }
 
 
@@ -790,19 +829,16 @@ void TouchGestureManager::generatePQServiceEvent(Event::Type eventType, map<int,
 		evt->setExtraDataFloat(1, touch.yWidth);
 		evt->setExtraDataFloat(2, touch.initXPos);
 		evt->setExtraDataFloat(3, touch.initYPos);
-		evt->setExtraDataFloat(4, touchList.size()-1); // Do not include self in count
+		evt->setExtraDataFloat(4, touchList.size()); // Do not include self in count
 
 		map<int, Touch>::iterator it;
 		int extraDataIndex = 5;
 		for (it = touchList.begin(); it != touchList.end(); it++)
 		{
 			Touch t = (*it).second;
-			if (t.ID != touch.ID) // Does not include itself in this list
-			{
-				evt->setExtraDataFloat(extraDataIndex++, t.ID);
-				evt->setExtraDataFloat(extraDataIndex++, t.xPos);
-				evt->setExtraDataFloat(extraDataIndex++, t.yPos);
-			}
+			evt->setExtraDataFloat(extraDataIndex++, t.ID);
+			evt->setExtraDataFloat(extraDataIndex++, t.xPos);
+			evt->setExtraDataFloat(extraDataIndex++, t.yPos);
 		}
 
 		

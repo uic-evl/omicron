@@ -152,7 +152,7 @@ void SAGEInputServer::connectToSage(){
     Sleep(1000);
     printf("\nConnected to sage on: %s\n", sageHost);
 
-	createClient( sageHost, DIM_PORT, false, sock );
+	createClient( sageHost, DIM_PORT, InputServer::DataMode::Omicron, sock );
     sageConnected = true;
 }
 int triggerFlag = 0;

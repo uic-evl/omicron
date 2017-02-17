@@ -100,16 +100,19 @@ class OMICRON_API InputServer
 {
 public:
     virtual void handleEvent(const Event& evt);
-    virtual bool handleLegacyEvent(const Event& evt);
+	virtual bool generateOmicronPacket(const Event& evt);
+    virtual bool generateLegacyPacket(const Event& evt);
+	virtual bool generateTacTilePacket(const Event& evt);
     void startConnection(Config* cfg);
     SOCKET startListening();
     // VRPN Server (for CalVR)
     void loop();
 
+	enum DataMode { TacTile, Omicron, Omicron_Legacy };
 protected:
     char* createOmicronEventPacket(const Event*);
     void sendToClients(char*, int);
-    void createClient(const char*,int, bool, SOCKET);
+	void createClient(const char*, int, DataMode, SOCKET);
 private:
     enum dataMode { omicron, omicron_legacy };
     
@@ -119,7 +122,6 @@ private:
     
     #define DEFAULT_BUFLEN 512
     char eventPacket[DEFAULT_BUFLEN];
-    char legacyPacket[DEFAULT_BUFLEN];
 
     char recvbuf[DEFAULT_BUFLEN];
     int iResult, iSendResult;

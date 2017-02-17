@@ -56,7 +56,9 @@ private:
     SOCKET sendSocket;
     SOCKET msgSocket;
     sockaddr_in recvAddr;
-    bool legacyMode;
+	
+	InputServer::DataMode legacyMode;
+
     bool connected;
 
     const char* clientAddress;
@@ -64,29 +66,29 @@ private:
 public:
     NetClient( const char* address, int port, SOCKET clientSocket )
     {
-		createSocketConnection(address, port, false, clientSocket);
+		createSocketConnection(address, port, InputServer::DataMode::Omicron, clientSocket);
 		printf("NetClient %s:%i created...\n", address, port);
     }// CTOR
 
-    NetClient( const char* address, int port, int legacy, SOCKET clientSocket )
+	NetClient(const char* address, int port, InputServer::DataMode mode, SOCKET clientSocket)
     {
-		createSocketConnection(address, port, legacy, clientSocket);
-		if (legacyMode)
+		createSocketConnection(address, port, mode, clientSocket);
+		if (mode == InputServer::DataMode::Omicron_Legacy)
 		{
 			printf("Legacy NetClient %s:%i created...\n", address, port);
 		}
-		else
+		else if (mode == InputServer::DataMode::Omicron)
 		{
 			printf("NetClient %s:%i created...\n", address, port);
 		}
     }// CTOR
 
-	void createSocketConnection(const char* address, int port, int legacy, SOCKET clientSocket)
+	void createSocketConnection(const char* address, int port, InputServer::DataMode mode, SOCKET clientSocket)
 	{
 		clientAddress = address;
 		clientPort = port;
 
-		legacyMode = legacy;
+		legacyMode = mode;
 		connected = true;
 
 		// Create a UDP socket for sending data
@@ -128,14 +130,19 @@ public:
         }
     }// SendMsg
 
-    void setLegacy(bool value)
+	void setLegacy(InputServer::DataMode value)
     {
         legacyMode = value;
     }// setLegacy
 
+	InputServer::DataMode getDataMode()
+	{
+		return legacyMode;
+	}// getDataMode
+
     bool isLegacy()
     {
-        return legacyMode;
+		return legacyMode == InputServer::DataMode::Omicron_Legacy;
     }// isLegacy
 
     bool isConnected()
@@ -183,44 +190,80 @@ char* InputServer::createOmicronEventPacket(const Event* evt)
 //
 void InputServer::sendToClients(char* eventPacket, int priority)
 {
-    std::map<char*,NetClient*>::iterator itr = netClients.begin();
-    while( itr != netClients.end() )
-    {
-        NetClient* client = itr->second;
-
-        if( client->isLegacy() )
-        {
-            //client->sendEvent(legacyPacket, 512);
-        }
-        else
-        {
-			if (priority == 0) // UDP
-			{
-				client->sendEvent(eventPacket, DEFAULT_BUFLEN);
-			}
-			else if (priority == 1) // TCP
-			{
-				client->sendMsg(eventPacket, DEFAULT_BUFLEN);
-			}
-        }
-        itr++;
-    }
+    
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // Checks the type of event. If a valid event, creates an event packet and sends to clients.
 void InputServer::handleEvent(const Event& evt)
 {
-    // If the event has been processed locally (i.e. by a filter event service)
-    if(evt.isProcessed()) return;
+	// If the event has been processed locally (i.e. by a filter event service)
+	if (evt.isProcessed()) return;
 
+#ifdef OMICRON_USE_VRPN
+	vrpnDevice->update(&evt);
+#endif
+
+	int priority = 0;
+	if (evt.getType() == Event::Type::Update || evt.getType() == Event::Type::Move)
+	{
+		priority = 0;
+	}
+	else
+	{
+		priority = 1;
+	}
+
+	std::map<char*, NetClient*>::iterator itr = netClients.begin();
+	while (itr != netClients.end())
+	{
+		NetClient* client = itr->second;
+
+		switch(client->getDataMode())
+		{
+			case(DataMode::Omicron) : generateOmicronPacket(evt); break;
+			case(DataMode::Omicron_Legacy) : generateLegacyPacket(evt); break;
+			case(DataMode::TacTile) : generateTacTilePacket(evt); break;
+			default: generateOmicronPacket(evt); break;
+		}
+
+		if (priority == 0) // UDP
+		{
+			client->sendEvent(eventPacket, DEFAULT_BUFLEN);
+		}
+		else if (priority == 1) // TCP
+		{
+			client->sendMsg(eventPacket, DEFAULT_BUFLEN);
+
+			// Also send as UDP for legcy clients
+			client->sendEvent(eventPacket, DEFAULT_BUFLEN);
+		}
+		itr++;
+	}
+
+	if (evt.getType() == Event::Type::Update || evt.getType() == Event::Type::Move)
+	{
+		if (showEventStream)
+			printf("oinputserver: Event %d type: %d sent at pos %f %f\n", evt.getSourceId(), evt.getType(), evt.getPosition().x(), evt.getPosition().y());
+		sendToClients(eventPacket, 0);
+	}
+	else
+	{
+		sendToClients(eventPacket, 0); // Also send to udp stream for legacy clients
+		if (showEventMessages)
+			printf("oinputserver: Event %d type: %d sent at pos %f %f\n", evt.getSourceId(), evt.getType(), evt.getPosition().x(), evt.getPosition().y());
+		sendToClients(eventPacket, 1); // Send to TCP clients expecting reliable events
+
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Binary packet of standard Omicron event
+bool InputServer::generateOmicronPacket(const Event& evt)
+{
     timeb tb;
     ftime( &tb );
     int timestamp = tb.millitm + (tb.time & 0xfffff) * 1000;
-
-#ifdef OMICRON_USE_VRPN
-    vrpnDevice->update(&evt);
-#endif
             
     int offset = 0;
             
@@ -247,46 +290,34 @@ void InputServer::handleEvent(const Event& evt)
         memcpy(&eventPacket[offset], evt.getExtraDataBuffer(), evt.getExtraDataSize());
     }
     offset += evt.getExtraDataSize();
-        
-    //handleLegacyEvent(evt);
-        
-    if( showStreamSpeed )
-    {
-        if( (timestamp - lastOutgoingEventTime) >= 1000 )
-        {
-            lastOutgoingEventTime = timestamp;
-            ofmsg("oinputserver: Outgoing event stream %1% event(s)/sec", %eventCount );
-            eventCount = 0;
-        }
-        else
-        {
-            eventCount++;
-        }
-    }
-
-	if (evt.getType() == Event::Type::Update || evt.getType() == Event::Type::Move)
+    
+	if (showStreamSpeed)
 	{
-		if (showEventStream)
-			printf("oinputserver: Event %d type: %d sent at pos %f %f\n", evt.getSourceId(), evt.getType(), evt.getPosition().x(), evt.getPosition().y());
-		sendToClients(eventPacket, 0);
+		if ((timestamp - lastOutgoingEventTime) >= 1000)
+		{
+			lastOutgoingEventTime = timestamp;
+			ofmsg("oinputserver: Outgoing event stream %1% event(s)/sec", %eventCount);
+			eventCount = 0;
+		}
+		else
+		{
+			eventCount++;
+		}
 	}
-	else
-	{
-		sendToClients(eventPacket, 0); // Also send to udp stream for legacy clients
-		if (showEventMessages)
-			printf("oinputserver: Event %d type: %d sent at pos %f %f\n", evt.getSourceId(), evt.getType(), evt.getPosition().x(), evt.getPosition().y());
-		sendToClients(eventPacket, 1); // Send to TCP clients expecting reliable events
 
-	}
+	return true;
 }
     
 ///////////////////////////////////////////////////////////////////////////////
-bool InputServer::handleLegacyEvent(const Event& evt)
+// dgram string of format:
+// Pointer: 'serviceType:eventType,x,y,w,h '
+// Pointer (gesture): 'serviceType:eventType,x,y,extraData1,extraData2,etc '
+bool InputServer::generateLegacyPacket(const Event& evt)
 {
     //itoa(evt.getServiceType(), eventPacket, 10); // Append input type
-    sprintf(legacyPacket, "%d", evt.getServiceType());
+    sprintf(eventPacket, "%d", evt.getServiceType());
 
-    strcat( legacyPacket, ":" );
+    strcat( eventPacket, ":" );
     char floatChar[32];
         
     switch(evt.getServiceType())
@@ -297,72 +328,72 @@ bool InputServer::handleLegacyEvent(const Event& evt)
 
         // Converts gesture type to char, appends to eventPacket
         sprintf(floatChar,"%d",evt.getType());
-        strcat( legacyPacket, floatChar );
-        strcat( legacyPacket, "," ); // Spacer
+        strcat( eventPacket, floatChar );
+        strcat( eventPacket, "," ); // Spacer
 
         // Converts id to char, appends to eventPacket
         sprintf(floatChar,"%d",evt.getSourceId());
-        strcat( legacyPacket, floatChar );
-        strcat( legacyPacket, "," ); // Spacer
+        strcat( eventPacket, floatChar );
+        strcat( eventPacket, "," ); // Spacer
 
         // Converts x to char, appends to eventPacket
         sprintf(floatChar,"%f",evt.getPosition().x());
-        strcat( legacyPacket, floatChar );
-        strcat( legacyPacket, "," ); // Spacer
+        strcat( eventPacket, floatChar );
+        strcat( eventPacket, "," ); // Spacer
 
         // Converts y to char, appends to eventPacket
         sprintf(floatChar,"%f",evt.getPosition().y());
-        strcat( legacyPacket, floatChar );
+        strcat( eventPacket, floatChar );
 
         if( evt.getExtraDataItems() == 2){ // TouchPoint down/up/move
             // Converts xWidth to char, appends to eventPacket
-            strcat( legacyPacket, "," ); // Spacer
+            strcat( eventPacket, "," ); // Spacer
             sprintf(floatChar,"%f", evt.getExtraDataFloat(0) );
-            strcat( legacyPacket, floatChar );
+            strcat( eventPacket, floatChar );
                 
             // Converts yWidth to char, appends to eventPacket
-            strcat( legacyPacket, "," ); // Spacer
+            strcat( eventPacket, "," ); // Spacer
             sprintf(floatChar,"%f", evt.getExtraDataFloat(1) );
-            strcat( legacyPacket, floatChar );
+            strcat( eventPacket, floatChar );
         } else { // Touch Gestures
             // Converts value to char, appends to eventPacket
-            strcat( legacyPacket, "," ); // Spacer
+            strcat( eventPacket, "," ); // Spacer
             sprintf(floatChar,"%f", evt.getExtraDataFloat(0) );
-            strcat( legacyPacket, floatChar );
+            strcat( eventPacket, floatChar );
                 
             // Converts value to char, appends to eventPacket
-            strcat( legacyPacket, "," ); // Spacer
+            strcat( eventPacket, "," ); // Spacer
             sprintf(floatChar,"%f", evt.getExtraDataFloat(1) );
-            strcat( legacyPacket, floatChar );
+            strcat( eventPacket, floatChar );
 
             // Converts value to char, appends to eventPacket
-            strcat( legacyPacket, "," ); // Spacer
+            strcat( eventPacket, "," ); // Spacer
             sprintf(floatChar,"%f", evt.getExtraDataFloat(2) );
-            strcat( legacyPacket, floatChar );
+            strcat( eventPacket, floatChar );
 
             // Converts value to char, appends to eventPacket
-            strcat( legacyPacket, "," ); // Spacer
+            strcat( eventPacket, "," ); // Spacer
             sprintf(floatChar,"%f", evt.getExtraDataFloat(3) );
-            strcat( legacyPacket, floatChar );
+            strcat( eventPacket, floatChar );
 
             if( evt.getType() == Event::Rotate ){
                 // Converts rotation to char, appends to eventPacket
-                strcat( legacyPacket, "," ); // Spacer
+                strcat( eventPacket, "," ); // Spacer
                 sprintf(floatChar,"%f", evt.getExtraDataFloat(4) );
-                strcat( legacyPacket, floatChar );
+                strcat( eventPacket, floatChar );
             } else if( evt.getType() == Event::Split ){
                 // Converts values to char, appends to eventPacket
-                strcat( legacyPacket, "," ); // Spacer
+                strcat( eventPacket, "," ); // Spacer
                 sprintf(floatChar,"%f", evt.getExtraDataFloat(4) ); // Delta distance
-                strcat( legacyPacket, floatChar );
+                strcat( eventPacket, floatChar );
 
-                strcat( legacyPacket, "," ); // Spacer
+                strcat( eventPacket, "," ); // Spacer
                 sprintf(floatChar,"%f", evt.getExtraDataFloat(5) ); // Delta ratio
-                strcat( legacyPacket, floatChar );
+                strcat( eventPacket, floatChar );
             }
         }
 
-        strcat( legacyPacket, " " ); // Spacer
+        strcat( eventPacket, " " ); // Spacer
 
         return true;
         break;
@@ -371,43 +402,43 @@ bool InputServer::handleLegacyEvent(const Event& evt)
     {
         // Converts id to char, appends to eventPacket
         sprintf(floatChar,"%d",evt.getSourceId());
-        strcat( legacyPacket, floatChar );
-        strcat( legacyPacket, "," ); // Spacer
+        strcat( eventPacket, floatChar );
+        strcat( eventPacket, "," ); // Spacer
 
         // Converts xPos to char, appends to eventPacket
         sprintf(floatChar,"%f",evt.getPosition()[0]);
-        strcat( legacyPacket, floatChar );
-        strcat( legacyPacket, "," ); // Spacer
+        strcat( eventPacket, floatChar );
+        strcat( eventPacket, "," ); // Spacer
 
         // Converts yPos to char, appends to eventPacket
         sprintf(floatChar,"%f",evt.getPosition()[1]);
-        strcat( legacyPacket, floatChar );
-        strcat( legacyPacket, "," ); // Spacer
+        strcat( eventPacket, floatChar );
+        strcat( eventPacket, "," ); // Spacer
 
         // Converts zPos to char, appends to eventPacket
         sprintf(floatChar,"%f",evt.getPosition()[2]);
-        strcat( legacyPacket, floatChar );
-        strcat( legacyPacket, "," ); // Spacer
+        strcat( eventPacket, floatChar );
+        strcat( eventPacket, "," ); // Spacer
 
         // Converts xRot to char, appends to eventPacket
         sprintf(floatChar,"%f",evt.getOrientation().x());
-        strcat( legacyPacket, floatChar );
-        strcat( legacyPacket, "," ); // Spacer
+        strcat( eventPacket, floatChar );
+        strcat( eventPacket, "," ); // Spacer
 
         // Converts yRot to char, appends to eventPacket
         sprintf(floatChar,"%f",evt.getOrientation().y());
-        strcat( legacyPacket, floatChar );
-        strcat( legacyPacket, "," ); // Spacer
+        strcat( eventPacket, floatChar );
+        strcat( eventPacket, "," ); // Spacer
 
         // Converts zRot to char, appends to eventPacket
         sprintf(floatChar,"%f",evt.getOrientation().z());
-        strcat( legacyPacket, floatChar );
-        strcat( legacyPacket, "," ); // Spacer
+        strcat( eventPacket, floatChar );
+        strcat( eventPacket, "," ); // Spacer
 
         // Converts wRot to char, appends to eventPacket
         sprintf(floatChar,"%f",evt.getOrientation().w());
-        strcat( legacyPacket, floatChar );
-        strcat( legacyPacket, " " ); // Spacer
+        strcat( eventPacket, floatChar );
+        strcat( eventPacket, " " ); // Spacer
         return true;
         break;
     }
@@ -415,36 +446,36 @@ bool InputServer::handleLegacyEvent(const Event& evt)
     case Service::Controller:
         // Converts id to char, appends to eventPacket
         sprintf(floatChar,"%d",evt.getSourceId());
-        strcat( legacyPacket, floatChar );
-        strcat( legacyPacket, "," ); // Spacer
+        strcat( eventPacket, floatChar );
+        strcat( eventPacket, "," ); // Spacer
 
         // See DirectXInputService.cpp for parameter details
             
         for( int i = 0; i < evt.getExtraDataItems(); i++ ){
             sprintf(floatChar,"%d", (int)evt.getExtraDataFloat(i));
-            strcat( legacyPacket, floatChar );
+            strcat( eventPacket, floatChar );
             if( i < evt.getExtraDataItems() - 1 )
-                strcat( legacyPacket, "," ); // Spacer
+                strcat( eventPacket, "," ); // Spacer
             else
-                strcat( legacyPacket, " " ); // Spacer
+                strcat( eventPacket, " " ); // Spacer
         }
         return true;
         break;
     case Service::Wand:
         // Converts event type to char, appends to eventPacket
         sprintf(floatChar,"%d",evt.getType());
-        strcat( legacyPacket, floatChar );
-        strcat( legacyPacket, "," ); // Spacer
+        strcat( eventPacket, floatChar );
+        strcat( eventPacket, "," ); // Spacer
 
         // Converts id to char, appends to eventPacket
         sprintf(floatChar,"%d",evt.getSourceId());
-        strcat( legacyPacket, floatChar );
-        strcat( legacyPacket, "," ); // Spacer
+        strcat( eventPacket, floatChar );
+        strcat( eventPacket, "," ); // Spacer
 
         // Converts flags to char, appends to eventPacket
         sprintf(floatChar,"%d",evt.getFlags());
-        strcat( legacyPacket, floatChar );
-        strcat( legacyPacket, "," ); // Spacer
+        strcat( eventPacket, floatChar );
+        strcat( eventPacket, "," ); // Spacer
 
         // Due to packet size constraints, wand events will
         // be treated as controller events (wand mocap data can
@@ -454,35 +485,106 @@ bool InputServer::handleLegacyEvent(const Event& evt)
             
         for( int i = 0; i < evt.getExtraDataItems(); i++ ){
             sprintf(floatChar,"%f", evt.getExtraDataFloat(i));
-            strcat( legacyPacket, floatChar );
+            strcat( eventPacket, floatChar );
             if( i < evt.getExtraDataItems() - 1 )
-                strcat( legacyPacket, "," ); // Spacer
+                strcat( eventPacket, "," ); // Spacer
             else
-                strcat( legacyPacket, " " ); // Spacer
+                strcat( eventPacket, " " ); // Spacer
         }
         return true;
         break;
     case Service::Brain:
         // Converts id to char, appends to eventPacket
         sprintf(floatChar,"%d",evt.getSourceId());
-        strcat( legacyPacket, floatChar );
+        strcat( eventPacket, floatChar );
         for( int i = 0; i < 12; i++ ){
-            strcat( legacyPacket, "," ); // Spacer
+            strcat( eventPacket, "," ); // Spacer
             sprintf(floatChar,"%d", (int)evt.getExtraDataFloat(i));
-            strcat( legacyPacket, floatChar );
+            strcat( eventPacket, floatChar );
         }
         return true;
         break;
     case Service::Generic:
         // Converts id to char, appends to eventPacket
         sprintf(floatChar,"%d",evt.getSourceId());
-        strcat( legacyPacket, floatChar );
+        strcat( eventPacket, floatChar );
         return true;
         break;
     default: break;
     }
 
     return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// dgram string of format:
+// Pointer: 'timestamp:flag:id,x,y,w,h,gesture,intensity '
+// Pointer (gesture): 'serviceType:eventType,x,y,extraData1,extraData2,etc '
+bool InputServer::generateTacTilePacket(const Event& evt)
+{
+	itoa(evt.getTimestamp(), eventPacket, 10); // Append input type
+	strcat(eventPacket, ":q:");
+
+	char floatChar[32];
+
+	switch (evt.getServiceType())
+	{
+	case Service::Pointer:
+		//printf(" Touch type %d \n", evt.getType()); 
+		//printf("               at %f %f \n", x, y ); 
+
+		// Converts id to char, appends to eventPacket
+		sprintf(floatChar, "%d", evt.getSourceId());
+		strcat(eventPacket, floatChar);
+		strcat(eventPacket, ","); // Spacer
+
+		// Converts x to char, appends to eventPacket
+		sprintf(floatChar, "%f", evt.getPosition()[0]);
+		strcat(eventPacket, floatChar);
+		strcat(eventPacket, ","); // Spacer
+
+		// Converts y to char, appends to eventPacket
+		sprintf(floatChar, "%f", evt.getPosition()[1]);
+		strcat(eventPacket, floatChar);
+
+		if (evt.getExtraDataItems() == 2){ // TouchPoint down/up/move
+			// Converts xWidth to char, appends to eventPacket
+			strcat(eventPacket, ","); // Spacer
+			sprintf(floatChar, "%f", evt.getExtraDataFloat(0));
+			strcat(eventPacket, floatChar);
+
+			// Converts yWidth to char, appends to eventPacket
+			strcat(eventPacket, ","); // Spacer
+			sprintf(floatChar, "%f", evt.getExtraDataFloat(1));
+			strcat(eventPacket, floatChar);
+
+			// Converts eventType to TacTile gesture
+			if (evt.getType() == EventBase::Type::Down)
+			{
+				strcat(eventPacket, ","); // Spacer
+				strcat(eventPacket, "0");
+			}
+			else if (evt.getType() == EventBase::Type::Up)
+			{
+				strcat(eventPacket, ","); // Spacer
+				strcat(eventPacket, "2");
+			}
+			else // Move
+			{
+				strcat(eventPacket, ","); // Spacer
+				strcat(eventPacket, "1");
+			}
+
+			// Intensity
+			strcat(eventPacket, ",1.0");
+		}
+		strcat(eventPacket, " "); // Spacer
+
+		return true;
+		break;
+	}
+
+	return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -645,9 +747,9 @@ SOCKET InputServer::startListening()
         if (iResult > 0)
         {
             //printf("Service: Bytes received: %d\n", iResult);
-            char* inMessage;
+			String inMessage;
             char* portCStr;
-            inMessage = new char[iResult];
+            inMessage = "";
             portCStr = new char[iResult];
 
             // Iterate through message string and
@@ -662,7 +764,7 @@ SOCKET InputServer::startListening()
                 }
                 else if( i < portIndex )
                 {
-                    inMessage[i] = recvbuf[i];
+                    inMessage += recvbuf[i];
                 } 
                 else 
                 {
@@ -672,32 +774,41 @@ SOCKET InputServer::startListening()
             }
 
             // Make sure handshake is correct
-            char* handshake = "data_on";
-            char* omicronHandshake = "omicron_data_on";
-            char* legacyHandshake = "omicron_legacy_data_on";
+            String handshake = "data_on";
+			String omicronHandshake = "omicron_data_on";
+			String legacyHandshake = "omicron_legacy_data_on";
+			String tacTileHandshake = "tactile_data_on";
             int dataPort = 7000; // default port
-
-            if( strcmp(inMessage, legacyHandshake) == 1 )
+			
+			if (legacyHandshake.find(inMessage) == 0)
             {
                 // Get data port number
                 dataPort = atoi(portCStr);
                 printf("OInputServer: '%s' requests omicron legacy data to be sent on port '%d'\n", clientAddress, dataPort);
-                printf("OInputServer: WARNING - This server does not support legacy data!\n");
-                createClient( clientAddress, dataPort, true, clientSocket );
+                printf("OInputServer: WARNING - Legacy data many not be supported for all service types!\n");
+                createClient( clientAddress, dataPort, DataMode::Omicron_Legacy, clientSocket );
             }
-            else if( strcmp(inMessage, omicronHandshake) == 1 )
+			else if (omicronHandshake.find(inMessage) == 0)
             {
                 // Get data port number
                 dataPort = atoi(portCStr);
                 printf("OInputServer: '%s' requests omicron data to be sent on port '%d'\n", clientAddress, dataPort);
-                createClient( clientAddress, dataPort, false, clientSocket );
+				createClient(clientAddress, dataPort, DataMode::Omicron, clientSocket);
             }
-            else if( strcmp(inMessage, handshake) == 1 )
+			else if (tacTileHandshake.find(inMessage) == 0)
+			{
+				// Get data port number
+				dataPort = atoi(portCStr);
+				printf("OInputServer: '%s' requests TacTile data to be sent on port '%d'\n", clientAddress, dataPort);
+				printf("OInputServer: WARNING - Only supports non-gesture pointer events!\n");
+				createClient(clientAddress, dataPort, DataMode::TacTile, clientSocket);
+			}
+			else if (handshake.find(inMessage) == 0)
             {
                 // Get data port number
                 dataPort = atoi(portCStr);
                 printf("OInputServer: '%s' requests data (old handshake) to be sent on port '%d'\n", clientAddress, dataPort);
-                createClient( clientAddress, dataPort, false, clientSocket );
+				createClient(clientAddress, dataPort, DataMode::Omicron, clientSocket);
             }
             else
             {
@@ -705,11 +816,11 @@ SOCKET InputServer::startListening()
                 dataPort = atoi(portCStr);
                 printf("OInputServer: '%s' requests data to be sent on port '%d'\n", clientAddress, dataPort);
                 printf("OInputServer: '%s' using unknown handshake '%s'\n", clientAddress, inMessage);
-                createClient( clientAddress, dataPort, false, clientSocket );
+				createClient(clientAddress, dataPort, DataMode::Omicron, clientSocket);
             }
-
+			
             gotData = true;
-            delete inMessage;
+            //delete inMessage;
             delete portCStr;
         } 
         else if (iResult == 0)
@@ -742,7 +853,7 @@ void InputServer::loop()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void InputServer::createClient(const char* clientAddress, int dataPort, bool legacy, SOCKET clientSocket)
+void InputServer::createClient(const char* clientAddress, int dataPort, DataMode legacy, SOCKET clientSocket)
 {
     // Generate a unique name for client "address:port"
     char* addr = new char[128];

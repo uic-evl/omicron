@@ -52,9 +52,13 @@ typedef	struct {
 } vrpn_TRACKERCB; */
 void VRPN_CALLBACK handle_tracker(void *userData, const vrpn_TRACKERCB t)
 {
-    VRPNStruct* vs = ((VRPNStruct*)userData);
-    VRPNService* vrpnService = vs->vrnpService;
+	VRPNStruct* vs = ((VRPNStruct*)userData);
+	VRPNService* vrpnService = vs->vrnpService;
 
+	if (vrpnService->isDebugEnabled())
+	{
+		printf("VRPNService: handle_tracker id %d, sensor %d\n", vs->object_id, vs->sensorId);
+	}
     vrpnService->generateTrackerEvent(t, vs->object_id, vs->userId, vs->jointId);
 }
 
@@ -184,32 +188,39 @@ void VRPNService::initialize()
     mysInstance = this;
 
 
-    for(int i = 0; i < trackerNames.size(); i++)
-    {
-        TrackerInfo& t = trackerNames[i];
-        char trackerName[256];
-        strcpy(trackerName,t.object_name);
-        strcat(trackerName,"@");
-        strcat(trackerName,t.server_ip);
-        ofmsg("Added %1%" , %trackerName);
+	for (int i = 0; i < trackerNames.size(); i++)
+	{
+		TrackerInfo& t = trackerNames[i];
+		char trackerName[256];
+		strcpy(trackerName, t.object_name);
+		strcat(trackerName, "@");
+		strcat(trackerName, t.server_ip);
+		ofmsg("Added %1%", %trackerName);
 
-        // Open the tracker: '[object name]@[tracker IP]'
-        vrpn_Tracker_Remote *tkr = new vrpn_Tracker_Remote(trackerName);
+		// Open the tracker: '[object name]@[tracker IP]'
+		vrpn_Tracker_Remote *tkr = new vrpn_Tracker_Remote(trackerName);
 		vrpn_Button_Remote* vrpnButton = new vrpn_Button_Remote(trackerName);
 
-        VRPNStruct* vrpnData = new VRPNStruct();
-        vrpnData->object_name = t.object_name;
+		VRPNStruct* vrpnData = new VRPNStruct();
+		vrpnData->object_name = t.object_name;
 		vrpnData->object_type = t.object_type;
-        vrpnData->object_id = t.trackableId;
-        vrpnData->userId = t.userId;
-        vrpnData->jointId = t.jointId;
-        vrpnData->vrnpService = this;
+		vrpnData->object_id = t.trackableId;
+		vrpnData->userId = t.userId;
+		vrpnData->jointId = t.jointId;
+		vrpnData->vrnpService = this;
 		vrpnData->sensorId = t.sensorId;
 
-        // Set up the callback handler
-        tkr->register_change_handler((void*)vrpnData, handle_tracker);
-		vrpnButton->register_change_handler((void*)vrpnData, handle_button);
+		// Set up the callback handler
+		if (t.sensorId == -1)
+		{
+			tkr->register_change_handler((void*)vrpnData, handle_tracker);
+		}
+		else
+		{
+			tkr->register_change_handler((void*)vrpnData, handle_tracker, t.sensorId);
+		}
 
+		vrpnButton->register_change_handler((void*)vrpnData, handle_button);
         // Add to tracker remote list
         trackerRemotes.push_back(tkr);
     }

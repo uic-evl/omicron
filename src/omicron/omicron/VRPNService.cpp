@@ -1,13 +1,13 @@
 /******************************************************************************
  * THE OMICRON PROJECT
  *-----------------------------------------------------------------------------
- * Copyright 2010-2016		Electronic Visualization Laboratory, 
+ * Copyright 2010-2017		Electronic Visualization Laboratory, 
  *							University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto	    anishimoto42@gmail.com
  *  Alessandro Febretti		febret@gmail.com
  *-----------------------------------------------------------------------------
- * Copyright (c) 2010-2016, Electronic Visualization Laboratory,  
+ * Copyright (c) 2010-2017, Electronic Visualization Laboratory,  
  * University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, 
@@ -122,6 +122,23 @@ void VRPNService::setup(Setting& settings)
                 trackerInfo.jointId = -1;
             }
 
+			if (str.exists("sensorId"))
+			{
+				unsigned int uid = (unsigned int)str["sensorId"];
+				trackerInfo.sensorId = (unsigned short)uid;
+				ofmsg("Tracker %1% sensor Id %2%", %trackerInfo.object_name %uid);
+			}
+			else if (str.exists("sensorID"))
+			{
+				unsigned int uid = (unsigned int)str["sensorID"];
+				trackerInfo.sensorId = (unsigned short)uid;
+				ofmsg("Tracker %1% sensor ID %2%", %trackerInfo.object_name %uid);
+			}
+			else
+			{
+				trackerInfo.sensorId = -1;
+			}
+
 			if(str.exists("objectType"))
             {
                 trackerInfo.object_type = (const char*)str["objectType"];
@@ -131,8 +148,20 @@ void VRPNService::setup(Setting& settings)
 				trackerInfo.object_type = "None";
 			}
 
-            trackerInfo.trackableId = str["objectID"];
-            trackerNames.push_back(trackerInfo);
+			if (str.exists("objectID"))
+			{
+				trackerInfo.trackableId = str["objectID"];
+			}
+			else if (str.exists("objectId"))
+			{
+				trackerInfo.trackableId = str["objectId"];
+			}
+			else
+			{
+				trackerInfo.trackableId = 0;
+			}
+
+			trackerNames.push_back(trackerInfo);
 
         }
 
@@ -175,6 +204,7 @@ void VRPNService::initialize()
         vrpnData->userId = t.userId;
         vrpnData->jointId = t.jointId;
         vrpnData->vrnpService = this;
+		vrpnData->sensorId = t.sensorId;
 
         // Set up the callback handler
         tkr->register_change_handler((void*)vrpnData, handle_tracker);

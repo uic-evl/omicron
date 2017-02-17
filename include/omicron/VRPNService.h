@@ -82,6 +82,7 @@ private:
         int trackableId;
         unsigned short userId;
         int jointId;
+		int sensorId;
     };
 
     Vector<TrackerInfo> trackerNames; // Vector of the TrackerInfo struct
@@ -98,6 +99,7 @@ struct VRPNStruct
     int object_id;
     unsigned short userId;
     int jointId;
+	int sensorId;
     VRPNService* vrnpService;
 };
 ///////////////////////////////////////////////////////////////////////////////

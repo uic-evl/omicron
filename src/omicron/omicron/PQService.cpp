@@ -1,11 +1,11 @@
 /********************************************************************************************************************** 
 * THE OMICRON PROJECT
  *---------------------------------------------------------------------------------------------------------------------
- * Copyright 2010-2014							Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2017							Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto								anishimoto42@gmail.com
  *---------------------------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2014, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2017, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the 
  * following conditions are met:
@@ -39,7 +39,7 @@ bool PQService::showStreamSpeed = false;
 int PQService::lastIncomingEventTime = 0;
 int PQService::eventCount = 0;
 Vector2i PQService::serverResolution = Vector2i(1920,1080);
-Vector2i PQService::screenOffset = Vector2i(0,0);
+Vector2i PQService::touchOffset = Vector2i(0, 0);
 Vector2i PQService::rawDataResolution = Vector2i(1920,1080);
 bool PQService::hasCustomRawDataResolution = false;
 
@@ -81,7 +81,7 @@ void PQService::setup(Setting& settings)
 	debugRawPQInfo = Config::getBoolValue("debugRawPQInfo", settings, false);
 	showStreamSpeed = Config::getBoolValue("showStreamSpeed", settings, false);
 
-	screenOffset = Config::getVector2iValue("screenOffset", settings, Vector2i(0,0) );
+	touchOffset = Config::getVector2iValue("touchOffset", settings, Vector2i(0, 0));
 
 	if(settings.exists("rawDataResolution"))
 	{
@@ -304,8 +304,8 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 			ofmsg("PQService: Incoming touch point ID: %1% type: %6% at (%2%,%3%) size: (%4%,%5%)", %touch.ID %tp.x %tp.y %tp.dx %tp.dy %tp.point_event);
 		}
 
-		touch.xPos = tp.x / (float)serverResolution[0] + screenOffset[0];
-		touch.yPos = tp.y / (float)serverResolution[1] + screenOffset[1];
+		touch.xPos = (tp.x + touchOffset[0]) / (float)serverResolution[0];
+		touch.yPos = (tp.y + touchOffset[1]) / (float)serverResolution[1];
 		touch.xWidth = tp.dx / (float)serverResolution[0];
 		touch.yWidth = tp.dy / (float)serverResolution[1];
 

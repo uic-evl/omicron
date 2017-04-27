@@ -262,7 +262,9 @@ bool wiimote::Connect (unsigned wiimote_index, bool force_hidwrites)
 	if(wiimote_index == FIRST_AVAILABLE)
 		TRACE(_T("Connecting first available Wiimote:"));
 	else
+	{
 		TRACE(_T("Connecting Wiimote %u:"), wiimote_index);
+	}
 
 	// auto-disconnect if user is being naughty
 	if(IsConnected())
@@ -329,6 +331,8 @@ bool wiimote::Connect (unsigned wiimote_index, bool force_hidwrites)
 
 			// yes, but is it the one we're interested in?
 			++wiimotes_found;
+			printf("Wiimote: Found Wiimote\n");
+
 			if((wiimote_index != FIRST_AVAILABLE) &&
 			   (wiimote_index != wiimotes_found))
 				goto skip;
@@ -338,7 +342,6 @@ bool wiimote::Connect (unsigned wiimote_index, bool force_hidwrites)
 				TRACE(_T(".. opening Wiimote %u:"), wiimotes_found);
 			else
 				TRACE(_T(".. opening:"));
-
 
 			// re-open the handle, but this time we don't allow write sharing
 			//  (that way subsequent calls can still _discover_ wiimotes above, but
@@ -355,12 +358,16 @@ bool wiimote::Connect (unsigned wiimote_index, bool force_hidwrites)
 			//  call below to open the device in full shared mode - but then the
 			//  library can no longer detect if you've already connected a device
 			//  and will allow you to connect it twice!  So be careful ...
+
+			// Arthur edit: Added 'FILE_SHARE_WRITE' to allow controller to connect in
+			// Windows 10. See warning above.
 			Handle = CreateFile(didetail->DevicePath, GENERIC_READ|GENERIC_WRITE,
-													FILE_SHARE_READ,
+													FILE_SHARE_READ|FILE_SHARE_WRITE,
 													NULL, OPEN_EXISTING,
 													FILE_FLAG_OVERLAPPED, NULL);
 			if(Handle == INVALID_HANDLE_VALUE) {
 				TRACE(_T(".... failed with err %x"), GetLastError());
+				printf(".... failed with err %x\n", GetLastError());
 				goto skip;
 				}
 
@@ -414,6 +421,7 @@ bool wiimote::Connect (unsigned wiimote_index, bool force_hidwrites)
 			// still failed?
 			if(!bStatusReceived) {
 				WARN(_T("output failed - wiimote is not connected (or confused)."));
+				printf("Wiimote: Failed to connect to Wiimote\n");
 				Disconnect();
 				goto skip;
 				}
@@ -445,7 +453,7 @@ bool wiimote::Connect (unsigned wiimote_index, bool force_hidwrites)
 			//  all devices, but may work fairly well in practice... ?)
 			memcpy(&UniqueID, &CalibrationInfo, sizeof(CalibrationInfo));
 
-			_ASSERT(UniqueID != 0); // if this fires, the calibration data didn't
+			//_ASSERT(UniqueID != 0); // if this fires, the calibration data didn't
 									//  arrive - this shouldn't happen
 
 #ifdef ID2_FROM_DEVICEPATH		// (see comments in header)

@@ -452,7 +452,11 @@ namespace omicronConnector
 
         static const int ExtraDataSize = 1024;
         unsigned int extraDataType;
+#if !defined(__GNUC__)
         unsigned int extraDataItems;
+#else
+        int extraDataItems; // GCC complains of signed-unsigned comparison
+#endif
         unsigned int extraDataMask;
         unsigned char extraData[ExtraDataSize];
 
@@ -689,7 +693,9 @@ namespace omicronConnector
         if(result > 0)
         {
             int offset = 0;
+#if !defined (__GNUC__) // gcc with Werror does not like unused variables
             int msgLen = result - 1;
+#endif
             char* eventPacket = recvbuf;
 
             EventData ed;

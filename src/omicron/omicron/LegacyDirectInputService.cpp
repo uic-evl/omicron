@@ -69,10 +69,10 @@ BOOL CALLBACK EnumJoysticksCallback( const DIDEVICEINSTANCE* pdidInstance,
 			wiimoteID = nControllers;
 			//return DIENUM_CONTINUE; 
 		} else if( pdidInstance->guidProduct.Data1 == 44106846 ){ // 'Xbox360' product ID: 44106846
-			printf("DirectInputService: Connecting to Xbox 360 controller.\n",pdidInstance->guidProduct.Data1);
+			printf("DirectInputService: Connecting to Xbox 360 controller.\n");
 			controllerType[nControllers] = omicron::LegacyDirectInputService::Xbox360;
 		} else if( pdidInstance->guidProduct.Data1 == 50890888 ){ // 'PS3 Sixaxis' product ID: 44106846
-			printf("DirectInputService: Connecting to PS3 Sixaxis controller.\n",pdidInstance->guidProduct.Data1);
+			printf("DirectInputService: Connecting to PS3 Sixaxis controller.\n");
 			controllerType[nControllers] = omicron::LegacyDirectInputService::PS3;
 		} else {
 			printf("DirectInputService: Connecting to controller GUID %d.\n",pdidInstance->guidProduct.Data1);

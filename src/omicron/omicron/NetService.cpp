@@ -88,6 +88,6 @@ void NetService::setServer(const String& address, int port)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void NetService::setDataport(int port) 
 {
-	printf("Dataport set to '%s'\n", port);
+	printf("Dataport set to '%d'\n", port);
 	dataPort = port;
 }

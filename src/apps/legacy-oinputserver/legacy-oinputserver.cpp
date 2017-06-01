@@ -570,14 +570,14 @@ void main(int argc, char** argv)
 				}
 			}
 			if( printOutput )
-				printf("------------------------------------------------------------------------------\n", app.getEvent());
+				printf("------------------------------------------------------------------------------\n");
 		}// if
 		else if( testStream ){
 			testPacket = new char[99];
 			// example touch string: '2:-10,0.5,0.5,0.1,0.1 '
 			itoa(1, testPacket, 10); // Append input type
 			strcat( testPacket, ":42,0.5,0.5,0.1,0.1 " );
-			printf("OInputServer: main() ----- WARNING: TEST STREAM MODE ACTIVE -----\n",testPacket);
+			printf("OInputServer: main() ----- WARNING: TEST STREAM MODE ACTIVE -----\n");
 			printf("%s\n",testPacket);
 			app.sendToClients( testPacket );
 		}

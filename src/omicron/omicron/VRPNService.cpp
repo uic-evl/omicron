@@ -55,10 +55,10 @@ void VRPN_CALLBACK handle_tracker(void *userData, const vrpn_TRACKERCB t)
 	VRPNStruct* vs = ((VRPNStruct*)userData);
 	VRPNService* vrpnService = vs->vrnpService;
 
-	if (vrpnService->isDebugEnabled())
-	{
-		printf("VRPNService: handle_tracker id %d, sensor %d\n", vs->object_id, vs->sensorId);
-	}
+	// if (vrpnService->isDebugEnabled())
+	// {
+	// 	printf("VRPNService: handle_tracker id %d, sensor %d\n", vs->object_id, vs->sensorId);
+	// }
     vrpnService->generateTrackerEvent(t, vs->object_id, vs->userId, vs->jointId);
 }
 
@@ -220,7 +220,7 @@ void VRPNService::initialize()
 			tkr->register_change_handler((void*)vrpnData, handle_tracker, t.sensorId);
 		}
 
-		//vrpnButton->register_change_handler((void*)vrpnData, handle_button);
+		vrpnButton->register_change_handler((void*)vrpnData, handle_button);
         // Add to tracker remote list
         trackerRemotes.push_back(tkr);
     }

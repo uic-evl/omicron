@@ -220,7 +220,7 @@ void VRPNService::initialize()
 			tkr->register_change_handler((void*)vrpnData, handle_tracker, t.sensorId);
 		}
 
-		vrpnButton->register_change_handler((void*)vrpnData, handle_button);
+		//vrpnButton->register_change_handler((void*)vrpnData, handle_button);
         // Add to tracker remote list
         trackerRemotes.push_back(tkr);
     }

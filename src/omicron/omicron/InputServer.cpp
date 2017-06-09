@@ -56,7 +56,7 @@ private:
     SOCKET sendSocket;
     SOCKET msgSocket;
     sockaddr_in recvAddr;
-    bool legacyMode;
+    int clientMode;
     bool connected;
 
     const char* clientAddress;
@@ -67,7 +67,7 @@ public:
         clientAddress = address;
         clientPort = port;
 
-        legacyMode = false;
+        clientMode = 0;
         connected = true;
 
         // Create a UDP socket for sending data
@@ -83,12 +83,12 @@ public:
         msgSocket = clientSocket;
     }// CTOR
 
-    NetClient( const char* address, int port, int legacy, SOCKET clientSocket )
+    NetClient( const char* address, int port, int mode, SOCKET clientSocket )
     {
         clientAddress = address;
         clientPort = port;
 
-        legacyMode = legacy;
+        clientMode = mode;
         connected = true;
 
         // Create a UDP socket for sending data
@@ -102,10 +102,14 @@ public:
 
         msgSocket = clientSocket;
 
-        if( legacyMode )
+        if( clientMode == 1 )
         {
             printf("Legacy NetClient %s:%i created...\n", address, port);
         }
+		else if (clientMode == 2)
+		{
+			printf("NetClient %s:%i created. Requesting to stream data to server.\n", address, port);
+		}
         else
         {
             printf("NetClient %s:%i created...\n", address, port);
@@ -141,12 +145,15 @@ public:
 
     void setLegacy(bool value)
     {
-        legacyMode = value;
+		if (value)
+			clientMode = 1;
+		else
+			clientMode = 0;
     }// setLegacy
 
     bool isLegacy()
     {
-        return legacyMode;
+        return clientMode == 1;
     }// isLegacy
 
     bool isConnected()
@@ -687,6 +694,7 @@ SOCKET InputServer::startListening()
             // Make sure handshake is correct
             char* handshake = "data_on";
             char* omicronHandshake = "omicron_data_on";
+			char* omicronStreamInHandshake = "omicron_data_in";
             char* legacyHandshake = "omicron_legacy_data_on";
             int dataPort = 7000; // default port
 
@@ -696,21 +704,28 @@ SOCKET InputServer::startListening()
                 dataPort = atoi(portCStr);
                 printf("OInputServer: '%s' requests omicron legacy data to be sent on port '%d'\n", clientAddress, dataPort);
                 printf("OInputServer: WARNING - This server does not support legacy data!\n");
-                createClient( clientAddress, dataPort, true, clientSocket );
+                createClient( clientAddress, dataPort, 1, clientSocket );
             }
             else if( strcmp(inMessage, omicronHandshake) == 1 )
             {
                 // Get data port number
                 dataPort = atoi(portCStr);
                 printf("OInputServer: '%s' requests omicron data to be sent on port '%d'\n", clientAddress, dataPort);
-                createClient( clientAddress, dataPort, false, clientSocket );
+                createClient( clientAddress, dataPort, 0, clientSocket );
             }
+			else if (strcmp(inMessage, omicronStreamInHandshake) == 1)
+			{
+				// Get data port number
+				dataPort = atoi(portCStr);
+				printf("OInputServer: '%s' requests to SEND omicron data to be RECEIVED on port '%d'\n", clientAddress, dataPort);
+				createClient(clientAddress, dataPort, 2, clientSocket);
+			}
             else if( strcmp(inMessage, handshake) == 1 )
             {
                 // Get data port number
                 dataPort = atoi(portCStr);
                 printf("OInputServer: '%s' requests data (old handshake) to be sent on port '%d'\n", clientAddress, dataPort);
-                createClient( clientAddress, dataPort, false, clientSocket );
+                createClient( clientAddress, dataPort, 0, clientSocket );
             }
             else
             {
@@ -718,7 +733,7 @@ SOCKET InputServer::startListening()
                 dataPort = atoi(portCStr);
                 printf("OInputServer: '%s' requests data to be sent on port '%d'\n", clientAddress, dataPort);
                 printf("OInputServer: '%s' using unknown handshake '%s'\n", clientAddress, inMessage);
-                createClient( clientAddress, dataPort, false, clientSocket );
+                createClient( clientAddress, dataPort, 0, clientSocket );
             }
 
             gotData = true;
@@ -755,7 +770,7 @@ void InputServer::loop()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void InputServer::createClient(const char* clientAddress, int dataPort, bool legacy, SOCKET clientSocket)
+void InputServer::createClient(const char* clientAddress, int dataPort, int mode, SOCKET clientSocket)
 {
     // Generate a unique name for client "address:port"
     char* addr = new char[128];
@@ -781,20 +796,24 @@ void InputServer::createClient(const char* clientAddress, int dataPort, bool leg
             printf("OInputServer: NetClient already exists: %s \n", addr );
 
             // Check dataMode: if different, update client
-            if( p->second->isLegacy() != legacy )
+            if( p->second->isLegacy() != (mode == 1) )
             {
-                if( legacy )
+                if(mode == 1)
                 {
-                    printf("OInputServer: NetClient %s now using legacy omicron data \n", addr );
+                    printf("OInputServer: NetClient %s now requesting to receive legacy omicron data \n", addr );
                     printf("OInputServer: WARNING - This server does not support legacy data!\n");
                 }
+				else if (mode == 2)
+				{
+					printf("OInputServer: NetClient %s now requesting to send omicron data \n", addr);
+				}
                 else
-                    printf("OInputServer: NetClient %s now using omicron data \n", addr );
-                p->second->setLegacy(legacy);
+                    printf("OInputServer: NetClient %s now requesting to receive omicron data \n", addr );
+                p->second->setLegacy(mode == 1);
             }
             return;
         }
     }
 
-    netClients[addr] = new NetClient( clientAddress, dataPort, legacy, clientSocket );
+    netClients[addr] = new NetClient( clientAddress, dataPort, mode, clientSocket );
 }

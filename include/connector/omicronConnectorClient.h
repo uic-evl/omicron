@@ -511,13 +511,13 @@ namespace omicronConnector
         OmicronConnectorClient(IOmicronConnectorClientListener* clistener): listener(clistener)
         {}
 
-        void connect(const char* server, int port = 27000, int dataPort = 7000);
+        void connect(const char* server, int port = 27000, int dataPort = 7000, int mode = 0);
         void poll();
         void dispose();
         void setDataport(int);
 
     private:
-        void initHandshake();
+        void initHandshake(int);
         void parseDGram(int);
 
     private:
@@ -549,7 +549,7 @@ namespace omicronConnector
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //template<typename ListenerType>
-    inline void OmicronConnectorClient::connect(const char* server, int port, int pdataPort) 
+    inline void OmicronConnectorClient::connect(const char* server, int port, int pdataPort, int mode) 
     {
         serverAddress = server;
         serverPort = port;
@@ -594,16 +594,23 @@ namespace omicronConnector
         {
             printf("NetService: Connected to server '%s' on port '%d'!\n", serverAddress, serverPort);
         }
-        initHandshake();
+        initHandshake(mode);
 
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //template<typename ListenerType>
-    inline void OmicronConnectorClient::initHandshake() 
+    inline void OmicronConnectorClient::initHandshake(int mode) 
     {
         char sendbuf[50];
-        sprintf(sendbuf, "omicron_data_on,%d", dataPort);
+		if (mode == 1)
+		{
+			sprintf(sendbuf, "omicron_data_in,%d", dataPort);
+		}
+		else
+		{
+			sprintf(sendbuf, "omicron_data_on,%d", dataPort);
+		}
         printf("NetService: Sending handshake: '%s'\n", sendbuf);
 
         iResult = send(ConnectSocket, sendbuf, (int) strlen(sendbuf), 0);

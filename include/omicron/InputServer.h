@@ -109,7 +109,7 @@ public:
 protected:
     char* createOmicronEventPacket(const Event*);
     void sendToClients(char*, int);
-    void createClient(const char*,int, bool, SOCKET);
+    void createClient(const char*,int, int, SOCKET);
 private:
     enum dataMode { omicron, omicron_legacy };
     

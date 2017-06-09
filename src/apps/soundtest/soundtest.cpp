@@ -241,22 +241,22 @@ public:
 		ftime( &tb );
 		int curTime = ((tb.millitm + (tb.time & 0xfffff) * 1000) - initTime) / 1000.0f;
 
-		//printf("[%d%] :\n",curTime);
+		//printf("[%d] :\n",curTime);
 		///////////////////////////////////////////////////////////////////
 		// Stereo sound test
 		///////////////////////////////////////////////////////////////////
 		if( currentState == 0 )
 		{
-			printf("[%d%] : Starting sound test...\n",currentState);
-			printf("[%d%] : Stereo sound loop playing\n",currentState);
-			printf("[%d%] : If playing speed is off, file is not 48000 Hz!\n",currentState);
+			printf("[%d] : Starting sound test...\n",currentState);
+			printf("[%d] : Stereo sound loop playing\n",currentState);
+			printf("[%d] : If playing speed is off, file is not 48000 Hz!\n",currentState);
 
 			currentState = 1;
 			nextTime = curTime + 5;
 		}
 		else if( currentState == 1 && curTime >= nextTime)
 		{
-			printf("[%d%] : Stereo sound - setVolume(0.1)\n",currentState);
+			printf("[%d] : Stereo sound - setVolume(0.1)\n",currentState);
 			si_stereoTest->setVolume(0.1f);
 
 			currentState++;
@@ -264,7 +264,7 @@ public:
 		}
 		else if( currentState == 2 && curTime >= nextTime)
 		{
-			printf("[%d%] : Stereo sound - setVolume(0.7)\n",currentState);
+			printf("[%d] : Stereo sound - setVolume(0.7)\n",currentState);
 			si_stereoTest->setVolume(0.7f);
 
 			currentState++;
@@ -272,7 +272,7 @@ public:
 		}
 		else if( currentState == 3 && curTime >= nextTime)
 		{
-			printf("[%d%] : Stereo sound - setPitch(0.5) - one octave down\n",currentState);
+			printf("[%d] : Stereo sound - setPitch(0.5) - one octave down\n",currentState);
 			si_stereoTest->setPitch(0.5f);
 
 			currentState++;
@@ -280,7 +280,7 @@ public:
 		}
 		else if( currentState == 4 && curTime >= nextTime)
 		{
-			printf("[%d%] : Stereo sound - setPitch(2) - one octave up\n",currentState);
+			printf("[%d] : Stereo sound - setPitch(2) - one octave up\n",currentState);
 			si_stereoTest->setPitch(2);
 
 			currentState++;
@@ -288,7 +288,7 @@ public:
 		}
 		else if( currentState == 5 && curTime >= nextTime)
 		{
-			printf("[%d%] : Stereo sound - setPitch(-1) - backward\n",currentState);
+			printf("[%d] : Stereo sound - setPitch(-1) - backward\n",currentState);
 			si_stereoTest->setPitch(-1);
 
 			currentState++;
@@ -296,7 +296,7 @@ public:
 		}
 		else if( currentState == 6 && curTime >= nextTime)
 		{
-			printf("[%d%] : Stereo sound - setPitch(1) - normal\n",currentState);
+			printf("[%d] : Stereo sound - setPitch(1) - normal\n",currentState);
 			si_stereoTest->setPitch(1);
 
 			currentState++;
@@ -304,7 +304,7 @@ public:
 		}
 		else if( currentState == 7 && curTime >= nextTime)
 		{
-			printf("[%d%] : Stereo sound - fade(0,2) - fade to volume 0 over 2 seconds\n",currentState);
+			printf("[%d] : Stereo sound - fade(0,2) - fade to volume 0 over 2 seconds\n",currentState);
 			si_stereoTest->fade(0,2);
 			//si_stereoTest->setVolume(0);
 
@@ -313,7 +313,7 @@ public:
 		}
 		else if( currentState == 8 && curTime >= nextTime)
 		{
-			printf("[%d%] : Stereo sound - fade(0.8,5) - fade to volume 0.8 over 5 seconds\n",currentState);
+			printf("[%d] : Stereo sound - fade(0.8,5) - fade to volume 0.8 over 5 seconds\n",currentState);
 			si_stereoTest->fade(0.8f,5);
 			//si_stereoTest->setVolume(0.8);
 
@@ -322,7 +322,7 @@ public:
 		}
 		else if( currentState == 9 && curTime >= nextTime)
 		{
-			printf("[%d%] : Stereo sound - setVolume(0.1) - post fade() check\n",currentState);
+			printf("[%d] : Stereo sound - setVolume(0.1) - post fade() check\n",currentState);
 			si_stereoTest->setVolume(0.1f);
 
 			currentState++;
@@ -330,7 +330,7 @@ public:
 		}
 		else if( currentState == 10 && curTime >= nextTime)
 		{
-			printf("[%d%] : Stereo sound - setVolume(0.7) - post fade() check\n",currentState);
+			printf("[%d] : Stereo sound - setVolume(0.7) - post fade() check\n",currentState);
 			si_stereoTest->setVolume(0.7f);
 
 			currentState++;
@@ -338,7 +338,7 @@ public:
 		}
 		else if( currentState == 11 && curTime >= nextTime)
 		{
-			printf("[%d%] : Stereo sound - setCurrentFrame(15000)\n",currentState);
+			printf("[%d] : Stereo sound - setCurrentFrame(15000)\n",currentState);
 			si_stereoTest->setCurrentFrame(15000);
 
 			currentState++;
@@ -346,7 +346,7 @@ public:
 		}
 		else if( currentState == 12 && curTime >= nextTime)
 		{
-			printf("[%d%] : Stereo sound - setCurrentFrame(0)\n",currentState);
+			printf("[%d] : Stereo sound - setCurrentFrame(0)\n",currentState);
 			si_stereoTest->setCurrentFrame(0);
 
 			currentState++;
@@ -354,7 +354,7 @@ public:
 		}
 		else if( currentState == 13 && curTime >= nextTime)
 		{
-			//printf("[%d%] : setServerVolume(-20)\n",currentState);
+			//printf("[%d] : setServerVolume(-20)\n",currentState);
 			//env->setServerVolume(-20);
 
 			currentState++;
@@ -368,10 +368,10 @@ public:
 		///////////////////////////////////////////////////////////////////
 		if( currentState == 100 && curTime >= nextTime)
 		{
-			printf("[%d%] : Stereo sound stop()\n",currentState);
+			printf("[%d] : Stereo sound stop()\n",currentState);
 			si_stereoTest->stop();
-			printf("[%d%] : Mono sound loop playing\n",currentState);
-			printf("[%d%] : If playing speed is off, file is not 48000 Hz!\n",currentState);
+			printf("[%d] : Mono sound loop playing\n",currentState);
+			printf("[%d] : If playing speed is off, file is not 48000 Hz!\n",currentState);
 			si_monoTest->play();
 
 			currentState++;
@@ -379,7 +379,7 @@ public:
 		}
 		else if( currentState == 101 && curTime >= nextTime)
 		{
-			printf("[%d%] : Mono sound - setVolume(0.1)\n",currentState);
+			printf("[%d] : Mono sound - setVolume(0.1)\n",currentState);
 			si_monoTest->setVolume(0.1f);
 
 			currentState++;
@@ -387,7 +387,7 @@ public:
 		}
 		else if( currentState == 102 && curTime >= nextTime)
 		{
-			printf("[%d%] : Mono sound - setVolume(0.7)\n",currentState);
+			printf("[%d] : Mono sound - setVolume(0.7)\n",currentState);
 			si_monoTest->setVolume(0.7f);
 
 			currentState++;
@@ -395,7 +395,7 @@ public:
 		}
 		else if( currentState == 103 && curTime >= nextTime)
 		{
-			printf("[%d%] : Mono sound - setPitch(0.5) - one octave down\n",currentState);
+			printf("[%d] : Mono sound - setPitch(0.5) - one octave down\n",currentState);
 			si_monoTest->setPitch(0.5f);
 
 			currentState++;
@@ -403,7 +403,7 @@ public:
 		}
 		else if( currentState == 104 && curTime >= nextTime)
 		{
-			printf("[%d%] : Mono sound - setPitch(2) - one octave up\n",currentState);
+			printf("[%d] : Mono sound - setPitch(2) - one octave up\n",currentState);
 			si_monoTest->setPitch(2);
 
 			currentState++;
@@ -411,7 +411,7 @@ public:
 		}
 		else if( currentState == 105 && curTime >= nextTime)
 		{
-			printf("[%d%] : Mono sound - setPitch(-1) - backward\n",currentState);
+			printf("[%d] : Mono sound - setPitch(-1) - backward\n",currentState);
 			si_monoTest->setPitch(-1);
 
 			currentState++;
@@ -419,7 +419,7 @@ public:
 		}
 		else if( currentState == 106 && curTime >= nextTime)
 		{
-			printf("[%d%] : Mono sound - setPitch(1) - normal\n",currentState);
+			printf("[%d] : Mono sound - setPitch(1) - normal\n",currentState);
 			si_monoTest->setPitch(1);
 
 			currentState++;
@@ -427,7 +427,7 @@ public:
 		}
 		else if( currentState == 107 && curTime >= nextTime)
 		{
-			printf("[%d%] : Mono sound - fade(0,5) - fade to volume 0 over 5 seconds\n",currentState);
+			printf("[%d] : Mono sound - fade(0,5) - fade to volume 0 over 5 seconds\n",currentState);
 			si_monoTest->fade(0,5);
 
 			currentState++;
@@ -435,7 +435,7 @@ public:
 		}
 		else if( currentState == 108 && curTime >= nextTime)
 		{
-			printf("[%d%] : Mono sound - fade(0.8,1) - fade to volume 0.8 over 1 second\n",currentState);
+			printf("[%d] : Mono sound - fade(0.8,1) - fade to volume 0.8 over 1 second\n",currentState);
 			si_monoTest->fade(0.8f,1);
 
 			currentState++;
@@ -443,7 +443,7 @@ public:
 		}
 		else if( currentState == 109 && curTime >= nextTime)
 		{
-			printf("[%d%] : Mono sound - setVolume(0.1) - post fade() check \n",currentState);
+			printf("[%d] : Mono sound - setVolume(0.1) - post fade() check \n",currentState);
 			si_monoTest->setVolume(0.1f);
 
 			currentState++;
@@ -451,7 +451,7 @@ public:
 		}
 		else if( currentState == 110 && curTime >= nextTime)
 		{
-			printf("[%d%] : Mono sound - setVolume(1) - post fade() check \n",currentState);
+			printf("[%d] : Mono sound - setVolume(1) - post fade() check \n",currentState);
 			si_monoTest->setVolume(1);
 
 			currentState++;
@@ -459,7 +459,7 @@ public:
 		}
 		else if( currentState == 111 && curTime >= nextTime)
 		{
-			printf("[%d%] : Mono sound - setReverb( 0.7, 0.7 )\n",currentState);
+			printf("[%d] : Mono sound - setReverb( 0.7, 0.7 )\n",currentState);
 			si_monoTest->setReverb( 0.7f, 0.7f );
 
 			currentState++;
@@ -467,7 +467,7 @@ public:
 		}
 		else if( currentState == 112 && curTime >= nextTime)
 		{
-			printf("[%d%] : Mono sound - setReverb( 0.0, 0.0 ) - normal\n",currentState);
+			printf("[%d] : Mono sound - setReverb( 0.0, 0.0 ) - normal\n",currentState);
 			si_monoTest->setReverb( 0.0f, 0.0f );
 
 			currentState++;
@@ -475,10 +475,10 @@ public:
 		}
 		else if( currentState == 113 && curTime >= nextTime)
 		{
-			printf("[%d%] : Mono sound - stop()\n",currentState);
+			printf("[%d] : Mono sound - stop()\n",currentState);
 			si_monoTest->stop();
 			
-			//printf("[%d%] : Sound cleanup\n",currentState);
+			//printf("[%d] : Sound cleanup\n",currentState);
 			
 			//env->getSoundManager()->stopAllSounds();
 			//env->getSoundManager()->cleanupAllSounds();
@@ -488,10 +488,10 @@ public:
 		}
 		else if( currentState == 114 && curTime >= nextTime)
 		{
-			printf("[%d%] : Mono short sound - play()\n",currentState);
+			printf("[%d] : Mono short sound - play()\n",currentState);
 			si_monoTestShort = new SoundInstance(monoTestShort);
 			si_monoTestShort->play();
-			//printf("[%d%] : Sound cleanup\n",currentState);
+			//printf("[%d] : Sound cleanup\n",currentState);
 			
 			//env->getSoundManager()->stopAllSounds();
 			//env->getSoundManager()->cleanupAllSounds();
@@ -502,15 +502,15 @@ public:
 		else if( currentState >= 115 && currentState < 125 && curTime >= nextTime)
 		{
 			//printf("%s", x ? "true" : "false");
-			printf("[%d%] : Mono short sound - isPlaying() - %s%\n",currentState, si_monoTestShort->isPlaying() ? "true" : "false");
-			printf("[%d%] : Mono short sound - isDone() - %s%\n",currentState, si_monoTestShort->isDone() ? "true" : "false");
+			printf("[%d] : Mono short sound - isPlaying() - %s\n",currentState, si_monoTestShort->isPlaying() ? "true" : "false");
+			printf("[%d] : Mono short sound - isDone() - %s\n",currentState, si_monoTestShort->isDone() ? "true" : "false");
 			
 			currentState++;
 			nextTime += 1;
 		}
 		else if( currentState == 125 && curTime >= nextTime)
 		{
-			printf("[%d%] : Mono short sound - play() - round 2\n",currentState);
+			printf("[%d] : Mono short sound - play() - round 2\n",currentState);
 			si_monoTestShort = new SoundInstance(monoTestShort);
 			si_monoTestShort->play();
 
@@ -520,15 +520,15 @@ public:
 		else if( currentState >= 125 && currentState < 135 && curTime >= nextTime)
 		{
 			//printf("%s", x ? "true" : "false");
-			printf("[%d%] : Mono short sound - isPlaying() - %s%\n",currentState, si_monoTestShort->isPlaying() ? "true" : "false");
-			printf("[%d%] : Mono short sound - isDone() - %s%\n",currentState, si_monoTestShort->isDone() ? "true" : "false");
+			printf("[%d] : Mono short sound - isPlaying() - %s\n",currentState, si_monoTestShort->isPlaying() ? "true" : "false");
+			printf("[%d] : Mono short sound - isDone() - %s\n",currentState, si_monoTestShort->isDone() ? "true" : "false");
 			
 			currentState++;
 			nextTime += 1;
 		}
 		else if( currentState == 135 && curTime >= nextTime)
 		{
-			printf("[%d%] : Sound cleanup\n",currentState);
+			printf("[%d] : Sound cleanup\n",currentState);
 			env->getSoundManager()->stopAllSounds();
 			env->getSoundManager()->cleanupAllSounds();
 			

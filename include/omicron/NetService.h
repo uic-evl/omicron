@@ -59,7 +59,9 @@ namespace omicron
 		String serverAddress;
 		int serverPort;
 		int dataPort;
+		bool connected;
 		bool dataStreamOut;
+		int reconnectDelay;
 	};
 
 };

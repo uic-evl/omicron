@@ -70,11 +70,7 @@
             iResult = WSAStartup(MAKEWORD(2,2), &wsaData); \
             if (iResult != 0) { \
                 printf("OmicronConnectorClient: WSAStartup failed: %d\n", iResult); \
-                return; \
-            } else { \
-                printf("OmicronConnectorClient: Winsock initialized \n"); \
             }
-
     #else
         #define SOCKET_CLOSE(sock) close(sock);
         #define SOCKET_CLEANUP()
@@ -511,13 +507,13 @@ namespace omicronConnector
         OmicronConnectorClient(IOmicronConnectorClientListener* clistener): listener(clistener)
         {}
 
-        void connect(const char* server, int port = 27000, int dataPort = 7000, int mode = 0);
+        bool connect(const char* server, int port = 27000, int dataPort = 7000, int mode = 0);
         void poll();
         void dispose();
         void setDataport(int);
 
     private:
-        void initHandshake(int);
+        bool initHandshake(int);
         void parseDGram(int);
 
     private:
@@ -549,7 +545,7 @@ namespace omicronConnector
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //template<typename ListenerType>
-    inline void OmicronConnectorClient::connect(const char* server, int port, int pdataPort, int mode) 
+    inline bool OmicronConnectorClient::connect(const char* server, int port, int pdataPort, int mode) 
     {
         serverAddress = server;
         serverPort = port;
@@ -574,7 +570,7 @@ namespace omicronConnector
             printf("omicronConnectorClient: Unable to connect to server '%s' on port '%d'", serverAddress, serverPort);
             PRINT_SOCKET_ERROR("");
             SOCKET_CLEANUP();
-            return;
+            return false;
         }
 
         // Generate the socket
@@ -588,19 +584,18 @@ namespace omicronConnector
             printf("omicronConnectorClient: Unable to connect to server '%s' on port '%d'", serverAddress, serverPort);
             PRINT_SOCKET_ERROR("");
             SOCKET_CLEANUP();
-            return;
+            return false;
         }
         else
         {
             printf("NetService: Connected to server '%s' on port '%d'!\n", serverAddress, serverPort);
         }
-        initHandshake(mode);
-
+        return initHandshake(mode);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //template<typename ListenerType>
-    inline void OmicronConnectorClient::initHandshake(int mode) 
+    inline bool OmicronConnectorClient::initHandshake(int mode) 
     {
         char sendbuf[50];
 		if (mode == 1)
@@ -620,7 +615,7 @@ namespace omicronConnector
             PRINT_SOCKET_ERROR("NetService: Send failed");
             SOCKET_CLOSE(ConnectSocket);
             SOCKET_CLEANUP()
-            return;
+            return false;
         }
 
         sockaddr_in RecvAddr;
@@ -633,6 +628,7 @@ namespace omicronConnector
         RecvAddr.sin_addr.s_addr = htonl(INADDR_ANY);
         ::bind(RecvSocket, (const sockaddr*) &RecvAddr, sizeof(RecvAddr));
         readyToReceive = true;
+		return true;
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -35,6 +35,7 @@ NetService::NetService()
 {
 	mysInstance = this;
 	myClient = new omicronConnector::OmicronConnectorClient(this);
+	connected = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -44,24 +45,34 @@ void NetService::setup(Setting& settings)
 	serverPort = Config::getIntValue("msgPort", settings, 27000); 
 	dataPort = Config::getIntValue("dataPort", settings, 7000); 
 	dataStreamOut = Config::getBoolValue("dataStreamOut", settings, false);
+	reconnectDelay = Config::getIntValue("reconnectDelay", settings, 5000);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void NetService::initialize() 
 {
-	if (dataStreamOut)
-	{
-		myClient->connect(serverAddress.c_str(), serverPort, dataPort, 1);
-	}
-	else
-	{
-		myClient->connect(serverAddress.c_str(), serverPort, dataPort);
-	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void NetService::poll()
 {
+	if( !connected )
+	{
+		printf("NetService: Connecting to %s on port %d \n", serverAddress.c_str(), serverPort);
+		if (dataStreamOut)
+		{
+			connected = myClient->connect(serverAddress.c_str(), serverPort, dataPort, 1);
+		}
+		else
+		{
+			connected = myClient->connect(serverAddress.c_str(), serverPort, dataPort);
+		}
+		if (!connected)
+		{
+			printf("NetService: Attempting reconnection in %d second(s)\n", reconnectDelay / 1000);
+			Sleep(reconnectDelay);
+		}
+	}
 	myClient->poll();
 }
 

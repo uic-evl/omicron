@@ -78,7 +78,6 @@
         iResult = WSAStartup(MAKEWORD(2,2), &wsaData); \
         if (iResult != 0) { \
             printf("%s: WSAStartup failed: %d\n", typeid(*this).name(), iResult); \
-            return; \
         } else { \
             printf("%s: Winsock initialized \n",  typeid(*this).name()); \
         }

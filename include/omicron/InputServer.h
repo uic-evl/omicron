@@ -74,7 +74,7 @@
     #define PRINT_SOCKET_ERROR(msg) printf(msg" - socket error: %d\n", WSAGetLastError());
     #define SOCKET_CLOSE(sock) closesocket(sock);
     #define SOCKET_CLEANUP() WSACleanup();
-    #define SOCKET_INIT() \
+	#define SOCKET_INIT() \
         iResult = WSAStartup(MAKEWORD(2,2), &wsaData); \
         if (iResult != 0) { \
             printf("%s: WSAStartup failed: %d\n", typeid(*this).name(), iResult); \
@@ -92,7 +92,156 @@
     #define ioctlsocket ioctl // Used for setting socket blocking mode
 #endif
 
-class NetClient;
+///////////////////////////////////////////////////////////////////////////////
+// Based on Winsock UDP Server Example:
+// http://msdn.microsoft.com/en-us/library/ms740148
+// Also based on Beej's Guide to Network Programming:
+// http://beej.us/guide/bgnet/output/html/multipage/clientserver.html
+class NetClient
+{
+private:
+	SOCKET udpSocket;
+	SOCKET tcpSocket;
+	sockaddr_in recvAddr;
+	int clientMode;
+	// 0 = NetClient sends data out to remote (default)
+	// 1 = NetClient sends legacy data out to remote
+	// 2 = NetClient receiving data from remote
+
+	bool tcpConnected;
+	bool udpConnected;
+
+	const char* clientAddress;
+	int clientPort;
+public:
+	NetClient(const char* address, int port)
+	{
+		clientAddress = address;
+		clientPort = port;
+
+		clientMode = 0;
+
+		// Create a UDP socket for sending data
+		udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+		// Set up the RecvAddr structure with the IP address of
+		// the receiver
+		recvAddr.sin_family = AF_INET;
+		recvAddr.sin_port = htons(port);
+		recvAddr.sin_addr.s_addr = inet_addr(address);
+		printf("NetClient %s:%i created...\n", address, port);
+		udpConnected = true;
+	}
+
+	NetClient(const char* address, int port, SOCKET clientSocket)
+	{
+		clientAddress = address;
+		clientPort = port;
+
+		clientMode = 0;
+		
+
+		// Create a UDP socket for sending data
+		udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+		// Set up the RecvAddr structure with the IP address of
+		// the receiver
+		recvAddr.sin_family = AF_INET;
+		recvAddr.sin_port = htons(port);
+		recvAddr.sin_addr.s_addr = inet_addr(address);
+		printf("NetClient %s:%i created...\n", address, port);
+		udpConnected = true;
+
+		tcpSocket = clientSocket;
+		tcpConnected = true;
+	}// CTOR
+
+	NetClient(const char* address, int port, int mode, SOCKET clientSocket)
+	{
+		clientAddress = address;
+		clientPort = port;
+
+		clientMode = mode;
+		
+		// Create a UDP socket for sending data
+		udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+		// Set up the RecvAddr structure with the IP address of
+		// the receiver
+		recvAddr.sin_family = AF_INET;
+		recvAddr.sin_port = htons(port);
+		recvAddr.sin_addr.s_addr = inet_addr(address);
+		udpConnected = true;
+
+		tcpSocket = clientSocket;
+		tcpConnected = true;
+
+		if (clientMode == 1)
+		{
+			printf("Legacy NetClient %s:%i created...\n", address, port);
+		}
+		else if (clientMode == 2)
+		{
+			printf("NetClient %s:%i created. Requesting to stream data to server.\n", address, port);
+		}
+		else
+		{
+			printf("NetClient %s:%i created...\n", address, port);
+		}
+	}// CTOR
+
+	void sendEvent(char* eventPacket, int length)
+	{
+		// Send a datagram to the receiver
+		sendto(udpSocket,
+			eventPacket,
+			length,
+			0,
+			(const struct sockaddr*)&recvAddr,
+			sizeof(recvAddr));
+	}// SendEvent
+
+	int recvEvent(char* eventPacket, int length)
+	{
+		return recv(udpSocket, eventPacket, length, 0);
+	}// recvEvent
+
+	void sendMsg(char* eventPacket, int length)
+	{
+		// Ping the client to see if still active
+		int result = sendto(tcpSocket,
+			eventPacket,
+			length,
+			0,
+			(const struct sockaddr*)&recvAddr,
+			sizeof(recvAddr));
+
+		if (result == SOCKET_ERROR)
+		{
+			tcpConnected = false;
+		}
+	}// SendMsg
+
+	void setLegacy(bool value)
+	{
+		if (value)
+			clientMode = 1;
+		else
+			clientMode = 0;
+	}// setLegacy
+
+	bool isLegacy()
+	{
+		return clientMode == 1;
+	}// isLegacy
+
+	bool isReceivingData()
+	{
+		return clientMode == 2;
+
+	}// isReceivingData
+};
+
 namespace omicron {
 ///////////////////////////////////////////////////////////////////////////////
 class OMICRON_API InputServer
@@ -105,8 +254,8 @@ public:
     // VRPN Server (for CalVR)
     void loop();
 
+	static char* createOmicronPacketFromEvent(const Event*);
 protected:
-    char* createOmicronEventPacket(const Event*);
     void sendToClients(char*, int);
     void createClient(const char*,int, int, SOCKET);
 private:

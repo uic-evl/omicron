@@ -62,6 +62,7 @@ void NetService::poll()
 		if (dataStreamOut)
 		{
 			connected = myClient->connect(serverAddress.c_str(), serverPort, dataPort, 1);
+			streamClient = new NetClient(serverAddress.c_str(), dataPort);
 		}
 		else
 		{
@@ -72,6 +73,21 @@ void NetService::poll()
 			printf("NetService: Attempting reconnection in %d second(s)\n", reconnectDelay / 1000);
 			Sleep(reconnectDelay);
 		}
+	}
+	else if(dataStreamOut)
+	{
+		ServiceManager* serviceManager = mysInstance->getManager();
+		int eventCount = serviceManager->getAvailableEvents();
+		serviceManager->lockEvents(); // Lock the main event list
+		for (int evtNum = 0; evtNum < eventCount; evtNum++)
+		{
+			// Get the event
+			Event* e = serviceManager->getEvent(evtNum);
+			char* eventPacket = InputServer::createOmicronPacketFromEvent(e);
+			
+			streamClient->sendEvent(eventPacket, DEFAULT_BUFLEN);
+		}
+		serviceManager->unlockEvents();
 	}
 	myClient->poll();
 }

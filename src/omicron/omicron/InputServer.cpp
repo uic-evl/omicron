@@ -45,131 +45,15 @@ using namespace omicron;
 
 using namespace omicron;
 
-///////////////////////////////////////////////////////////////////////////////
-// Based on Winsock UDP Server Example:
-// http://msdn.microsoft.com/en-us/library/ms740148
-// Also based on Beej's Guide to Network Programming:
-// http://beej.us/guide/bgnet/output/html/multipage/clientserver.html
-class NetClient
-{
-private:
-    SOCKET sendSocket;
-    SOCKET msgSocket;
-    sockaddr_in recvAddr;
-    int clientMode;
-    bool connected;
-
-    const char* clientAddress;
-    int clientPort;
-public:
-    NetClient( const char* address, int port, SOCKET clientSocket )
-    {
-        clientAddress = address;
-        clientPort = port;
-
-        clientMode = 0;
-        connected = true;
-
-        // Create a UDP socket for sending data
-        sendSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-
-        // Set up the RecvAddr structure with the IP address of
-        // the receiver
-        recvAddr.sin_family = AF_INET;
-        recvAddr.sin_port = htons(port);
-        recvAddr.sin_addr.s_addr = inet_addr(address);
-        printf("NetClient %s:%i created...\n", address, port);
-
-        msgSocket = clientSocket;
-    }// CTOR
-
-    NetClient( const char* address, int port, int mode, SOCKET clientSocket )
-    {
-        clientAddress = address;
-        clientPort = port;
-
-        clientMode = mode;
-        connected = true;
-
-        // Create a UDP socket for sending data
-        sendSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-
-        // Set up the RecvAddr structure with the IP address of
-        // the receiver
-        recvAddr.sin_family = AF_INET;
-        recvAddr.sin_port = htons(port);
-        recvAddr.sin_addr.s_addr = inet_addr(address);
-
-        msgSocket = clientSocket;
-
-        if( clientMode == 1 )
-        {
-            printf("Legacy NetClient %s:%i created...\n", address, port);
-        }
-		else if (clientMode == 2)
-		{
-			printf("NetClient %s:%i created. Requesting to stream data to server.\n", address, port);
-		}
-        else
-        {
-            printf("NetClient %s:%i created...\n", address, port);
-        }
-    }// CTOR
-
-    void sendEvent(char* eventPacket, int length)
-    {
-        // Send a datagram to the receiver
-        sendto(sendSocket, 
-            eventPacket, 
-            length, 
-            0,
-            (const struct sockaddr*)&recvAddr,
-            sizeof(recvAddr));
-    }// SendEvent
-
-    void sendMsg(char* eventPacket, int length)
-    {
-        // Ping the client to see if still active
-        int result = sendto(msgSocket, 
-            eventPacket, 
-            length, 
-            0,
-            (const struct sockaddr*)&recvAddr,
-            sizeof(recvAddr));
-
-        if( result == SOCKET_ERROR )
-        {
-            connected = false;
-        }
-    }// SendMsg
-
-    void setLegacy(bool value)
-    {
-		if (value)
-			clientMode = 1;
-		else
-			clientMode = 0;
-    }// setLegacy
-
-    bool isLegacy()
-    {
-        return clientMode == 1;
-    }// isLegacy
-
-    bool isConnected()
-    {
-        return connected;
-    }// isConnected
-};
-
 #define OI_WRITEBUF(type, buf, offset, val) *((type*)&buf[offset]) = val; offset += sizeof(type);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Creates an event packet from an Omicron event. Returns the buffer offset.
-char* InputServer::createOmicronEventPacket(const Event* evt)
+char* InputServer::createOmicronPacketFromEvent(const Event* evt)
 {
     int offset = 0;
-    
+	char* eventPacket = new char[DEFAULT_BUFLEN];
+
     OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getTimestamp()); 
     OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getSourceId()); 
     OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getDeviceTag()); 

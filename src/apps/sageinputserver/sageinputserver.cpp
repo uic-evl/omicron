@@ -164,7 +164,7 @@ void SAGEInputServer::handleEvent(Event* evt){
 		//pointerToSAGEEvent( evt );
 
 		// SAGE2
-		char* eventPacket = createOmicronEventPacket(evt);
+		char* eventPacket = createOmicronPacketFromEvent(evt);
 		if( isSAGEConnected() )
 		{
 			sendToClients(eventPacket, 0);

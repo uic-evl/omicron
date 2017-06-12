@@ -31,6 +31,7 @@
 #include "connector/omicronConnectorClient.h"
 #include "omicron/osystem.h"
 #include "omicron/ServiceManager.h"
+#include "omicron/InputServer.h"
 
 namespace omicron
 {
@@ -62,6 +63,8 @@ namespace omicron
 		bool connected;
 		bool dataStreamOut;
 		int reconnectDelay;
+
+		NetClient* streamClient;
 	};
 
 };

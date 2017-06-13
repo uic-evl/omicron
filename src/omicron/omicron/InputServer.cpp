@@ -651,6 +651,22 @@ void InputServer::loop()
     // VRPN connection
     connection->mainloop();
 #endif
+
+	std::map<char*, NetClient*>::iterator p;
+	for (p = netClients.begin(); p != netClients.end(); p++)
+	{
+		char* clientAddress = p->first;
+		NetClient* client = p->second;
+
+		if ( client->isReceivingData() )
+		{
+			int iresult = client->recvEvent(eventPacket, DEFAULT_BUFLEN);
+			if (iresult > 0)
+			{
+				printf("Receiving data\n");
+			}
+		}
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

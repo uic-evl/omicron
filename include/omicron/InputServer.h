@@ -182,7 +182,12 @@ public:
 		}
 		else if (clientMode == 2)
 		{
-			printf("NetClient %s:%i created. Requesting to stream data to server.\n", address, port);
+			// Set socket to receive data from any address on a specified port
+			recvAddr.sin_family = AF_INET;
+			recvAddr.sin_port = htons(port);
+			recvAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+			bind(udpSocket, (const sockaddr*)&recvAddr, sizeof(recvAddr));
+			printf("NetClient %s:%i created. Client to stream data to this machine.\n", address, port);
 		}
 		else
 		{

@@ -129,7 +129,10 @@ public:
 		recvAddr.sin_family = AF_INET;
 		recvAddr.sin_port = htons(port);
 		recvAddr.sin_addr.s_addr = inet_addr(address);
-		printf("NetClient %s:%i created...\n", address, port);
+		bind(udpSocket, (const sockaddr*)&recvAddr, sizeof(recvAddr));
+
+
+		printf("NetClient %s:%i created for streaming data out...\n", address, port);
 		udpConnected = true;
 	}
 

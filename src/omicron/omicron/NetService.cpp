@@ -83,6 +83,9 @@ void NetService::poll()
 		{
 			// Get the event
 			Event* e = serviceManager->getEvent(evtNum);
+
+			//printf("NetService: Data out: %d %f %f %f\n", e->getSourceId(), e->getPosition().x(), e->getPosition().y(), e->getPosition().z());
+
 			char* eventPacket = InputServer::createOmicronPacketFromEvent(e);
 
 			streamClient->sendEvent(eventPacket, DEFAULT_BUFLEN);

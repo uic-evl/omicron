@@ -46,9 +46,10 @@ using namespace omicron;
 using namespace omicron;
 
 #define OI_WRITEBUF(type, buf, offset, val) *((type*)&buf[offset]) = val; offset += sizeof(type);
+#define OI_READBUF(type, buf, offset, val) val = *((type*)&buf[offset]); offset += sizeof(type);
 
 ///////////////////////////////////////////////////////////////////////////////
-// Creates an event packet from an Omicron event. Returns the buffer offset.
+// Creates an event packet from an Omicron event. Returns the buffer.
 char* InputServer::createOmicronPacketFromEvent(const Event* evt)
 {
     int offset = 0;
@@ -79,6 +80,42 @@ char* InputServer::createOmicronPacketFromEvent(const Event* evt)
     offset += evt->getExtraDataSize();
 
     return eventPacket;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Creates EventData from an Omicron event packet. Returns the EventData.
+omicronConnector::EventData InputServer::createOmicronEventDataFromEventPacket(char* eventPacket)
+{
+	int offset = 0;
+	omicronConnector::EventData ed;
+
+	OI_READBUF(unsigned int, eventPacket, offset, ed.timestamp);
+	OI_READBUF(unsigned int, eventPacket, offset, ed.sourceId);
+	OI_READBUF(unsigned int, eventPacket, offset, ed.deviceTag);
+	OI_READBUF(unsigned int, eventPacket, offset, ed.serviceType);
+	OI_READBUF(unsigned int, eventPacket, offset, ed.type);
+	OI_READBUF(unsigned int, eventPacket, offset, ed.flags);
+	OI_READBUF(float, eventPacket, offset, ed.posx);
+	OI_READBUF(float, eventPacket, offset, ed.posy);
+	OI_READBUF(float, eventPacket, offset, ed.posz);
+	OI_READBUF(float, eventPacket, offset, ed.orw);
+	OI_READBUF(float, eventPacket, offset, ed.orx);
+	OI_READBUF(float, eventPacket, offset, ed.ory);
+	OI_READBUF(float, eventPacket, offset, ed.orz);
+
+	OI_READBUF(unsigned int, eventPacket, offset, ed.extraDataType);
+	OI_READBUF(unsigned int, eventPacket, offset, ed.extraDataItems);
+	OI_READBUF(unsigned int, eventPacket, offset, ed.extraDataMask);
+	memcpy(ed.extraData, &eventPacket[offset], omicronConnector::EventData::ExtraDataSize);
+
+	return ed;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Sets the ServiceManager for accessing event stream
+void InputServer::setServiceManager(ServiceManager* sm)
+{
+	serviceManager = sm;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -114,7 +151,7 @@ void InputServer::sendToClients(char* eventPacket, int priority)
 void InputServer::handleEvent(const Event& evt)
 {
     // If the event has been processed locally (i.e. by a filter event service)
-    if(evt.isProcessed()) return;
+    if(!serviceManager && evt.isProcessed()) return;
 
     timeb tb;
     ftime( &tb );
@@ -663,7 +700,18 @@ void InputServer::loop()
 			int iresult = client->recvEvent(eventPacket, DEFAULT_BUFLEN);
 			if (iresult > 0)
 			{
-				printf("Receiving data\n");
+				omicronConnector::EventData ed = createOmicronEventDataFromEventPacket(eventPacket);
+
+				//printf("InputServer: Data in id: %d pos: %f %f %f\n", ed.sourceId, ed.posx, ed.posy, ed.posz);
+
+				if (serviceManager)
+				{
+					serviceManager->lockEvents();
+					Event* e = serviceManager->writeHead();
+					e->deserialize(&ed);
+
+					serviceManager->unlockEvents();
+				}
 			}
 		}
 	}

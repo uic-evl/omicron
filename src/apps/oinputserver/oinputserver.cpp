@@ -65,6 +65,7 @@ int main(int argc, char** argv)
 
         // Start listening for clients (non-blocking)
         app.startListening();
+		app.setServiceManager(sm);
 
         // Get events
         int av = sm->getAvailableEvents();

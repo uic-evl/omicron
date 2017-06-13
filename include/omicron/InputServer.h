@@ -260,12 +260,14 @@ public:
     void loop();
 
 	static char* createOmicronPacketFromEvent(const Event*);
+	static omicronConnector::EventData createOmicronEventDataFromEventPacket(char*);
+
+	void setServiceManager(ServiceManager*);
 protected:
     void sendToClients(char*, int);
     void createClient(const char*,int, int, SOCKET);
 private:
     enum dataMode { omicron, omicron_legacy };
-    
 
     const char* serverPort;
     SOCKET listenSocket;    
@@ -289,6 +291,7 @@ private:
     int lastOutgoingEventTime;
     int eventCount;
 
+	ServiceManager* serviceManager;
 #ifdef OMICRON_USE_VRPN
     // VRPN Server (for CalVR)
     const char	*TRACKER_NAME;

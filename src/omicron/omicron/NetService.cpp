@@ -84,7 +84,7 @@ void NetService::poll()
 			// Get the event
 			Event* e = serviceManager->getEvent(evtNum);
 			char* eventPacket = InputServer::createOmicronPacketFromEvent(e);
-			
+
 			streamClient->sendEvent(eventPacket, DEFAULT_BUFLEN);
 		}
 		serviceManager->unlockEvents();

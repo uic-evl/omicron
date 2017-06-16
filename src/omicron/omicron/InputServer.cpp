@@ -36,14 +36,13 @@
  ******************************************************************************/
 #include "omicron/InputServer.h"
 #include "omicron/StringUtils.h"
+#include "omicron/ServiceManager.h"
 #include <vector>
 
 #include <time.h>
 using namespace omicron;
 
 #include <stdio.h>
-
-using namespace omicron;
 
 #define OI_WRITEBUF(type, buf, offset, val) *((type*)&buf[offset]) = val; offset += sizeof(type);
 #define OI_READBUF(type, buf, offset, val) val = *((type*)&buf[offset]); offset += sizeof(type);

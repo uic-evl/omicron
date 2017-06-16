@@ -581,7 +581,7 @@ namespace omicron
     inline void Event::setExtraDataString(const String& value)
     {
         oassert(myExtraDataType == ExtraDataString);
-        myExtraDataItems = (int)value.size() > (getExtraDataSize() - 1) ? (getExtraDataSize() - 1) : (int)value.size();
+        myExtraDataItems = (int)value.size() > (getExtraDataSize() - 1) ? getExtraDataSize() : (int)value.size();
         strncpy((char*)myExtraData, value.c_str(), myExtraDataItems);
         myExtraData[myExtraDataItems] = '\0';
     }

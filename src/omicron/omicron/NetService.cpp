@@ -51,11 +51,14 @@ void NetService::setup(Setting& settings)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void NetService::initialize() 
 {
+	init = clock();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void NetService::poll()
 {
+	timer = (clock() - init) / (double)CLOCKS_PER_SEC;
+
 	if( !connected )
 	{
 		printf("NetService: Connecting to %s on port %d \n", serverAddress.c_str(), serverPort);
@@ -92,6 +95,18 @@ void NetService::poll()
 		}
 		serviceManager->unlockEvents();
 	}
+
+	// Pings
+	if (connected && timer > 3)
+	{
+		connected = myClient->sendMsg("ping");
+		if (!connected)
+		{
+			printf("NetService: Client %s disconnected \n", serverAddress.c_str());
+		}
+		init = clock();
+	}
+
 	myClient->poll();
 }
 

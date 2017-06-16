@@ -511,7 +511,7 @@ namespace omicronConnector
         void poll();
         void dispose();
         void setDataport(int);
-
+		bool sendMsg(char*);
     private:
         bool initHandshake(int);
         void parseDGram(int);
@@ -608,15 +608,14 @@ namespace omicronConnector
 		}
         printf("NetService: Sending handshake: '%s'\n", sendbuf);
 
-        iResult = send(ConnectSocket, sendbuf, (int) strlen(sendbuf), 0);
-
-        if (iResult == -1) 
-        {
-            PRINT_SOCKET_ERROR("NetService: Send failed");
-            SOCKET_CLOSE(ConnectSocket);
-            SOCKET_CLEANUP()
-            return false;
-        }
+		bool result = sendMsg(sendbuf);
+		if (!result)
+		{
+			PRINT_SOCKET_ERROR("NetService: Send failed");
+			SOCKET_CLOSE(ConnectSocket);
+			SOCKET_CLEANUP();
+			return false;
+		}
 
         sockaddr_in RecvAddr;
         SenderAddrSize = sizeof(SenderAddr);
@@ -630,6 +629,19 @@ namespace omicronConnector
         readyToReceive = true;
 		return true;
     }
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//template<typename ListenerType>
+	inline bool OmicronConnectorClient::sendMsg(char* sendbuf)
+	{
+		int iResult = send(ConnectSocket, sendbuf, (int)strlen(sendbuf), 0);
+
+		if (iResult == -1)
+		{
+			return false;
+		}
+		return true;
+	}
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //template<typename ListenerType>

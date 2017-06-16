@@ -63,6 +63,7 @@ namespace omicron
 		bool connected;
 		bool dataStreamOut;
 		int reconnectDelay;
+		clock_t init, timer;
 
 		NetClient* streamClient;
 	};

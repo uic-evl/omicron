@@ -1,13 +1,13 @@
 /******************************************************************************
  * THE OMICRON PROJECT
  *-----------------------------------------------------------------------------
- * Copyright 2010-2014		Electronic Visualization Laboratory, 
+ * Copyright 2010-2017		Electronic Visualization Laboratory, 
  *							University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto	    anishimoto42@gmail.com
  *  Alessandro Febretti		febret@gmail.com
  *-----------------------------------------------------------------------------
- * Copyright (c) 2010-2014, Electronic Visualization Laboratory,  
+ * Copyright (c) 2010-2017, Electronic Visualization Laboratory,  
  * University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, 
@@ -52,9 +52,13 @@ typedef	struct {
 } vrpn_TRACKERCB; */
 void VRPN_CALLBACK handle_tracker(void *userData, const vrpn_TRACKERCB t)
 {
-    VRPNStruct* vs = ((VRPNStruct*)userData);
-    VRPNService* vrpnService = vs->vrnpService;
+	VRPNStruct* vs = ((VRPNStruct*)userData);
+	VRPNService* vrpnService = vs->vrnpService;
 
+	// if (vrpnService->isDebugEnabled())
+	// {
+	// 	printf("VRPNService: handle_tracker id %d, sensor %d\n", vs->object_id, vs->sensorId);
+	// }
     vrpnService->generateTrackerEvent(t, vs->object_id, vs->userId, vs->jointId);
 }
 
@@ -90,43 +94,59 @@ void VRPNService::setup(Setting& settings)
     if(settings.exists("objects"))
     {
         Setting& strs = settings["objects"];
-		for (int i = 0; i < strs.getLength(); i++)
-		{
-			Setting& str = strs[i];
-			TrackerInfo trackerInfo;
-			trackerInfo.object_name = (const char*)str["name"];
-			if (str.exists("serverIP")){
-				trackerInfo.server_ip = (const char*)str["serverIP"]; // Use object specified IP
-			}
-			else {
-				trackerInfo.server_ip = server_ip; // Use global IP
-			}
+        for(int i = 0; i < strs.getLength(); i++)
+        {
+            Setting& str = strs[i];
+            TrackerInfo trackerInfo;
+            trackerInfo.object_name = (const char*)str["name"];
+            if( str.exists("serverIP") ){
+                trackerInfo.server_ip = (const char*)str["serverIP"]; // Use object specified IP
+            } else {
+                trackerInfo.server_ip = server_ip; // Use global IP
+            }
 
-			if (str.exists("userId"))
-			{
-				unsigned int uid = (unsigned int)str["userId"];
-				trackerInfo.userId = (unsigned short)uid;
+            if(str.exists("userId"))
+            {
+                unsigned int uid = (unsigned int)str["userId"];
+                trackerInfo.userId = (unsigned short)uid;
 				ofmsg("Tracker %1% user ID %2%", %trackerInfo.object_name %uid);
+            }
+            else
+            {
+                trackerInfo.userId = 0;
+            }
+
+            if(str.exists("jointId"))
+            {
+                String jointName = (const char*)str["jointId"];
+                trackerInfo.jointId = Event::parseJointName(jointName);
+            }
+            else
+            {
+                trackerInfo.jointId = -1;
+            }
+
+			if (str.exists("sensorId"))
+			{
+				unsigned int uid = (unsigned int)str["sensorId"];
+				trackerInfo.sensorId = (unsigned short)uid;
+				ofmsg("Tracker %1% sensor Id %2%", %trackerInfo.object_name %uid);
+			}
+			else if (str.exists("sensorID"))
+			{
+				unsigned int uid = (unsigned int)str["sensorID"];
+				trackerInfo.sensorId = (unsigned short)uid;
+				ofmsg("Tracker %1% sensor ID %2%", %trackerInfo.object_name %uid);
 			}
 			else
 			{
-				trackerInfo.userId = 0;
+				trackerInfo.sensorId = -1;
 			}
 
-			if (str.exists("jointId"))
-			{
-				String jointName = (const char*)str["jointId"];
-				trackerInfo.jointId = Event::parseJointName(jointName);
-			}
-			else
-			{
-				trackerInfo.jointId = -1;
-			}
-
-			if (str.exists("objectType"))
-			{
-				trackerInfo.object_type = (const char*)str["objectType"];
-			}
+			if(str.exists("objectType"))
+            {
+                trackerInfo.object_type = (const char*)str["objectType"];
+            }
 			else
 			{
 				trackerInfo.object_type = "None";
@@ -135,12 +155,18 @@ void VRPNService::setup(Setting& settings)
 			if (str.exists("objectID"))
 			{
 				trackerInfo.trackableId = str["objectID"];
-				trackerNames.push_back(trackerInfo);
+			}
+			else if (str.exists("objectId"))
+			{
+				trackerInfo.trackableId = str["objectId"];
 			}
 			else
 			{
-				ofmsg("VRPNService: Warning - Object %1% has no objectID?", %trackerInfo.object_name);
+				trackerInfo.trackableId = 0;
 			}
+
+			trackerNames.push_back(trackerInfo);
+
         }
 
         myUpdateInterval = 0.0f;
@@ -149,10 +175,6 @@ void VRPNService::setup(Setting& settings)
             myUpdateInterval = settings["updateInterval"];
         }
     }
-	else
-	{
-		omsg("VRPNService: Warning - No 'objects' section found?");
-	}
     setPollPriority(Service::PollFirst);
 }
 
@@ -166,33 +188,41 @@ void VRPNService::initialize()
     mysInstance = this;
 
 
-    for(int i = 0; i < trackerNames.size(); i++)
-    {
-        TrackerInfo& t = trackerNames[i];
+	for (int i = 0; i < trackerNames.size(); i++)
+	{
+		TrackerInfo& t = trackerNames[i];
 		char trackerName[256];
-        strcpy(trackerName,t.object_name);
-        strcat(trackerName,"@");
-        strcat(trackerName,t.server_ip);
-        ofmsg("Added %1%" , %trackerName);
+		strcpy(trackerName, t.object_name);
+		strcat(trackerName, "@");
+		strcat(trackerName, t.server_ip);
+		ofmsg("Added %1%", %trackerName);
 
-        // Open the tracker: '[object name]@[tracker IP]'
-        vrpn_Tracker_Remote *tkr = new vrpn_Tracker_Remote(trackerName);
+		// Open the tracker: '[object name]@[tracker IP]'
+		vrpn_Tracker_Remote *tkr = new vrpn_Tracker_Remote(trackerName);
 		vrpn_Button_Remote* vrpnButton = new vrpn_Button_Remote(trackerName);
 
-        VRPNStruct* vrpnData = new VRPNStruct();
-        vrpnData->object_name = t.object_name;
+		VRPNStruct* vrpnData = new VRPNStruct();
+		vrpnData->object_name = t.object_name;
 		vrpnData->object_type = t.object_type;
-        vrpnData->object_id = t.trackableId;
-        vrpnData->userId = t.userId;
-        vrpnData->jointId = t.jointId;
-        vrpnData->vrnpService = this;
+		vrpnData->object_id = t.trackableId;
+		vrpnData->userId = t.userId;
+		vrpnData->jointId = t.jointId;
+		vrpnData->vrnpService = this;
+		vrpnData->sensorId = t.sensorId;
 
-        // Set up the callback handler
-        tkr->register_change_handler((void*)vrpnData, handle_tracker);
+		// Set up the callback handler
+		if (t.sensorId == -1)
+		{
+			tkr->register_change_handler((void*)vrpnData, handle_tracker);
+		}
+		else
+		{
+			tkr->register_change_handler((void*)vrpnData, handle_tracker, t.sensorId);
+		}
+
 		vrpnButton->register_change_handler((void*)vrpnData, handle_button);
-
         // Add to tracker remote list
-        //trackerRemotes.push_back(tkr);
+        trackerRemotes.push_back(tkr);
     }
 }
 
@@ -228,12 +258,10 @@ void VRPNService::generateTrackerEvent(vrpn_TRACKERCB t, int id, unsigned short 
      //float curt = (float)((double)clock() / CLOCKS_PER_SEC);
      //if(curt - lastt > mysInstance->myUpdateInterval)
      //{
-
 	if (isDebugEnabled())
 	{
-		ofmsg("VRPNService: Tracker Event Device ID %1% Position: %2% %3% %4%", %id %t.pos[0] %t.pos[1] %t.pos[2]);
+		ofmsg("VRPNService: Tracker ID %1% at pos: %2% %3% %4%", %id %t.pos[0] %t.pos[1] %t.pos[2]);
 	}
-
          mysInstance->lockEvents();
          Event* evt = mysInstance->writeHead();
          evt->reset(Event::Update, Service::Mocap, id, getServiceId(), userId);

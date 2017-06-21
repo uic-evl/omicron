@@ -1,12 +1,12 @@
 /**************************************************************************************************
  * THE OMICRON PROJECT
  *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2015		Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2017		Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto		anishimoto42@gmail.com
  *  Alessandro Febretti		febret@gmail.com
  *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2015, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2017, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted 
  * provided that the following conditions are met:
@@ -33,6 +33,8 @@ using namespace omicron;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 WiimoteService* WiimoteService::mysInstance = NULL;
+int WiimoteService::maxControllers = 4;
+std::map<int, wiimote> wiimoteInfo;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void wii_state_change (wiimote			  &remote,
@@ -114,10 +116,79 @@ void WiimoteService::setup(Setting& settings)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-void WiimoteService::initialize() 
+void WiimoteService::initialize()
 {
 	omsg("WiimoteService::initialize()");
 	mysInstance = this;
+
+	/*
+	for (int i = 0; i < maxControllers; i++)
+	{
+		wiimoteInfo[i] = wiimote();
+
+		// in this demo we use a state-change callback to get notified of
+		//  extension-related events, and polling for everything else
+		// (note you don't have to use both, use whatever suits your app):
+		wiimoteInfo[i].ChangedCallback = wii_state_change;
+		//  notify us only when the wiimote connected sucessfully, or something
+		//   related to extensions changes
+		wiimoteInfo[i].CallbackTriggerFlags = (state_change_flags)(WIIMOTE_CONNECTED |
+			EXTENSION_CHANGED |
+			MOTIONPLUS_CHANGED);
+		
+		if (wiimoteInfo[i].Connect(i + 1))
+		{
+			ofmsg("WiimoteService: Wiimote %1% connected", %(i+1));
+
+			switch (i+1)
+			{
+			case(1) :
+				wiimoteInfo[i].SetLEDs(0x01);
+				myWiimote = wiimoteInfo[i];
+				myButtonState = pollButtonState();
+				break;
+			case(2) :
+				wiimoteInfo[i].SetLEDs(0x02);
+				break;
+			case(3) :
+				wiimoteInfo[i].SetLEDs(0x04);
+				break;
+			case(4) :
+				wiimoteInfo[i].SetLEDs(0x08);
+				break;
+			default:
+				break;
+			}
+			
+		}
+		else
+		{
+			ofmsg("WiimoteService: Wiimote %1% not connected", % (i + 1));
+		}
+		
+	}
+	*/
+	
+	/*
+	if (myWiimote.Connect(1))
+	{
+		owarn("WiimoteService: Wiimote 1x connected");
+		myWiimote.SetLEDs(0x01);
+	}
+	if (myWiimote.Connect(2))
+	{
+		owarn("WiimoteService: Wiimote 2x connected");
+		myWiimote.SetLEDs(0x02);
+	}
+	if (myWiimote.Connect(3))
+	{
+		owarn("WiimoteService: Wiimote 3x connected");
+	}
+	if (myWiimote.Connect(4))
+	{
+		owarn("WiimoteService: Wiimote 4x connected");
+	}
+	*/
 
 	// in this demo we use a state-change callback to get notified of
 	//  extension-related events, and polling for everything else
@@ -126,20 +197,22 @@ void WiimoteService::initialize()
 	//  notify us only when the wiimote connected sucessfully, or something
 	//   related to extensions changes
 	myWiimote.CallbackTriggerFlags = (state_change_flags)(WIIMOTE_CONNECTED |
-														EXTENSION_CHANGED |
-														MOTIONPLUS_CHANGED);
+		EXTENSION_CHANGED |
+		MOTIONPLUS_CHANGED);
+
 	if(!myWiimote.Connect(wiimote::FIRST_AVAILABLE)) 
 	{
 		owarn("WiimoteService: no wiimote controller connected.");
-		// Initialize button state
-		myButtonState = pollButtonState();
 	}
 	else
 	{
+		// Initialize button state
+		myButtonState = pollButtonState();
+
 		// Set all LEDs
 		myWiimote.SetLEDs(0x01);
 	}
-
+	
 	myUpdateTimer.start();
 }
 
@@ -147,17 +220,40 @@ void WiimoteService::initialize()
 uint WiimoteService::pollButtonState()
 {
 	// Set controller type and button flags.
-	uint flags = TypeWiimote;
-	if(myWiimote.Button.A()) flags |= ButtonA;
-	if(myWiimote.Button.B()) flags |= ButtonB;
-	if(myWiimote.Button.Plus()) flags |= ButtonPlus;
-	if(myWiimote.Button.Minus()) flags |= ButtonMinus;
-	if(myWiimote.Button.One()) flags |= ButtonOne;
-	if(myWiimote.Button.Two()) flags |= ButtonTwo;
-	if(myWiimote.Button.Up()) flags |= ButtonUp;
-	if(myWiimote.Button.Down()) flags |= ButtonDown;
-	if(myWiimote.Button.Left()) flags |= ButtonLeft;
-	if(myWiimote.Button.Right()) flags |= ButtonRight;
+	uint flags = 0;
+	if (myWiimote.Button.A()) flags |= Event::Button6;
+	if (myWiimote.Button.B()) flags |= Event::Button7;
+	if (myWiimote.Button.Plus()) flags |= Event::Button2;
+	if (myWiimote.Button.Minus()) flags |= Event::Button3;
+	if (myWiimote.Button.One()) flags |= Event::Button1;
+	if (myWiimote.Button.Two()) flags |= Event::Button4;
+	if (myWiimote.Button.Up()) flags |= Event::ButtonUp;
+	if (myWiimote.Button.Down()) flags |= Event::ButtonDown;
+	if (myWiimote.Button.Left()) flags |= Event::ButtonLeft;
+	if (myWiimote.Button.Right()) flags |= Event::ButtonRight;
+
+	if (myWiimote.NunchukConnected())
+	{
+		if (myWiimote.Nunchuk.C) flags |= Event::Button5;
+		if (myWiimote.Nunchuk.Z) flags |= Event::Button7;
+	}
+	// 00 = off
+	// 01 = LED 1
+	// 02 = LED 2
+	// 03 = LED 1, 2
+	// 04 = LED 3
+	// 05 = LED 1, 3
+	// 06 = LED 2, 3
+	// 07 = LED 1, 2, 3
+	// 08 = LED 4
+	// 09 = LED 1, 4
+	// 0a = LED 2, 3
+	// 0b = LED 1, 2, 4
+	// 0c = LED 3, 4
+	// 0d = LED 1, 3, 4
+	// 0e = LED 2, 3, 4
+	// 0f = LED 1, 2, 3, 4
+	//myWiimote.SetLEDs(0x0f);
 	return flags;
 }
 
@@ -177,19 +273,20 @@ void WiimoteService::poll()
 		lockEvents();
 
 		writeWiimoteEvent();
-		if(myWiimote.NunchukConnected())
-		{
-			writeNunchuckEvent();
-		}
-		if( myWiimote.MotionPlusConnected() )
-		{
-			writeMotionPlusEvent();
-		}
+		//if(myWiimote.NunchukConnected())
+		//{
+			//writeNunchuckEvent();
+		//}
+		//if( myWiimote.MotionPlusConnected() )
+		//{
+			//writeMotionPlusEvent();
+		//}
 
 		unlockEvents();
 
 		if(myWiimote.Button.Home())
 		{
+			myWiimote.SetLEDs(0);
 			myWiimote.Disconnect();
 		}
 	}
@@ -212,12 +309,12 @@ void WiimoteService::writeWiimoteEvent()
 		if(curButtonState > myButtonState)
 		{
 			evt->reset(Event::Down, Service::Controller, myEventSourceId);
-			if(isDebugEnabled()) omsg("Wiimote button down");
+			if (isDebugEnabled()) ofmsg("Wiimote %1% flags %2% down event", %myEventSourceId %curButtonState);
 		}
 		else
 		{
 			evt->reset(Event::Up, Service::Controller, myEventSourceId);
-			if(isDebugEnabled()) omsg("Wiimote button up");
+			if (isDebugEnabled()) ofmsg("Wiimote %1% flags %2% up event", %myEventSourceId %curButtonState);
 		}
 		myButtonState = curButtonState;
 	}
@@ -236,6 +333,12 @@ void WiimoteService::writeWiimoteEvent()
 	evt->setExtraDataFloat(1, myWiimote.Acceleration.Y);
 	evt->setExtraDataFloat(2, myWiimote.Acceleration.Z);
 	evt->setExtraDataFloat(0, myWiimote.BatteryPercent);
+
+	if (isDebugEnabled())
+	{
+		//ofmsg("Wiimote Accelorometer: %1% %2% %3%", %myWiimote.Acceleration.X %myWiimote.Acceleration.Y %myWiimote.Acceleration.Z );
+	}
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

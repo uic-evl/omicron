@@ -1,4 +1,4 @@
-![logo](https://code.google.com/p/omicron-sdk/logo?cct=1370629544) omicron
+![logo](https://github.com/uic-evl/omicron/blob/master/logo.png) omicron
 
 =======
 The omicron SDK is a library providing access to a variety of input devices, mostly used in immersive installations and stereo display systems. 

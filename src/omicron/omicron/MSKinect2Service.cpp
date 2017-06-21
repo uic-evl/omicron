@@ -167,12 +167,17 @@ void MSKinectService::pollBody()
 		{
 			hr = pBodyFrame->GetAndRefreshBodyData(_countof(ppBodies), ppBodies);
 		}
-
+		
+		
 		if (SUCCEEDED(hr))
 		{
-			ProcessBody(nTime, BODY_COUNT, ppBodies);
+			Vector4* floorClipPlane = new Vector4();
+			pBodyFrame->get_FloorClipPlane(floorClipPlane);
+
+			ProcessBody(nTime, BODY_COUNT, ppBodies, floorClipPlane);
 		}
 
+		
 		for (int i = 0; i < _countof(ppBodies); ++i)
 		{
 			SafeRelease(ppBodies[i]);
@@ -313,7 +318,7 @@ void MSKinectService::UnInitializeKinect( const OLECHAR *instanceName )
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void MSKinectService::ProcessBody(INT64 nTime, int nBodyCount, IBody** ppBodies)
+void MSKinectService::ProcessBody(INT64 nTime, int nBodyCount, IBody** ppBodies, Vector4* floorClipPlane)
 {
 	HRESULT hr;
 
@@ -345,7 +350,7 @@ void MSKinectService::ProcessBody(INT64 nTime, int nBodyCount, IBody** ppBodies)
 						closestSkeletonDistance = headDistance;
 						closestBodyIndex = i;
 					}
-					GenerateMocapEvent( pBody, joints );
+					GenerateMocapEvent( pBody, joints, floorClipPlane );
 				}
 			}
 		}
@@ -408,7 +413,7 @@ void MSKinectService::ProcessBody(INT64 nTime, int nBodyCount, IBody** ppBodies)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void MSKinectService::GenerateMocapEvent( IBody* body, Joint* joints )
+void MSKinectService::GenerateMocapEvent( IBody* body, Joint* joints, Vector4* floorClipPlane )
 {      
 	UINT64 skeletonID;
 	body->get_TrackingId(&skeletonID);
@@ -418,9 +423,11 @@ void MSKinectService::GenerateMocapEvent( IBody* body, Joint* joints )
 	Joint head = joints[JointType_Head];
 	headPos = Vector3f( head.Position.X, head.Position.Y, head.Position.Z );
 
-	if( debugInfo )
-		ofmsg( "Kinect Head %1% (%2%,%3%,%4%)",  %skeletonID %(headPos.x()) %(headPos.y()) %(headPos.z()) );
-
+	if (debugInfo)
+	{
+		ofmsg("Kinect Head %1% (%2%,%3%,%4%)", %skeletonID % (headPos.x()) % (headPos.y()) % (headPos.z()));
+		ofmsg("Floor Clip Plane (%1%,%2%,%3%,%4%)", % (floorClipPlane->x) % (floorClipPlane->y) % (floorClipPlane->z) % (floorClipPlane->w));
+	}
 	HandState leftHandState = HandState_Unknown;
 	HandState rightHandState = HandState_Unknown;
 	body->get_HandLeftState(&leftHandState);
@@ -437,11 +444,17 @@ void MSKinectService::GenerateMocapEvent( IBody* body, Joint* joints )
 	pos[2] = jointPos.z();
 	evt->setPosition( pos );
 
-	// Hand state
-	evt->setOrientation(leftHandState, rightHandState, 0, 0);
+	// Floor clip plane
+	// x, y, z, unit vector indicating normal of plane
+	// w distance from the plane to origin in meters
+	evt->setOrientation(floorClipPlane->w, floorClipPlane->x, floorClipPlane->y, floorClipPlane->z);
 
 	uint flags = 0;
-	
+	if (leftHandState == 0) flags |= 2;
+	if (leftHandState == 0) flags |= 2;
+	if (leftHandState == 0) flags |= 2;
+	if (leftHandState == 0) flags |= 2;
+
 	evt->setExtraDataType(Event::ExtraDataVector3Array);
 
 	SkeletonPositionToEvent( joints, evt, Event::OMICRON_SKEL_HIP_CENTER, JointType_SpineBase );

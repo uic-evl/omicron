@@ -1,13 +1,13 @@
 /******************************************************************************
  * THE OMICRON SDK
  *-----------------------------------------------------------------------------
- * Copyright 2010-2016		Electronic Visualization Laboratory, 
+ * Copyright 2010-2017		Electronic Visualization Laboratory, 
  *							University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto		anishimoto42@gmail.com
  *  Alessandro Febretti		febret@gmail.com
  *-----------------------------------------------------------------------------
- * Copyright (c) 2010-2016, Electronic Visualization Laboratory,  
+ * Copyright (c) 2010-2017, Electronic Visualization Laboratory,  
  * University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, 
@@ -598,7 +598,7 @@ SOCKET InputServer::startListening()
                 if( recvbuf[i] == ',' )
                 {
                     portIndex = i + 1;
-                    inMessage[i] = '\n';
+                    inMessage[i] = '\0';
                 }
                 else if( i < portIndex )
                 {
@@ -616,9 +616,10 @@ SOCKET InputServer::startListening()
             char* omicronHandshake = "omicron_data_on";
 			char* omicronStreamInHandshake = "omicron_data_in";
             char* legacyHandshake = "omicron_legacy_data_on";
+			char* tactileHandshake = "tactile_data_on";
             int dataPort = 7000; // default port
 
-            if( strcmp(inMessage, legacyHandshake) == 1 )
+            if( strcmp(inMessage, legacyHandshake) == 0 )
             {
                 // Get data port number
                 dataPort = atoi(portCStr);
@@ -626,21 +627,28 @@ SOCKET InputServer::startListening()
                 printf("OInputServer: WARNING - This server does not support legacy data!\n");
                 createClient( clientAddress, dataPort, 1, clientSocket );
             }
-            else if( strcmp(inMessage, omicronHandshake) == 1 )
+            else if( strcmp(inMessage, omicronHandshake) == 0 )
             {
                 // Get data port number
                 dataPort = atoi(portCStr);
                 printf("OInputServer: '%s' requests omicron data to be sent on port '%d'\n", clientAddress, dataPort);
                 createClient( clientAddress, dataPort, 0, clientSocket );
             }
-			else if (strcmp(inMessage, omicronStreamInHandshake) == 1)
+			else if (strcmp(inMessage, omicronStreamInHandshake) == 0)
 			{
 				// Get data port number
 				dataPort = atoi(portCStr);
 				printf("OInputServer: '%s' requests to SEND omicron data to be RECEIVED on port '%d'\n", clientAddress, dataPort);
 				createClient(clientAddress, dataPort, 2, clientSocket);
 			}
-            else if( strcmp(inMessage, handshake) == 1 )
+			else if (strcmp(inMessage, tactileHandshake) == 0)
+			{
+				// Get data port number
+				dataPort = atoi(portCStr);
+				printf("OInputServer: '%s' requests TacTile dgram data to be sent on port '%d'\n", clientAddress, dataPort);
+				createClient(clientAddress, dataPort, 3, clientSocket);
+			}
+            else if( strcmp(inMessage, handshake) == 0 )
             {
                 // Get data port number
                 dataPort = atoi(portCStr);
@@ -753,6 +761,10 @@ void InputServer::createClient(const char* clientAddress, int dataPort, int mode
 				else if (mode == 2)
 				{
 					printf("OInputServer: NetClient %s now requesting to send omicron data \n", addr);
+				}
+				else if (mode == 3)
+				{
+					printf("OInputServer: NetClient %s now requesting to receive Tactile dgram data \n", addr);
 				}
                 else
                     printf("OInputServer: NetClient %s now requesting to receive omicron data \n", addr );

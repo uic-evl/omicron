@@ -192,6 +192,10 @@ public:
 			bind(udpSocket, (const sockaddr*)&recvAddr, sizeof(recvAddr));
 			printf("NetClient %s:%i created. Client to stream data to this machine.\n", address, port);
 		}
+		else if (clientMode == 3)
+		{
+			printf("TacTile NetClient %s:%i created...\n", address, port);
+		}
 		else
 		{
 			printf("NetClient %s:%i created...\n", address, port);

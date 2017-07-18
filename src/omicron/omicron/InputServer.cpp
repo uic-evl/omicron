@@ -125,11 +125,18 @@ void InputServer::sendToClients(char* eventPacket, int priority)
     while( itr != netClients.end() )
     {
         NetClient* client = itr->second;
-
+		
         if( client->isLegacy() )
         {
             //client->sendEvent(legacyPacket, 512);
         }
+		else if (client->isTacTile())
+		{
+			if (priority == 0 && validTacTileEvent)
+			{
+				client->sendEvent(tacTilePacket, 512);
+			}
+		}
         else
         {
 			if (priority == 0) // UDP
@@ -150,7 +157,7 @@ void InputServer::sendToClients(char* eventPacket, int priority)
 void InputServer::handleEvent(const Event& evt)
 {
     // If the event has been processed locally (i.e. by a filter event service)
-    if(!serviceManager && evt.isProcessed()) return;
+    if(evt.isProcessed()) return;
 
     timeb tb;
     ftime( &tb );
@@ -186,8 +193,9 @@ void InputServer::handleEvent(const Event& evt)
     }
     offset += evt.getExtraDataSize();
         
-    //handleLegacyEvent(evt);
-        
+    //validLegacyEvent = handleLegacyEvent(evt);
+	validTacTileEvent = handleTacTileEvent(evt);
+
     if( showStreamSpeed )
     {
         if( (timestamp - lastOutgoingEventTime) >= 1000 )
@@ -202,7 +210,6 @@ void InputServer::handleEvent(const Event& evt)
         }
     }
 
-    
     
 	if (evt.getType() == Event::Type::Update || evt.getType() == Event::Type::Move)
 	{
@@ -221,6 +228,8 @@ void InputServer::handleEvent(const Event& evt)
 }
     
 ///////////////////////////////////////////////////////////////////////////////
+// Comma-separated string packet
+// [serviceType]:[eventType],[sourceID],[x],[y],[other data varying by event type]
 bool InputServer::handleLegacyEvent(const Event& evt)
 {
     //itoa(evt.getServiceType(), eventPacket, 10); // Append input type
@@ -423,6 +432,96 @@ bool InputServer::handleLegacyEvent(const Event& evt)
     }
 
     return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Comma-separated string packet (TacTile version)
+// Note dgram has a space appended to end
+// d-Flag (OmegaTracker/TacTile Event)
+// "[timestamp]:d:[id],[x],[y],[intensity] "
+//
+// Q-Flag (PQLabs Event)
+// "[timestamp]:q:[id],[x],[y],[w],[h],[gesture],[intensity] "
+// Gesture: 0 = down, 1 = move, 2 = up, 3 = hold
+bool InputServer::handleTacTileEvent(const Event& evt)
+{
+	//itoa(evt.getServiceType(), eventPacket, 10); // Append input type
+	sprintf(tacTilePacket, "%d", evt.getTimestamp());
+
+	strcat(tacTilePacket, ":");
+
+	strcat(tacTilePacket, "q");
+
+	strcat(tacTilePacket, ":");
+
+	char floatChar[32];
+
+	switch (evt.getServiceType())
+	{
+	case Service::Pointer:
+		//printf(" Touch type %d \n", evt.getType()); 
+		//printf("               at %f %f \n", x, y ); 
+
+		// Converts source id to char, appends to eventPacket
+		sprintf(floatChar, "%d", evt.getSourceId());
+		strcat(tacTilePacket, floatChar);
+		strcat(tacTilePacket, ","); // Spacer
+
+		// Converts x to char, appends to eventPacket
+		sprintf(floatChar, "%f", evt.getPosition().x());
+		strcat(tacTilePacket, floatChar);
+		strcat(tacTilePacket, ","); // Spacer
+
+		// Converts y to char, appends to eventPacket
+		sprintf(floatChar, "%f", evt.getPosition().y());
+		strcat(tacTilePacket, floatChar);
+
+		if (evt.getExtraDataItems() == 2) { // TouchPoint down/up/move
+
+			// Converts xWidth to char, appends to eventPacket
+			strcat(tacTilePacket, ","); // Spacer
+			sprintf(floatChar, "%f", evt.getExtraDataFloat(0));
+			strcat(tacTilePacket, floatChar);
+
+			// Converts yWidth to char, appends to eventPacket
+			strcat(tacTilePacket, ","); // Spacer
+			sprintf(floatChar, "%f", evt.getExtraDataFloat(1));
+			strcat(tacTilePacket, floatChar);
+
+		}
+
+		switch (evt.getType())
+		{
+		case(EventBase::Down):
+			// Converts gesture to char, appends to eventPacket
+			strcat(tacTilePacket, ","); // Spacer
+			sprintf(floatChar, "%d", 0);
+			strcat(tacTilePacket, floatChar);
+			break;
+		case(EventBase::Move):
+			// Converts gesture to char, appends to eventPacket
+			strcat(tacTilePacket, ","); // Spacer
+			sprintf(floatChar, "%d", 1);
+			strcat(tacTilePacket, floatChar);
+			break;
+		case(EventBase::Up):
+			// Converts gesture to char, appends to eventPacket
+			strcat(tacTilePacket, ","); // Spacer
+			sprintf(floatChar, "%d", 2);
+			strcat(tacTilePacket, floatChar);
+			break;
+		}
+
+		// Intensity (Not really used, just to match the old message format
+		strcat(tacTilePacket, ","); // Spacer
+		sprintf(floatChar, "%f", 1.0);
+		strcat(tacTilePacket, floatChar);
+
+		strcat(tacTilePacket, " "); // Spacer
+
+		return true;
+	}
+	return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -704,13 +803,16 @@ void InputServer::loop()
 
 		if ( client->isReceivingData() )
 		{
+			// Grab data from client
 			int iresult = client->recvEvent(eventPacket, DEFAULT_BUFLEN);
 			if (iresult > 0)
 			{
+				// Convert client packet to omicron event
 				omicronConnector::EventData ed = createOmicronEventDataFromEventPacket(eventPacket);
 
 				//printf("InputServer: Data in id: %d pos: %f %f %f\n", ed.sourceId, ed.posx, ed.posy, ed.posz);
 
+				// Add to local service manager's event list
 				if (serviceManager)
 				{
 					serviceManager->lockEvents();

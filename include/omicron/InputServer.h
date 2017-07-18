@@ -107,6 +107,7 @@ private:
 	// 0 = NetClient sends data out to remote (default)
 	// 1 = NetClient sends legacy data out to remote
 	// 2 = NetClient receiving data from remote
+	// 3 = NetClient sends TacTile data out to remote
 
 	bool tcpConnected;
 	bool udpConnected;
@@ -250,8 +251,12 @@ public:
 	bool isReceivingData()
 	{
 		return clientMode == 2;
-
 	}// isReceivingData
+
+	bool isTacTile()
+	{
+		return clientMode == 3;
+	}// isTacTile
 };
 
 namespace omicron {
@@ -261,6 +266,7 @@ class OMICRON_API InputServer
 public:
     virtual void handleEvent(const Event& evt);
     virtual bool handleLegacyEvent(const Event& evt);
+	virtual bool handleTacTileEvent(const Event& evt);
     void startConnection(Config* cfg);
     SOCKET startListening();
     // VRPN Server (for CalVR)
@@ -282,6 +288,10 @@ private:
     #define DEFAULT_BUFLEN 512
     char eventPacket[DEFAULT_BUFLEN];
     char legacyPacket[DEFAULT_BUFLEN];
+	char tacTilePacket[DEFAULT_BUFLEN];
+
+	bool validLegacyEvent;
+	bool validTacTileEvent;
 
     char recvbuf[DEFAULT_BUFLEN];
     int iResult, iSendResult;

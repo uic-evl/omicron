@@ -345,7 +345,7 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 					evt->reset(Event::Down, Service::Pointer, nextID);
 					if (isDebugEnabled())
 					{
-						ofmsg("PQService: Touch ID: %1% as DOWN event at (%2%,%3%) size: (%4%,%5%)", %nextID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth);
+						ofmsg("PQService: Touch ID: %1% as DOWN event at (%2%,%3%) size: (%4%,%5%)", %touch.ID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth);
 					}
 					touchID[tp.id] = nextID;
 					if( nextID < maxTouches - 100 ){
@@ -360,7 +360,7 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 					touchlist[touch.ID] = touch;
 					if (isDebugEnabled())
 					{
-						ofmsg("PQService: Touch ID: %1% as MOVE event at (%2%,%3%) size: (%4%,%5%)", %nextID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth);
+						ofmsg("PQService: Touch ID: %1% as MOVE event at (%2%,%3%) size: (%4%,%5%)", %touch.ID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth);
 					}
 					break;
 				case TP_UP:
@@ -368,7 +368,7 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 					touchlist.erase( touch.ID );
 					if (isDebugEnabled())
 					{
-						ofmsg("PQService: Touch ID: %1% as UP event at (%2%,%3%) size: (%4%,%5%)", %nextID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth);
+						ofmsg("PQService: Touch ID: %1% as UP event at (%2%,%3%) size: (%4%,%5%)", %touch.ID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth);
 					}
 					break;
 			}

@@ -119,37 +119,9 @@ void InputServer::setServiceManager(ServiceManager* sm)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-void InputServer::sendToClients(char* eventPacket, int priority)
+void InputServer::sendToClients(char* eventPacket)
 {
-    std::map<char*,NetClient*>::iterator itr = netClients.begin();
-    while( itr != netClients.end() )
-    {
-        NetClient* client = itr->second;
-		
-        if( client->isLegacy() )
-        {
-            //client->sendEvent(legacyPacket, 512);
-        }
-		else if (client->isTacTile())
-		{
-			if (priority == 0 && validTacTileEvent)
-			{
-				client->sendEvent(tacTilePacket, 512);
-			}
-		}
-        else
-        {
-			if (priority == 0) // UDP
-			{
-				client->sendEvent(eventPacket, DEFAULT_BUFLEN);
-			}
-			else if (priority == 1) // TCP
-			{
-				client->sendMsg(eventPacket, DEFAULT_BUFLEN);
-			}
-        }
-        itr++;
-    }
+    
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -158,6 +130,7 @@ void InputServer::handleEvent(const Event& evt)
 {
     // If the event has been processed locally (i.e. by a filter event service)
     if(evt.isProcessed()) return;
+	//if (!serviceManager && evt.isProcessed()) return;
 
     timeb tb;
     ftime( &tb );
@@ -210,20 +183,48 @@ void InputServer::handleEvent(const Event& evt)
         }
     }
 
-    
-	if (evt.getType() == Event::Type::Update || evt.getType() == Event::Type::Move)
-	{
-		if (showEventStream)
-			printf("oinputserver: Event %d type: %d sent at pos %f %f\n", evt.getSourceId(), evt.getType(), evt.getPosition().x(), evt.getPosition().y());
-		sendToClients(eventPacket, 0);
-	}
-	else
-	{
-		sendToClients(eventPacket, 0); // Also send to udp stream for legacy clients
-		if (showEventMessages)
-			printf("oinputserver: Event %d type: %d sent at pos %f %f\n", evt.getSourceId(), evt.getType(), evt.getPosition().x(), evt.getPosition().y());
-		sendToClients(eventPacket, 1); // Send to TCP clients expecting reliable events
+	if (showEventStream)
+		printf("oinputserver: Event %d type: %d sent at pos %f %f\n", evt.getSourceId(), evt.getType(), evt.getPosition().x(), evt.getPosition().y());
 
+	// Send to clients
+	std::map<char*, NetClient*>::iterator itr = netClients.begin();
+	while (itr != netClients.end())
+	{
+		NetClient* client = itr->second;
+
+		if (client->getMode() == NetClient::DataMode::omicron_legacy)
+		{
+			//client->sendEvent(legacyPacket, 512);
+		}
+		else if (client->getMode() == NetClient::DataMode::tactile)
+		{
+			if (validTacTileEvent)
+			{
+				client->sendEvent(tacTilePacket, 512);
+			}
+		}
+		else
+		{
+			if (evt.getType() == Event::Type::Update || evt.getType() == Event::Type::Move)
+			{
+				// Send continual data streams as UDP
+				client->sendEvent(eventPacket, DEFAULT_BUFLEN);
+			}
+			else
+			{
+				// If client supports dual TCP/UDP (V2), send single events as TCP
+				if (client->getMode() == NetClient::DataMode::omicronV2)
+				{
+					client->sendMsg(eventPacket, DEFAULT_BUFLEN);
+				}
+				else
+				{
+					// Legacy support, send single events as UDP
+					client->sendEvent(eventPacket, DEFAULT_BUFLEN);
+				}
+			}
+		}
+		itr++;
 	}
 }
     
@@ -713,6 +714,7 @@ SOCKET InputServer::startListening()
             // Make sure handshake is correct
             char* handshake = "data_on";
             char* omicronHandshake = "omicron_data_on";
+			char* omicronV2Handshake = "omicronV2_data_on";
 			char* omicronStreamInHandshake = "omicron_data_in";
             char* legacyHandshake = "omicron_legacy_data_on";
 			char* tactileHandshake = "tactile_data_on";
@@ -724,35 +726,42 @@ SOCKET InputServer::startListening()
                 dataPort = atoi(portCStr);
                 printf("OInputServer: '%s' requests omicron legacy data to be sent on port '%d'\n", clientAddress, dataPort);
                 printf("OInputServer: WARNING - This server does not support legacy data!\n");
-                createClient( clientAddress, dataPort, 1, clientSocket );
+                createClient( clientAddress, dataPort, NetClient::DataMode::omicron_legacy, clientSocket );
             }
             else if( strcmp(inMessage, omicronHandshake) == 0 )
             {
                 // Get data port number
                 dataPort = atoi(portCStr);
                 printf("OInputServer: '%s' requests omicron data to be sent on port '%d'\n", clientAddress, dataPort);
-                createClient( clientAddress, dataPort, 0, clientSocket );
+                createClient( clientAddress, dataPort, NetClient::DataMode::omicron, clientSocket );
             }
+			else if (strcmp(inMessage, omicronV2Handshake) == 0)
+			{
+				// Get data port number
+				dataPort = atoi(portCStr);
+				printf("OInputServer: '%s' requests omicron 2.0 (Dual TCP/UDP) data to be sent on port '%d'\n", clientAddress, dataPort);
+				createClient(clientAddress, dataPort, NetClient::DataMode::omicronV2, clientSocket);
+			}
 			else if (strcmp(inMessage, omicronStreamInHandshake) == 0)
 			{
 				// Get data port number
 				dataPort = atoi(portCStr);
 				printf("OInputServer: '%s' requests to SEND omicron data to be RECEIVED on port '%d'\n", clientAddress, dataPort);
-				createClient(clientAddress, dataPort, 2, clientSocket);
+				createClient(clientAddress, dataPort, NetClient::DataMode::omicron_in, clientSocket);
 			}
 			else if (strcmp(inMessage, tactileHandshake) == 0)
 			{
 				// Get data port number
 				dataPort = atoi(portCStr);
 				printf("OInputServer: '%s' requests TacTile dgram data to be sent on port '%d'\n", clientAddress, dataPort);
-				createClient(clientAddress, dataPort, 3, clientSocket);
+				createClient(clientAddress, dataPort, NetClient::DataMode::tactile, clientSocket);
 			}
             else if( strcmp(inMessage, handshake) == 0 )
             {
                 // Get data port number
                 dataPort = atoi(portCStr);
                 printf("OInputServer: '%s' requests data (old handshake) to be sent on port '%d'\n", clientAddress, dataPort);
-                createClient( clientAddress, dataPort, 0, clientSocket );
+                createClient( clientAddress, dataPort, NetClient::DataMode::omicron, clientSocket );
             }
             else
             {
@@ -760,7 +769,7 @@ SOCKET InputServer::startListening()
                 dataPort = atoi(portCStr);
                 printf("OInputServer: '%s' requests data to be sent on port '%d'\n", clientAddress, dataPort);
                 printf("OInputServer: '%s' using unknown handshake '%s'\n", clientAddress, inMessage);
-                createClient( clientAddress, dataPort, 0, clientSocket );
+                createClient( clientAddress, dataPort, NetClient::DataMode::omicron, clientSocket );
             }
 
             gotData = true;
@@ -827,7 +836,7 @@ void InputServer::loop()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void InputServer::createClient(const char* clientAddress, int dataPort, int mode, SOCKET clientSocket)
+void InputServer::createClient(const char* clientAddress, int dataPort, NetClient::DataMode mode, SOCKET clientSocket)
 {
     // Generate a unique name for client "address:port"
     char* addr = new char[128];
@@ -853,26 +862,29 @@ void InputServer::createClient(const char* clientAddress, int dataPort, int mode
             printf("OInputServer: NetClient already exists: %s \n", addr );
 
             // Check dataMode: if different, update client
-            if( p->second->isLegacy() != (mode == 1) )
+            if( p->second->getMode() != mode )
             {
-                if(mode == 1)
+                if(mode == NetClient::DataMode::omicron_legacy)
                 {
                     printf("OInputServer: NetClient %s now requesting to receive legacy omicron data \n", addr );
                     printf("OInputServer: WARNING - This server does not support legacy data!\n");
                 }
-				else if (mode == 2)
+				else if (mode == NetClient::DataMode::omicron_in)
 				{
 					printf("OInputServer: NetClient %s now requesting to send omicron data \n", addr);
 				}
-				else if (mode == 3)
+				else if (mode == NetClient::DataMode::tactile)
 				{
 					printf("OInputServer: NetClient %s now requesting to receive Tactile dgram data \n", addr);
 				}
+				else if (mode == NetClient::DataMode::omicronV2)
+				{
+					printf("OInputServer: NetClient '%s' now requesting omicron 2.0 (Dual TCP/UDP) data \n", addr);
+				}
                 else
                     printf("OInputServer: NetClient %s now requesting to receive omicron data \n", addr );
-                p->second->setLegacy(mode == 1);
+                p->second->setMode(mode);
             }
-            return;
         }
     }
 

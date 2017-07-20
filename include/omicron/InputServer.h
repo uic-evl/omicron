@@ -99,11 +99,14 @@
 // http://beej.us/guide/bgnet/output/html/multipage/clientserver.html
 class NetClient
 {
+public:
+	enum DataMode { omicron, omicron_legacy, omicron_in, tactile, omicronV2 };
 private:
 	SOCKET udpSocket;
 	SOCKET tcpSocket;
 	sockaddr_in recvAddr;
-	int clientMode;
+
+	DataMode clientMode;
 	// 0 = NetClient sends data out to remote (default)
 	// 1 = NetClient sends legacy data out to remote
 	// 2 = NetClient receiving data from remote
@@ -120,7 +123,7 @@ public:
 		clientAddress = address;
 		clientPort = port;
 
-		clientMode = 0;
+		clientMode = DataMode::omicron;
 
 		// Create a UDP socket for sending data
 		udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -142,7 +145,7 @@ public:
 		clientAddress = address;
 		clientPort = port;
 
-		clientMode = 0;
+		clientMode = DataMode::omicron;
 		
 
 		// Create a UDP socket for sending data
@@ -160,7 +163,7 @@ public:
 		tcpConnected = true;
 	}// CTOR
 
-	NetClient(const char* address, int port, int mode, SOCKET clientSocket)
+	NetClient(const char* address, int port, DataMode mode, SOCKET clientSocket)
 	{
 		clientAddress = address;
 		clientPort = port;
@@ -180,11 +183,11 @@ public:
 		tcpSocket = clientSocket;
 		tcpConnected = true;
 
-		if (clientMode == 1)
+		if (clientMode == DataMode::omicron_legacy)
 		{
 			printf("Legacy NetClient %s:%i created...\n", address, port);
 		}
-		else if (clientMode == 2)
+		else if (clientMode == DataMode::omicron_in)
 		{
 			// Set socket to receive data from any address on a specified port
 			recvAddr.sin_family = AF_INET;
@@ -193,7 +196,7 @@ public:
 			bind(udpSocket, (const sockaddr*)&recvAddr, sizeof(recvAddr));
 			printf("NetClient %s:%i created. Client to stream data to this machine.\n", address, port);
 		}
-		else if (clientMode == 3)
+		else if (clientMode == DataMode::tactile)
 		{
 			printf("TacTile NetClient %s:%i created...\n", address, port);
 		}
@@ -235,31 +238,24 @@ public:
 		}
 	}// SendMsg
 
-	void setLegacy(bool value)
+	DataMode getMode()
 	{
-		if (value)
-			clientMode = 1;
-		else
-			clientMode = 0;
-	}// setLegacy
+		return clientMode;
+	}
 
-	bool isLegacy()
+	void setMode(DataMode mode)
 	{
-		return clientMode == 1;
-	}// isLegacy
+		clientMode = mode;
+	}
 
 	bool isReceivingData()
 	{
-		return clientMode == 2;
+		return clientMode == DataMode::omicron_in;
 	}// isReceivingData
-
-	bool isTacTile()
-	{
-		return clientMode == 3;
-	}// isTacTile
 };
 
 namespace omicron {
+	
 ///////////////////////////////////////////////////////////////////////////////
 class OMICRON_API InputServer
 {
@@ -276,12 +272,11 @@ public:
 	static omicronConnector::EventData createOmicronEventDataFromEventPacket(char*);
 
 	void setServiceManager(ServiceManager*);
-protected:
-    void sendToClients(char*, int);
-    void createClient(const char*,int, int, SOCKET);
-private:
-    enum dataMode { omicron, omicron_legacy };
 
+protected:
+    void sendToClients(char*);
+    void createClient(const char*, int, NetClient::DataMode mode, SOCKET);
+private:
     const char* serverPort;
     SOCKET listenSocket;    
     

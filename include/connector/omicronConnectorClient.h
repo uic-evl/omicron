@@ -37,8 +37,8 @@
 // multiple times in different configurations within the same translation unit.
 
 // if OMICRON_CONNECTOR_LEAN_AND_MEAN, only define the omicron::EventBase and omicronConnector::EventData classes.
-// Skip the OmicronConnectorClient class and all socket functionality.
-#ifndef OMICRON_CONNECTOR_LEAN_AND_MEAN
+// Skip the OmicronConnectorClient class and all socket functionality unless Inputserver 
+#if !defined(OMICRON_CONNECTOR_LEAN_AND_MEAN) || defined(OMICRON_USE_INPUTSERVER)
     #ifdef WIN32
         #define OMICRON_OS_WIN
         #pragma comment(lib, "Ws2_32.lib")
@@ -489,6 +489,8 @@ namespace omicronConnector
 
 // if OMICRON_CONNECTOR_LEAN_AND_MEAN, only define the omicron::EventBase and omicronConnector::EventData classes.
 // Skip the OmicronConnectorClient class and all socket functionality.
+#define DEFAULT_BUFLEN 1024 // Moved out of OmicronConnectorClient as NetClient/InputServer also uses this
+
 #ifndef OMICRON_CONNECTOR_LEAN_AND_MEAN
 #ifndef OMICRON_CONNECTORCLIENT_DEFINED
 #define OMICRON_CONNECTORCLIENT_DEFINED
@@ -532,7 +534,6 @@ namespace omicronConnector
         int serverPort;
         int dataPort;
 
-        #define DEFAULT_BUFLEN 1024
         char recvbuf[DEFAULT_BUFLEN];
         int iResult, iSendResult;
 

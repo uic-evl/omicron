@@ -549,7 +549,6 @@ void InputServer::startConnection(Config* cfg)
 
     listenSocket = INVALID_SOCKET;
     recvbuflen = DEFAULT_BUFLEN;
-    int iResult;
 
 #ifdef OMICRON_USE_VRPN
     // VRPN Server Test ///////////////////////////////////////////////

@@ -36,6 +36,7 @@
 ******************************************************************************/
 #ifndef __OMICRON_INPUT_SERVER__
 #define __OMICRON_INPUT_SERVER__
+#define OMICRON_USE_INPUTSERVER
 
 #include "omicron/osystem.h"
 #include "omicron/DataManager.h"
@@ -68,28 +69,6 @@
     #include <errno.h>
     #include <unistd.h> // needed for close()
     #include <string>
-#endif
-
-#ifdef OMICRON_OS_WIN
-    #define PRINT_SOCKET_ERROR(msg) printf(msg" - socket error: %d\n", WSAGetLastError());
-    #define SOCKET_CLOSE(sock) closesocket(sock);
-    #define SOCKET_CLEANUP() WSACleanup();
-	#define SOCKET_INIT() \
-        iResult = WSAStartup(MAKEWORD(2,2), &wsaData); \
-        if (iResult != 0) { \
-            printf("%s: WSAStartup failed: %d\n", typeid(*this).name(), iResult); \
-        } else { \
-            printf("%s: Winsock initialized \n",  typeid(*this).name()); \
-        }
-#else
-    #define SOCKET_CLOSE(sock) close(sock);
-    #define SOCKET_CLEANUP()
-    #define SOCKET_INIT()
-    #define SOCKET int
-    #define PRINT_SOCKET_ERROR(msg) printf(msg" - socket error: %s\n", strerror(errno));
-    #define INVALID_SOCKET -1
-    #define SOCKET_ERROR   -1
-    #define ioctlsocket ioctl // Used for setting socket blocking mode
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -279,8 +258,7 @@ protected:
 private:
     const char* serverPort;
     SOCKET listenSocket;    
-    
-    #define DEFAULT_BUFLEN 512
+
     char eventPacket[DEFAULT_BUFLEN];
     char legacyPacket[DEFAULT_BUFLEN];
 	char tacTilePacket[DEFAULT_BUFLEN];

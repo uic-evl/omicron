@@ -69,7 +69,10 @@
     #include <errno.h>
     #include <unistd.h> // needed for close()
     #include <string>
+	#include <fcntl.h> // Non-blocking socket
 #endif
+
+enum DataMode { data_omicron, data_omicron_legacy, data_omicron_in, data_tactile, data_omicronV2 };
 
 ///////////////////////////////////////////////////////////////////////////////
 // Based on Winsock UDP Server Example:
@@ -78,8 +81,6 @@
 // http://beej.us/guide/bgnet/output/html/multipage/clientserver.html
 class NetClient
 {
-public:
-	enum DataMode { omicron, omicron_legacy, omicron_in, tactile, omicronV2 };
 private:
 	SOCKET udpSocket;
 	SOCKET tcpSocket;
@@ -102,7 +103,7 @@ public:
 		clientAddress = address;
 		clientPort = port;
 
-		clientMode = DataMode::omicron;
+		clientMode = data_omicron;
 
 		// Create a UDP socket for sending data
 		udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -124,7 +125,7 @@ public:
 		clientAddress = address;
 		clientPort = port;
 
-		clientMode = DataMode::omicron;
+		clientMode = data_omicron;
 		
 
 		// Create a UDP socket for sending data
@@ -162,11 +163,11 @@ public:
 		tcpSocket = clientSocket;
 		tcpConnected = true;
 
-		if (clientMode == DataMode::omicron_legacy)
+		if (clientMode == data_omicron_legacy)
 		{
 			printf("Legacy NetClient %s:%i created...\n", address, port);
 		}
-		else if (clientMode == DataMode::omicron_in)
+		else if (clientMode == data_omicron_in)
 		{
 			// Set socket to receive data from any address on a specified port
 			recvAddr.sin_family = AF_INET;
@@ -175,7 +176,7 @@ public:
 			bind(udpSocket, (const sockaddr*)&recvAddr, sizeof(recvAddr));
 			printf("NetClient %s:%i created. Client to stream data to this machine.\n", address, port);
 		}
-		else if (clientMode == DataMode::tactile)
+		else if (clientMode == data_tactile)
 		{
 			printf("TacTile NetClient %s:%i created...\n", address, port);
 		}
@@ -229,7 +230,7 @@ public:
 
 	bool isReceivingData()
 	{
-		return clientMode == DataMode::omicron_in;
+		return clientMode == data_omicron_in;
 	}// isReceivingData
 };
 
@@ -254,7 +255,7 @@ public:
 
 protected:
     void sendToClients(char*);
-    void createClient(const char*, int, NetClient::DataMode mode, SOCKET);
+    void createClient(const char*, int, DataMode mode, SOCKET);
 private:
     const char* serverPort;
     SOCKET listenSocket;    

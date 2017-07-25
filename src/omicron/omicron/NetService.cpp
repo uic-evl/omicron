@@ -74,7 +74,11 @@ void NetService::poll()
 		if (!connected)
 		{
 			printf("NetService: Attempting reconnection in %d second(s)\n", reconnectDelay / 1000);
+#ifdef OMICRON_OS_WIN
 			Sleep(reconnectDelay);
+#else
+			sleep(reconnectDelay / 1000);
+#endif
 		}
 	}
 	else if(dataStreamOut)

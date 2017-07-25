@@ -77,6 +77,8 @@
         #define SOCKET_INIT()
         #define SOCKET int
         #define PRINT_SOCKET_ERROR(msg) printf(msg" - socket error: %s\n", strerror(errno));
+		#define SOCKET_ERROR            (-1)
+		#define INVALID_SOCKET            (0)
     #endif
 
     #define OI_READBUF(type, buf, offset, val) val = *((type*)&buf[offset]); offset += sizeof(type);

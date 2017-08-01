@@ -714,12 +714,6 @@ SOCKET InputServer::startListening()
             }
 
             // Make sure handshake is correct
-            char* handshake = "data_on";
-            char* omicronHandshake = "omicron_data_on";
-			char* omicronV2Handshake = "omicronV2_data_on";
-			char* omicronStreamInHandshake = "omicron_data_in";
-            char* legacyHandshake = "omicron_legacy_data_on";
-			char* tactileHandshake = "tactile_data_on";
             int dataPort = 7000; // default port
 
             if( strcmp(inMessage, legacyHandshake) == 0 )

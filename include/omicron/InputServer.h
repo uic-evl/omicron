@@ -260,6 +260,13 @@ private:
     const char* serverPort;
     SOCKET listenSocket;    
 
+	const char* handshake = "data_on";
+	const char* omicronHandshake = "omicron_data_on";
+	const char* omicronV2Handshake = "omicronV2_data_on";
+	const char* omicronStreamInHandshake = "omicron_data_in";
+	const char* legacyHandshake = "omicron_legacy_data_on";
+	const char* tactileHandshake = "tactile_data_on";
+
     char eventPacket[DEFAULT_BUFLEN];
     char legacyPacket[DEFAULT_BUFLEN];
 	char tacTilePacket[DEFAULT_BUFLEN];

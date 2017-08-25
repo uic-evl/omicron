@@ -36,6 +36,7 @@
 #include "omicron/StringUtils.h"
 
 #include "omicron/RayPointMapper.h"
+#include "RectangularRayPointMapper.h"
 #include "CylindricalRayPointMapper.h"
 
 using namespace omicron;
@@ -46,7 +47,12 @@ RayPointMapper* RayPointMapper::create(const Setting& s)
     RayPointMapper* rpm = NULL;
     String type = Config::getStringValue("type", s, "");
     StringUtils::toLowerCase(type);
-    if(type == "cylindrical")
+	if (type == "rectangular")
+	{
+		rpm = new RectangularRayPointMapper();
+		rpm->setup(s);
+	}
+	else if (type == "cylindrical")
     {
         rpm = new CylindricalRayPointMapper();
         rpm->setup(s);

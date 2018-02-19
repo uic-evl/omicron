@@ -704,7 +704,7 @@ namespace omicronConnector
     {
         result = recvfrom(RecvSocket, 
             recvbuf,
-            DEFAULT_BUFLEN-1,
+            DEFAULT_BUFLEN,
             0,
             (sockaddr *)&SenderAddr, 
             (socklen_t*)&SenderAddrSize);

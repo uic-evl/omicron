@@ -92,14 +92,18 @@ void NetService::poll()
 			// Get the event
 			Event* e = serviceManager->getEvent(evtNum);
 
-			if (showDebug)
+			// Only send events that are not processed to prevent resending events
+			if (!e->isProcessed())
 			{
-				printf("NetService: Data out: (id, x, y, z) %d %f %f %f\n", e->getSourceId(), e->getPosition().x(), e->getPosition().y(), e->getPosition().z());
+				if (showDebug)
+				{
+					printf("NetService: Data out: (id, x, y, z) %d %f %f %f\n", e->getSourceId(), e->getPosition().x(), e->getPosition().y(), e->getPosition().z());
+				}
+
+				char* eventPacket = InputServer::createOmicronPacketFromEvent(e);
+
+				streamClient->sendEvent(eventPacket, DEFAULT_BUFLEN);
 			}
-
-			char* eventPacket = InputServer::createOmicronPacketFromEvent(e);
-
-			streamClient->sendEvent(eventPacket, DEFAULT_BUFLEN);
 		}
 		serviceManager->unlockEvents();
 	}

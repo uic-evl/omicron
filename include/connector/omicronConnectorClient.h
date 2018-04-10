@@ -691,11 +691,11 @@ namespace omicronConnector
         iResult = SOCKET_CLOSE(RecvSocket);
         if (iResult == -1) 
         {
-            PRINT_SOCKET_ERROR("NetService: Closesocket failed");
+            PRINT_SOCKET_ERROR("NetService: Closesocket failed\n");
             return;
         }
         SOCKET_CLEANUP();
-        printf("NetService: Shutting down.");
+        printf("NetService: Cleanup Complete.\n");
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

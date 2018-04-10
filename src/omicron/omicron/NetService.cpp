@@ -111,6 +111,7 @@ void NetService::poll()
 		if (!connected)
 		{
 			printf("NetService: Client %s disconnected \n", serverAddress.c_str());
+			myClient->dispose();
 		}
 		init = clock();
 	}

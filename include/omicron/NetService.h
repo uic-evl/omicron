@@ -62,6 +62,7 @@ namespace omicron
 		int dataPort;
 		bool connected;
 		bool dataStreamOut;
+		bool showDebug;
 		int reconnectDelay;
 		clock_t init, timer;
 

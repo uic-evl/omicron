@@ -45,6 +45,7 @@ void NetService::setup(Setting& settings)
 	serverPort = Config::getIntValue("msgPort", settings, 27000); 
 	dataPort = Config::getIntValue("dataPort", settings, 7000); 
 	dataStreamOut = Config::getBoolValue("dataStreamOut", settings, false);
+	showDebug = Config::getBoolValue("debug", settings, false);
 	reconnectDelay = Config::getIntValue("reconnectDelay", settings, 5000);
 }
 
@@ -91,7 +92,10 @@ void NetService::poll()
 			// Get the event
 			Event* e = serviceManager->getEvent(evtNum);
 
-			//printf("NetService: Data out: %d %f %f %f\n", e->getSourceId(), e->getPosition().x(), e->getPosition().y(), e->getPosition().z());
+			if (showDebug)
+			{
+				printf("NetService: Data out: (id, x, y, z) %d %f %f %f\n", e->getSourceId(), e->getPosition().x(), e->getPosition().y(), e->getPosition().z());
+			}
 
 			char* eventPacket = InputServer::createOmicronPacketFromEvent(e);
 
@@ -123,8 +127,14 @@ void NetService::dispose()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void NetService::onEvent(const omicronConnector::EventData& ed)
 {
-	Event* evt = mysInstance->writeHead();
-    evt->deserialize(&ed);
+	Event* e = mysInstance->writeHead();
+	e->deserialize(&ed);
+
+	if (showDebug)
+	{
+		printf("NetService: Data in: (id, x, y, z) %d %f %f %f\n", e->getSourceId(), e->getPosition().x(), e->getPosition().y(), e->getPosition().z());
+	}
+    
 	/*// NOTE: original event service id is substituted by NetService own service id.
 	// This is made because in the local context, original service ids have no meaning, so all events are marked
 	// as being originated from NetService.

@@ -112,9 +112,7 @@ public:
 		// the receiver
 		recvAddr.sin_family = AF_INET;
 		recvAddr.sin_port = htons(port);
-		recvAddr.sin_addr.s_addr = inet_addr(address);
-		bind(udpSocket, (const sockaddr*)&recvAddr, sizeof(recvAddr));
-
+		recvAddr.sin_addr.s_addr = htons(INADDR_ANY);
 
 		printf("NetClient %s:%i created for streaming data out...\n", address, port);
 		udpConnected = true;
@@ -169,12 +167,20 @@ public:
 		}
 		else if (clientMode == data_omicron_in)
 		{
-			// Set socket to receive data from any address on a specified port
+			// Set socket to receive data from any address on any port
 			recvAddr.sin_family = AF_INET;
-			recvAddr.sin_port = htons(port);
+			recvAddr.sin_port = htons(0);
 			recvAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-			bind(udpSocket, (const sockaddr*)&recvAddr, sizeof(recvAddr));
-			printf("NetClient %s:%i created. Client to stream data to this machine.\n", address, port);
+
+			int iResult = ::bind(udpSocket, (const sockaddr*)&recvAddr, sizeof(recvAddr));
+			if (iResult == SOCKET_ERROR) {
+				printf("bind failed with error: %d\n", WSAGetLastError());
+			}
+			else
+			{
+				printf("NetClient %s:%i created. Client to stream data to this machine.\n", address, port);
+			}
+
 		}
 		else if (clientMode == data_tactile)
 		{
@@ -194,12 +200,19 @@ public:
 			length,
 			0,
 			(const struct sockaddr*)&recvAddr,
-			sizeof(recvAddr));
+			sizeof(recvAddr)
+		);
 	}// SendEvent
 
 	int recvEvent(char* eventPacket, int length)
 	{
-		return recv(udpSocket, eventPacket, length, 0);
+		return recvfrom(udpSocket,
+			eventPacket,
+			length,
+			0,
+			(SOCKADDR *)& recvAddr,
+			(socklen_t*)& recvAddr
+		);
 	}// recvEvent
 
 	void sendMsg(char* eventPacket, int length)
@@ -232,6 +245,19 @@ public:
 	{
 		return clientMode == data_omicron_in;
 	}// isReceivingData
+
+	void dispose()
+	{
+		int iResult;
+		if (udpConnected)
+		{
+			iResult = closesocket(udpSocket);
+			if (iResult == -1)
+			{
+				printf("NetClient: Failed to close udpSocket - socket error: %d\n", WSAGetLastError());
+			}
+		}
+	}
 };
 
 namespace omicron {

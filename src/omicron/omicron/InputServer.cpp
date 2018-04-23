@@ -815,7 +815,7 @@ void InputServer::loop()
 				// Convert client packet to omicron event
 				omicronConnector::EventData ed = createOmicronEventDataFromEventPacket(eventPacket);
 
-				//printf("InputServer: Data in id: %d pos: %f %f %f\n", ed.sourceId, ed.posx, ed.posy, ed.posz);
+				// printf("InputServer: Data in id: %d pos: %f %f %f\n", ed.sourceId, ed.posx, ed.posy, ed.posz);
 
 				// Add to local service manager's event list
 				if (serviceManager)
@@ -826,6 +826,10 @@ void InputServer::loop()
 
 					serviceManager->unlockEvents();
 				}
+			}
+			else
+			{
+				// printf("InputServer: No data\n");
 			}
 		}
 	}

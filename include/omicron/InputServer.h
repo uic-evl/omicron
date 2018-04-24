@@ -88,6 +88,7 @@ private:
 	sockaddr_in senderAddr;
 
 	int senderAddrSize;
+	struct timeval timeout;
 
 	DataMode clientMode;
 	// 0 = NetClient sends data out to remote (default)
@@ -210,13 +211,37 @@ public:
 
 	int recvEvent(char* eventPacket, int length)
 	{
-		return recvfrom(udpSocket,
-			eventPacket,
-			length,
-			0,
-			(sockaddr *)&senderAddr,
-			(socklen_t*)&senderAddrSize
-		);
+		int result;
+
+		// Create a set of fd_set to store sockets
+		fd_set ReadFDs, WriteFDs, ExceptFDs;
+
+		// Set collections to null
+		FD_ZERO(&ReadFDs);
+		FD_ZERO(&WriteFDs);
+		FD_ZERO(&ExceptFDs);
+
+		FD_SET(udpSocket, &ReadFDs);
+		FD_SET(udpSocket, &ExceptFDs);
+
+		timeout.tv_sec = 0;
+		timeout.tv_usec = 0;
+
+		result = select(udpSocket + 1, &ReadFDs, &WriteFDs, &ExceptFDs, &timeout);
+		if (result > 0)
+		{
+			return recvfrom(udpSocket,
+				eventPacket,
+				length,
+				0,
+				(sockaddr *)&senderAddr,
+				(socklen_t*)&senderAddrSize
+			);
+		}
+		else
+		{
+			return result;
+		}
 	}// recvEvent
 
 	void sendMsg(char* eventPacket, int length)

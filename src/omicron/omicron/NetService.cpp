@@ -103,6 +103,7 @@ void NetService::poll()
 				char* eventPacket = InputServer::createOmicronPacketFromEvent(e);
 
 				streamClient->sendEvent(eventPacket, DEFAULT_BUFLEN);
+				delete eventPacket;
 			}
 		}
 		serviceManager->unlockEvents();
@@ -139,11 +140,6 @@ void NetService::onEvent(const omicronConnector::EventData& ed)
 	Event* e = mysInstance->writeHead();
 	e->deserialize(&ed);
 
-	if (showDebug)
-	{
-		printf("NetService: Data in: (id, x, y, z) %d %f %f %f\n", e->getSourceId(), e->getPosition().x(), e->getPosition().y(), e->getPosition().z());
-	}
-    
 	/*// NOTE: original event service id is substituted by NetService own service id.
 	// This is made because in the local context, original service ids have no meaning, so all events are marked
 	// as being originated from NetService.

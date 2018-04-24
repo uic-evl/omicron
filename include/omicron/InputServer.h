@@ -171,15 +171,12 @@ public:
 		}
 		else if (clientMode == data_omicron_in)
 		{
-			sockaddr_in serverAddr;
+			senderAddr.sin_family = AF_INET;
+			senderAddr.sin_port = htons(port);
+			senderAddr.sin_addr.s_addr = htonl(ADDR_ANY);
 			senderAddrSize = sizeof(senderAddr);
 
-			// Set socket to receive data from any address on any port
-			serverAddr.sin_family = AF_INET;
-			serverAddr.sin_port = htons(port);
-			serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-			int iResult = ::bind(udpSocket, (const sockaddr*)&serverAddr, sizeof(serverAddr));
+			int iResult = ::bind(udpSocket, (const sockaddr*)&senderAddr, sizeof(senderAddr));
 			if (iResult == SOCKET_ERROR) {
 				printf("NetClient: data_omicron_in - bind failed with error: %d\n", WSAGetLastError());
 			}

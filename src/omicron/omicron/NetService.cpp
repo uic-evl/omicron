@@ -116,6 +116,10 @@ void NetService::poll()
 		{
 			printf("NetService: Client %s disconnected \n", serverAddress.c_str());
 			myClient->dispose();
+			if (dataStreamOut)
+			{
+				streamClient->dispose();
+			}
 		}
 		init = clock();
 	}

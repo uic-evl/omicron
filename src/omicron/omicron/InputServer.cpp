@@ -1,13 +1,13 @@
 /******************************************************************************
  * THE OMICRON SDK
  *-----------------------------------------------------------------------------
- * Copyright 2010-2017		Electronic Visualization Laboratory, 
+ * Copyright 2010-2018		Electronic Visualization Laboratory, 
  *							University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto		anishimoto42@gmail.com
  *  Alessandro Febretti		febret@gmail.com
  *-----------------------------------------------------------------------------
- * Copyright (c) 2010-2017, Electronic Visualization Laboratory,  
+ * Copyright (c) 2010-2018, Electronic Visualization Laboratory,  
  * University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, 
@@ -543,6 +543,7 @@ void InputServer::startConnection(Config* cfg)
     showEventStream = Config::getBoolValue("showEventStream", sCfg, false );
     showStreamSpeed = Config::getBoolValue("showStreamSpeed", sCfg, false );
 	showEventMessages = Config::getBoolValue("showEventMessages", sCfg, false);
+	showIncomingStream = Config::getBoolValue("showIncomingStream", sCfg, false);
 
     if( checkForDisconnectedClients )
         omsg("Check for disconnected clients enabled.");
@@ -815,7 +816,10 @@ void InputServer::loop()
 				// Convert client packet to omicron event
 				omicronConnector::EventData ed = createOmicronEventDataFromEventPacket(eventPacket);
 
-				// printf("InputServer: Data in id: %d pos: %f %f %f\n", ed.sourceId, ed.posx, ed.posy, ed.posz);
+				if (showIncomingStream)
+				{
+					printf("InputServer: Data in id: %d pos: %f %f %f\n", ed.sourceId, ed.posx, ed.posy, ed.posz);
+				}
 
 				// Add to local service manager's event list
 				if (serviceManager)
@@ -853,6 +857,7 @@ void InputServer::createClient(const char* clientAddress, int dataPort, DataMode
     
     // Iterate through client map. If client name already exists,
     // do not add to list.
+	bool clientExists = false;
     std::map<char*, NetClient*>::iterator p;
     for(p = netClients.begin(); p != netClients.end(); p++) 
     {
@@ -860,6 +865,7 @@ void InputServer::createClient(const char* clientAddress, int dataPort, DataMode
         if( strcmp(p->first, addr) == 0 )
         {
             printf("OInputServer: NetClient already exists: %s \n", addr );
+			clientExists = true;
 
             // Check dataMode: if different, update client
             if( p->second->getMode() != mode )
@@ -888,5 +894,8 @@ void InputServer::createClient(const char* clientAddress, int dataPort, DataMode
         }
     }
 
-    netClients[addr] = new NetClient( clientAddress, dataPort, mode, clientSocket );
+	if (!clientExists)
+	{
+		netClients[addr] = new NetClient(clientAddress, dataPort, mode, clientSocket);
+	}
 }

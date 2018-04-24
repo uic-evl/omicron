@@ -1,13 +1,13 @@
 /******************************************************************************
 * THE OMICRON SDK
 *-----------------------------------------------------------------------------
-* Copyright 2010-2016		Electronic Visualization Laboratory,
+* Copyright 2010-2018		Electronic Visualization Laboratory,
 *							University of Illinois at Chicago
 * Authors:
 *  Arthur Nishimoto		anishimoto42@gmail.com
 *  Alessandro Febretti		febret@gmail.com
 *-----------------------------------------------------------------------------
-* Copyright (c) 2010-2016, Electronic Visualization Laboratory,
+* Copyright (c) 2010-2018, Electronic Visualization Laboratory,
 * University of Illinois at Chicago
 * All rights reserved.
 * Redistribution and use in source and binary forms, with or without modification,
@@ -85,6 +85,9 @@ private:
 	SOCKET udpSocket;
 	SOCKET tcpSocket;
 	sockaddr_in recvAddr;
+	sockaddr_in senderAddr;
+
+	int senderAddrSize;
 
 	DataMode clientMode;
 	// 0 = NetClient sends data out to remote (default)
@@ -112,7 +115,7 @@ public:
 		// the receiver
 		recvAddr.sin_family = AF_INET;
 		recvAddr.sin_port = htons(port);
-		recvAddr.sin_addr.s_addr = htons(INADDR_ANY);
+		recvAddr.sin_addr.s_addr = inet_addr(address);
 
 		printf("NetClient %s:%i created for streaming data out...\n", address, port);
 		udpConnected = true;
@@ -156,6 +159,7 @@ public:
 		recvAddr.sin_family = AF_INET;
 		recvAddr.sin_port = htons(port);
 		recvAddr.sin_addr.s_addr = inet_addr(address);
+
 		udpConnected = true;
 
 		tcpSocket = clientSocket;
@@ -167,14 +171,17 @@ public:
 		}
 		else if (clientMode == data_omicron_in)
 		{
-			// Set socket to receive data from any address on any port
-			recvAddr.sin_family = AF_INET;
-			recvAddr.sin_port = htons(0);
-			recvAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+			sockaddr_in serverAddr;
+			senderAddrSize = sizeof(senderAddr);
 
-			int iResult = ::bind(udpSocket, (const sockaddr*)&recvAddr, sizeof(recvAddr));
+			// Set socket to receive data from any address on any port
+			serverAddr.sin_family = AF_INET;
+			serverAddr.sin_port = htons(port);
+			serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+			int iResult = ::bind(udpSocket, (const sockaddr*)&serverAddr, sizeof(serverAddr));
 			if (iResult == SOCKET_ERROR) {
-				printf("bind failed with error: %d\n", WSAGetLastError());
+				printf("NetClient: data_omicron_in - bind failed with error: %d\n", WSAGetLastError());
 			}
 			else
 			{
@@ -210,8 +217,8 @@ public:
 			eventPacket,
 			length,
 			0,
-			(SOCKADDR *)& recvAddr,
-			(socklen_t*)& recvAddr
+			(sockaddr *)&senderAddr,
+			(socklen_t*)&senderAddrSize
 		);
 	}// recvEvent
 
@@ -255,6 +262,10 @@ public:
 			if (iResult == -1)
 			{
 				printf("NetClient: Failed to close udpSocket - socket error: %d\n", WSAGetLastError());
+			}
+			else
+			{
+				printf("NetClient: Cleaned up udpSocket\n");
 			}
 		}
 	}
@@ -312,6 +323,7 @@ private:
     bool showEventStream;
     bool showStreamSpeed;
 	bool showEventMessages;
+	bool showIncomingStream;
     int lastOutgoingEventTime;
     int eventCount;
 

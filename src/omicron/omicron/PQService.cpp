@@ -75,7 +75,7 @@ void PQService::setup(Setting& settings)
 	{
 		normalizeData = settings["normalizeData"];
 		if( normalizeData )
-			printf("PQService: Normalizing data");
+			omsg("PQService: Normalizing data");
 	}
 
 	debugRawPQInfo = Config::getBoolValue("debugRawPQInfo", settings, false);

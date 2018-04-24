@@ -47,6 +47,13 @@ using namespace omicron;
 #define OI_WRITEBUF(type, buf, offset, val) *((type*)&buf[offset]) = val; offset += sizeof(type);
 #define OI_READBUF(type, buf, offset, val) val = *((type*)&buf[offset]); offset += sizeof(type);
 
+const char* InputServer::handshake = "data_on";
+const char* InputServer::omicronHandshake = "omicron_data_on";
+const char* InputServer::omicronV2Handshake = "omicronV2_data_on";
+const char* InputServer::omicronStreamInHandshake = "omicron_data_in";
+const char* InputServer::legacyHandshake = "omicron_legacy_data_on";
+const char* InputServer::tactileHandshake = "tactile_data_on";
+
 ///////////////////////////////////////////////////////////////////////////////
 // Creates an event packet from an Omicron event. Returns the buffer.
 char* InputServer::createOmicronPacketFromEvent(const Event* evt)

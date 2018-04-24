@@ -72,6 +72,26 @@
 	#include <fcntl.h> // Non-blocking socket
 #endif
 
+#ifdef OMICRON_OS_WIN     
+#define PRINT_SOCKET_ERROR(msg) printf(msg" - socket error: %d\n", WSAGetLastError());
+#define SOCKET_CLOSE(sock) closesocket(sock);
+#define SOCKET_CLEANUP() WSACleanup();
+#define SOCKET_INIT() \
+            int iResult;    \
+            iResult = WSAStartup(MAKEWORD(2,2), &wsaData); \
+            if (iResult != 0) { \
+                printf("OmicronConnectorClient: WSAStartup failed: %d\n", iResult); \
+            }
+#else
+#define SOCKET_CLOSE(sock) close(sock);
+#define SOCKET_CLEANUP()
+#define SOCKET_INIT()
+#define SOCKET int
+#define PRINT_SOCKET_ERROR(msg) printf(msg" - socket error: %s\n", strerror(errno));
+#define SOCKET_ERROR            (-1)
+#define INVALID_SOCKET            (0)
+#endif
+
 enum DataMode { data_omicron, data_omicron_legacy, data_omicron_in, data_tactile, data_omicronV2 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -174,12 +194,12 @@ public:
 		{
 			senderAddr.sin_family = AF_INET;
 			senderAddr.sin_port = htons(port);
-			senderAddr.sin_addr.s_addr = htonl(ADDR_ANY);
+			senderAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 			senderAddrSize = sizeof(senderAddr);
 
 			int iResult = ::bind(udpSocket, (const sockaddr*)&senderAddr, sizeof(senderAddr));
 			if (iResult == SOCKET_ERROR) {
-				printf("NetClient: data_omicron_in - bind failed with error: %d\n", WSAGetLastError());
+				PRINT_SOCKET_ERROR("NetClient: data_omicron_in - bind failed");
 			}
 			else
 			{
@@ -280,10 +300,10 @@ public:
 		int iResult;
 		if (udpConnected)
 		{
-			iResult = closesocket(udpSocket);
+			iResult = SOCKET_CLOSE(udpSocket);
 			if (iResult == -1)
 			{
-				printf("NetClient: Failed to close udpSocket - socket error: %d\n", WSAGetLastError());
+				PRINT_SOCKET_ERROR("NetClient: Failed to close udpSocket");
 			}
 			else
 			{
@@ -319,12 +339,12 @@ private:
     const char* serverPort;
     SOCKET listenSocket;    
 
-	const char* handshake = "data_on";
-	const char* omicronHandshake = "omicron_data_on";
-	const char* omicronV2Handshake = "omicronV2_data_on";
-	const char* omicronStreamInHandshake = "omicron_data_in";
-	const char* legacyHandshake = "omicron_legacy_data_on";
-	const char* tactileHandshake = "tactile_data_on";
+	const static char* handshake;
+	const static char* omicronHandshake;
+	const static char* omicronV2Handshake;
+	const static char* omicronStreamInHandshake;
+	const static char* legacyHandshake;
+	const static char* tactileHandshake;
 
     char eventPacket[DEFAULT_BUFLEN];
     char legacyPacket[DEFAULT_BUFLEN];

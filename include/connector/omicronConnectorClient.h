@@ -668,12 +668,9 @@ namespace omicronConnector
             timeout.tv_sec  = 0;
             timeout.tv_usec = 0;
 
-            do
-            {
-                // Check if UDP socket has data waiting to be read before socket blocks to attempt to read.
-                result = select(RecvSocket+1, &ReadFDs, &WriteFDs, &ExceptFDs, &timeout);
-                if( result > 0 ) parseDGram(result);
-            } while(result > 0);
+			// Check if UDP socket has data waiting to be read before socket blocks to attempt to read.
+			result = select(RecvSocket + 1, &ReadFDs, &WriteFDs, &ExceptFDs, &timeout);
+			if (result > 0) parseDGram(result);
         }
     }
 

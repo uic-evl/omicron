@@ -450,10 +450,44 @@ void MSKinectService::GenerateMocapEvent( IBody* body, Joint* joints, Vector4* f
 	evt->setOrientation(floorClipPlane->w, floorClipPlane->x, floorClipPlane->y, floorClipPlane->z);
 
 	uint flags = 0;
-	if (leftHandState == 0) flags |= 2;
-	if (leftHandState == 0) flags |= 2;
-	if (leftHandState == 0) flags |= 2;
-	if (leftHandState == 0) flags |= 2;
+	uint userFlag = 1 << 18;
+	switch (leftHandState)
+	{
+		case(HandState_Unknown):
+			flags |= userFlag << 1;
+			break;
+		case(HandState_NotTracked):
+			flags |= userFlag << 2;
+			break;
+		case(HandState_Open):
+			flags |= userFlag << 3;
+			break;
+		case(HandState_Closed):
+			flags |= userFlag << 4;
+			break;
+		case(HandState_Lasso):
+			flags |= userFlag << 5;
+			break;
+	}
+	switch (rightHandState)
+	{
+	case(HandState_Unknown):
+		flags |= userFlag << 6;
+		break;
+	case(HandState_NotTracked):
+		flags |= userFlag << 7;
+		break;
+	case(HandState_Open):
+		flags |= userFlag << 8;
+		break;
+	case(HandState_Closed):
+		flags |= userFlag << 9;
+		break;
+	case(HandState_Lasso):
+		flags |= userFlag << 10;
+		break;
+	}
+	evt->setFlags(flags);
 
 	evt->setExtraDataType(Event::ExtraDataVector3Array);
 

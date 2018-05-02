@@ -675,7 +675,7 @@ SOCKET InputServer::startListening()
     {
         // Gets the clientInfo and extracts the IP address
         clientAddress = inet_ntoa(clientInfo.sin_addr);
-        printf("OInputServer: Client '%s' Accepted.\n", clientAddress);
+        printf("OInputServer: Client '%s' connecting...\n", clientAddress);
     }
     
     // Wait for client handshake
@@ -773,7 +773,6 @@ SOCKET InputServer::startListening()
                 dataPort = atoi(portCStr);
                 printf("OInputServer: '%s' requests data to be sent on port '%d'\n", clientAddress, dataPort);
                 printf("OInputServer: '%s' using unknown handshake '%s'\n", clientAddress, inMessage);
-                createClient( clientAddress, dataPort, data_omicron, clientSocket );
             }
 
             gotData = true;

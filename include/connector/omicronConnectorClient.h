@@ -37,8 +37,8 @@
 // multiple times in different configurations within the same translation unit.
 
 // if OMICRON_CONNECTOR_LEAN_AND_MEAN, only define the omicron::EventBase and omicronConnector::EventData classes.
-// Skip the OmicronConnectorClient class and all socket functionality.
-#ifndef OMICRON_CONNECTOR_LEAN_AND_MEAN
+// Skip the OmicronConnectorClient class and all socket functionality unless Inputserver 
+#if !defined(OMICRON_CONNECTOR_LEAN_AND_MEAN) || defined(OMICRON_USE_INPUTSERVER)
     #ifdef WIN32
         #define OMICRON_OS_WIN
         #pragma comment(lib, "Ws2_32.lib")
@@ -70,17 +70,15 @@
             iResult = WSAStartup(MAKEWORD(2,2), &wsaData); \
             if (iResult != 0) { \
                 printf("OmicronConnectorClient: WSAStartup failed: %d\n", iResult); \
-                return; \
-            } else { \
-                printf("OmicronConnectorClient: Winsock initialized \n"); \
             }
-
     #else
         #define SOCKET_CLOSE(sock) close(sock);
         #define SOCKET_CLEANUP()
         #define SOCKET_INIT()
         #define SOCKET int
         #define PRINT_SOCKET_ERROR(msg) printf(msg" - socket error: %s\n", strerror(errno));
+		#define SOCKET_ERROR            (-1)
+		#define INVALID_SOCKET            (0)
     #endif
 
     #define OI_READBUF(type, buf, offset, val) val = *((type*)&buf[offset]); offset += sizeof(type);
@@ -493,6 +491,8 @@ namespace omicronConnector
 
 // if OMICRON_CONNECTOR_LEAN_AND_MEAN, only define the omicron::EventBase and omicronConnector::EventData classes.
 // Skip the OmicronConnectorClient class and all socket functionality.
+#define DEFAULT_BUFLEN 1024 // Moved out of OmicronConnectorClient as NetClient/InputServer also uses this
+
 #ifndef OMICRON_CONNECTOR_LEAN_AND_MEAN
 #ifndef OMICRON_CONNECTORCLIENT_DEFINED
 #define OMICRON_CONNECTORCLIENT_DEFINED
@@ -511,13 +511,13 @@ namespace omicronConnector
         OmicronConnectorClient(IOmicronConnectorClientListener* clistener): listener(clistener)
         {}
 
-        void connect(const char* server, int port = 27000, int dataPort = 7000);
+        bool connect(const char* server, int port = 27000, int dataPort = 7000, int mode = 0);
         void poll();
         void dispose();
         void setDataport(int);
-
+		bool sendMsg(char*);
     private:
-        void initHandshake();
+        bool initHandshake(int);
         void parseDGram(int);
 
     private:
@@ -536,7 +536,6 @@ namespace omicronConnector
         int serverPort;
         int dataPort;
 
-        #define DEFAULT_BUFLEN 1024
         char recvbuf[DEFAULT_BUFLEN];
         int iResult, iSendResult;
 
@@ -549,7 +548,7 @@ namespace omicronConnector
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //template<typename ListenerType>
-    inline void OmicronConnectorClient::connect(const char* server, int port, int pdataPort) 
+    inline bool OmicronConnectorClient::connect(const char* server, int port, int pdataPort, int mode) 
     {
         serverAddress = server;
         serverPort = port;
@@ -574,7 +573,7 @@ namespace omicronConnector
             printf("omicronConnectorClient: Unable to connect to server '%s' on port '%d'", serverAddress, serverPort);
             PRINT_SOCKET_ERROR("");
             SOCKET_CLEANUP();
-            return;
+            return false;
         }
 
         // Generate the socket
@@ -588,33 +587,38 @@ namespace omicronConnector
             printf("omicronConnectorClient: Unable to connect to server '%s' on port '%d'", serverAddress, serverPort);
             PRINT_SOCKET_ERROR("");
             SOCKET_CLEANUP();
-            return;
+            return false;
         }
         else
         {
             printf("NetService: Connected to server '%s' on port '%d'!\n", serverAddress, serverPort);
         }
-        initHandshake();
-
+        return initHandshake(mode);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //template<typename ListenerType>
-    inline void OmicronConnectorClient::initHandshake() 
+    inline bool OmicronConnectorClient::initHandshake(int mode) 
     {
         char sendbuf[50];
-        sprintf(sendbuf, "omicron_data_on,%d", dataPort);
+		if (mode == 1)
+		{
+			sprintf(sendbuf, "omicron_data_in,%d", dataPort);
+		}
+		else
+		{
+			sprintf(sendbuf, "omicron_data_on,%d", dataPort);
+		}
         printf("NetService: Sending handshake: '%s'\n", sendbuf);
 
-        iResult = send(ConnectSocket, sendbuf, (int) strlen(sendbuf), 0);
-
-        if (iResult == -1) 
-        {
-            PRINT_SOCKET_ERROR("NetService: Send failed");
-            SOCKET_CLOSE(ConnectSocket);
-            SOCKET_CLEANUP()
-            return;
-        }
+		bool result = sendMsg(sendbuf);
+		if (!result)
+		{
+			PRINT_SOCKET_ERROR("NetService: Send failed");
+			SOCKET_CLOSE(ConnectSocket);
+			SOCKET_CLEANUP();
+			return false;
+		}
 
         sockaddr_in RecvAddr;
         SenderAddrSize = sizeof(SenderAddr);
@@ -626,7 +630,21 @@ namespace omicronConnector
         RecvAddr.sin_addr.s_addr = htonl(INADDR_ANY);
         ::bind(RecvSocket, (const sockaddr*) &RecvAddr, sizeof(RecvAddr));
         readyToReceive = true;
+		return true;
     }
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//template<typename ListenerType>
+	inline bool OmicronConnectorClient::sendMsg(char* sendbuf)
+	{
+		int iResult = send(ConnectSocket, sendbuf, (int)strlen(sendbuf), 0);
+
+		if (iResult == -1)
+		{
+			return false;
+		}
+		return true;
+	}
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //template<typename ListenerType>
@@ -650,12 +668,9 @@ namespace omicronConnector
             timeout.tv_sec  = 0;
             timeout.tv_usec = 0;
 
-            do
-            {
-                // Check if UDP socket has data waiting to be read before socket blocks to attempt to read.
-                result = select(RecvSocket+1, &ReadFDs, &WriteFDs, &ExceptFDs, &timeout);
-                if( result > 0 ) parseDGram(result);
-            } while(result > 0);
+			// Check if UDP socket has data waiting to be read before socket blocks to attempt to read.
+			result = select(RecvSocket + 1, &ReadFDs, &WriteFDs, &ExceptFDs, &timeout);
+			if (result > 0) parseDGram(result);
         }
     }
 
@@ -673,11 +688,11 @@ namespace omicronConnector
         iResult = SOCKET_CLOSE(RecvSocket);
         if (iResult == -1) 
         {
-            PRINT_SOCKET_ERROR("NetService: Closesocket failed");
+            PRINT_SOCKET_ERROR("NetService: Closesocket failed\n");
             return;
         }
         SOCKET_CLEANUP();
-        printf("NetService: Shutting down.");
+        printf("NetService: Cleanup Complete.\n");
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -686,7 +701,7 @@ namespace omicronConnector
     {
         result = recvfrom(RecvSocket, 
             recvbuf,
-            DEFAULT_BUFLEN-1,
+            DEFAULT_BUFLEN,
             0,
             (sockaddr *)&SenderAddr, 
             (socklen_t*)&SenderAddrSize);

@@ -450,10 +450,44 @@ void MSKinectService::GenerateMocapEvent( IBody* body, Joint* joints, Vector4* f
 	evt->setOrientation(floorClipPlane->w, floorClipPlane->x, floorClipPlane->y, floorClipPlane->z);
 
 	uint flags = 0;
-	if (leftHandState == 0) flags |= 2;
-	if (leftHandState == 0) flags |= 2;
-	if (leftHandState == 0) flags |= 2;
-	if (leftHandState == 0) flags |= 2;
+	uint userFlag = 1 << 18;
+	switch (leftHandState)
+	{
+		case(HandState_Unknown):
+			flags |= userFlag << 1;
+			break;
+		case(HandState_NotTracked):
+			flags |= userFlag << 2;
+			break;
+		case(HandState_Open):
+			flags |= userFlag << 3;
+			break;
+		case(HandState_Closed):
+			flags |= userFlag << 4;
+			break;
+		case(HandState_Lasso):
+			flags |= userFlag << 5;
+			break;
+	}
+	switch (rightHandState)
+	{
+	case(HandState_Unknown):
+		flags |= userFlag << 6;
+		break;
+	case(HandState_NotTracked):
+		flags |= userFlag << 7;
+		break;
+	case(HandState_Open):
+		flags |= userFlag << 8;
+		break;
+	case(HandState_Closed):
+		flags |= userFlag << 9;
+		break;
+	case(HandState_Lasso):
+		flags |= userFlag << 10;
+		break;
+	}
+	evt->setFlags(flags);
 
 	evt->setExtraDataType(Event::ExtraDataVector3Array);
 
@@ -853,19 +887,38 @@ void MSKinectService::ProcessSpeech()
                 hr = result->GetPhrase(&pPhrase);
                 if (SUCCEEDED(hr))
                 {
-                    if ((pPhrase->pProperties != NULL) && (pPhrase->pProperties->pFirstChild != NULL))
-                    {
-                        const SPPHRASEPROPERTY* pSemanticTag = pPhrase->pProperties->pFirstChild;
+					if ((pPhrase->pProperties != NULL))
+					{
+						LPCWSTR speechWString;
+						const SPPHRASEPROPERTY* pSemanticTag;
+						float speechStringConfidence = 0;
+						String speechString = "";
 
-						LPCWSTR speechWString = pSemanticTag->pszValue;
+						if (pPhrase->pProperties->pFirstChild != NULL)
+						{
+							pSemanticTag = pPhrase->pProperties->pFirstChild;
+							speechWString = pSemanticTag->pszValue;
+							speechStringConfidence = pSemanticTag->SREngineConfidence;
 
-						// Convert from LPCWSTR to String
-						std::wstring wstr = speechWString; 
-						String speechString; 
-						speechString.resize( wstr.size() ); //make enough room in copy for the string 
-						std::copy(wstr.begin(),wstr.end(), speechString.begin()); //copy it
+							speechString += WStringToString(speechWString);
 
-						float speechStringConfidence = pSemanticTag->SREngineConfidence;
+							while (pSemanticTag->pNextSibling != NULL)
+							{
+								pSemanticTag = pSemanticTag->pNextSibling;
+
+								speechWString = pSemanticTag->pszValue;
+								speechStringConfidence = pSemanticTag->SREngineConfidence;
+
+								speechString += " " + WStringToString(speechWString);
+							}
+						}
+						else
+						{
+							speechWString = pPhrase->pProperties->pszValue;
+							speechStringConfidence = pPhrase->pProperties->SREngineConfidence;
+
+							speechString += WStringToString(speechWString);
+						}
 
 						ofmsg("MSKinect2Service: Speech recognized '%1%' confidence: %2%", %speechString %speechStringConfidence);
 
@@ -880,6 +933,22 @@ void MSKinectService::ProcessSpeech()
         m_pSpeechContext->GetEvents(1, &curEvent, &fetched);
     }
     return;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// <summary>
+/// Convert from LPCWSTR to String.
+/// </summary>
+String MSKinectService::WStringToString(LPCWSTR speechWString)
+{
+	String speechString = "";
+	// Convert from LPCWSTR to String
+	std::wstring wstr = speechWString;
+
+	speechString.resize(wstr.size()); //make enough room in copy for the string 
+	std::copy(wstr.begin(), wstr.end(), speechString.begin()); //copy it
+
+	return speechString;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

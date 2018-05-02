@@ -152,7 +152,7 @@ void SAGEInputServer::connectToSage(){
     Sleep(1000);
     printf("\nConnected to sage on: %s\n", sageHost);
 
-	createClient( sageHost, DIM_PORT, false, sock );
+	createClient( sageHost, DIM_PORT, DataMode::data_omicron, sock );
     sageConnected = true;
 }
 int triggerFlag = 0;
@@ -164,10 +164,10 @@ void SAGEInputServer::handleEvent(Event* evt){
 		//pointerToSAGEEvent( evt );
 
 		// SAGE2
-		char* eventPacket = createOmicronEventPacket(evt);
+		char* eventPacket = createOmicronPacketFromEvent(evt);
 		if( isSAGEConnected() )
 		{
-			sendToClients(eventPacket, 0);
+			sendToClients(eventPacket);
 		}
 		else
 		{

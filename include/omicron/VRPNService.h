@@ -83,9 +83,10 @@ private:
         unsigned short userId;
         int jointId;
 		int sensorId;
+		float lastUpdateTime;
     };
 
-    Vector<TrackerInfo> trackerNames; // Vector of the TrackerInfo struct
+	std::map<int, TrackerInfo> trackerNames; // Vector of the TrackerInfo struct
     Vector<vrpn_Tracker_Remote*> trackerRemotes; // Vector of actual vrpn tracker remote objects
 
     float myUpdateInterval;

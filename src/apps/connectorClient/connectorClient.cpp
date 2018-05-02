@@ -45,10 +45,10 @@ virtual void onEvent(const EventData& e)
 		else if (e.type == EventData::Update) 
 		{
 			if (e.serviceType == EventData::ServiceTypeMocap)  // Mocap (head I guess
-				fprintf(stderr, "MOCAP source %d type %d device %d type %d\n",
+				fprintf(stderr, "MOCAP source %d type %d device %d\n",
 					e.sourceId, e.type, e.deviceTag);
 			if (e.serviceType == EventData::ServiceTypeWand)  // Wand
-				fprintf(stderr, "Wand source %d type %d device %d type %d\n",
+				fprintf(stderr, "Wand source %d type %d device %d\n",
 					e.sourceId, e.type, e.deviceTag);
 			fprintf(stderr, "      pos(%6.3f  %6.3f  %6.3f)\n", e.posx, e.posy, e.posz);
 			fprintf(stderr, "      rot(%6.3f  %6.3f  %6.3f  %6.3f)\n", e.orx, e.ory, e.orz, e.orw);
@@ -83,7 +83,7 @@ virtual void onEvent(const EventData& e)
 		}
 		else if (e.type == EventData::Up) 
 		{
-			fprintf(stderr, "EVENT up: %d\n", e.sourceId, e.type);
+			fprintf(stderr, "EVENT up: %d type: %d\n", e.sourceId, e.type);
 			fprintf(stderr, "      flag: %d\n", e.flags);
 			fprintf(stderr, "      extra: %d\n", e.extraDataType);
 			fprintf(stderr, "      items: %d\n", e.extraDataItems);

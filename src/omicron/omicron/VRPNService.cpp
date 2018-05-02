@@ -165,7 +165,9 @@ void VRPNService::setup(Setting& settings)
 				trackerInfo.trackableId = 0;
 			}
 
-			trackerNames.push_back(trackerInfo);
+			trackerInfo.lastUpdateTime = 0;
+
+			trackerNames[trackerInfo.trackableId] = (trackerInfo);
 
         }
 
@@ -229,10 +231,9 @@ void VRPNService::initialize()
 ///////////////////////////////////////////////////////////////////////////////
 void VRPNService::poll() 
 {
-    static float lastt;
-    float curt = (float)((double)clock() / CLOCKS_PER_SEC);
-    if(curt - lastt > myUpdateInterval)
-    {
+    //float curt = (float)((double)clock() / CLOCKS_PER_SEC);
+    //if(curt - lastt > myUpdateInterval)
+    //{
         for(int i = 0; i < trackerRemotes.size(); i++)
         {
             vrpn_Tracker_Remote *tkr = trackerRemotes[i];
@@ -241,8 +242,8 @@ void VRPNService::poll()
                 // as needed
             tkr->mainloop();
         }
-        lastt = curt;
-    }
+        //lastt = curt;
+    //}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -254,32 +255,38 @@ void VRPNService::dispose()
 ///////////////////////////////////////////////////////////////////////////////
 void VRPNService::generateTrackerEvent(vrpn_TRACKERCB t, int id, unsigned short userId, int jointId) 
 {
-     //static float lastt;
-     //float curt = (float)((double)clock() / CLOCKS_PER_SEC);
-     //if(curt - lastt > mysInstance->myUpdateInterval)
-     //{
-	if (isDebugEnabled())
-	{
-		ofmsg("VRPNService: Tracker ID %1% at pos: %2% %3% %4%", %id %t.pos[0] %t.pos[1] %t.pos[2]);
-	}
-         mysInstance->lockEvents();
-         Event* evt = mysInstance->writeHead();
-         evt->reset(Event::Update, Service::Mocap, id, getServiceId(), userId);
-         evt->setPosition(t.pos[0], t.pos[1], t.pos[2]);
+    // Get last event timestamp of trackable
+	TrackerInfo trackerInfo = trackerNames[id];
+	float lastt = trackerInfo.lastUpdateTime;
+
+    float curt = (float)((double)clock() / CLOCKS_PER_SEC);
+    if(curt - lastt > mysInstance->myUpdateInterval)
+    {
+		if (isDebugEnabled())
+		{
+			ofmsg("VRPNService: Tracker ID %1% at pos: %2% %3% %4%", %id %t.pos[0] %t.pos[1] %t.pos[2]);
+		}
+        mysInstance->lockEvents();
+        Event* evt = mysInstance->writeHead();
+        evt->reset(Event::Update, Service::Mocap, id, getServiceId(), userId);
+        evt->setPosition(t.pos[0], t.pos[1], t.pos[2]);
 
         // //double euler[3];
         // //q_to_euler(euler, t.quat);
-         evt->setOrientation(t.quat[3], t.quat[0], t.quat[1], t.quat[2]);
+        evt->setOrientation(t.quat[3], t.quat[0], t.quat[1], t.quat[2]);
 
-         if(jointId != -1)
-         {
-			 evt->setExtraDataType(Event::ExtraDataIntArray);
-             evt->setExtraDataInt(0, jointId);
-         }
+        if(jointId != -1)
+        {
+			evt->setExtraDataType(Event::ExtraDataIntArray);
+            evt->setExtraDataInt(0, jointId);
+        }
 
-         mysInstance->unlockEvents();
-         //lastt = curt;
-     //}
+        mysInstance->unlockEvents();
+
+		// Update last event timestamp of trackable
+		trackerInfo.lastUpdateTime = curt;
+		trackerNames[id] = trackerInfo;
+     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

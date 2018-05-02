@@ -174,6 +174,7 @@ private:
 	HRESULT                 LoadSpeechDictation();
 	HRESULT                 StartSpeechRecognition();
     void                    ProcessSpeech();
+	String WStringToString(LPCWSTR speechWString);
 	void                    ProcessSpeechDictation();
 	void					GenerateSpeechEvent( String, float );
 #endif

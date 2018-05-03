@@ -557,6 +557,7 @@ void main(int argc, char** argv)
 		int av = sm->getAvailableEvents();
 		if(av != 0 && !testStream )
 		{
+			/*
 			// @todo: Instead of copying the event list, we can lock the main one.
 			Event evts[OMICRON_MAX_EVENTS];
 			sm->getEvents(evts, OMICRON_MAX_EVENTS);
@@ -571,6 +572,7 @@ void main(int argc, char** argv)
 			}
 			if( printOutput )
 				printf("------------------------------------------------------------------------------\n");
+				*/
 		}// if
 		else if( testStream ){
 			testPacket = new char[99];

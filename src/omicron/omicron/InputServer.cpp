@@ -148,30 +148,63 @@ void InputServer::handleEvent(const Event& evt)
 #endif
             
     int offset = 0;
-            
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getTimestamp()); 
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getSourceId()); 
-    OI_WRITEBUF(int, eventPacket, offset, evt.getDeviceTag()); 
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getServiceType()); 
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getType()); 
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getFlags()); 
-    OI_WRITEBUF(float, eventPacket, offset, evt.getPosition().x()); 
-    OI_WRITEBUF(float, eventPacket, offset, evt.getPosition().y()); 
-    OI_WRITEBUF(float, eventPacket, offset, evt.getPosition().z()); 
-    OI_WRITEBUF(float, eventPacket, offset, evt.getOrientation().w()); 
-    OI_WRITEBUF(float, eventPacket, offset, evt.getOrientation().x()); 
-    OI_WRITEBUF(float, eventPacket, offset, evt.getOrientation().y()); 
-    OI_WRITEBUF(float, eventPacket, offset, evt.getOrientation().z()); 
-        
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getExtraDataType()); 
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getExtraDataItems()); 
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getExtraDataMask());
-        
-    if(evt.getExtraDataType() != Event::ExtraDataNull)
-    {
-        memcpy(&eventPacket[offset], evt.getExtraDataBuffer(), evt.getExtraDataSize());
-    }
-    offset += evt.getExtraDataSize();
+	int LargeBufferSize = 10000000;
+
+	if (!evt.isExtraDataLarge())
+	{
+
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getTimestamp());
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getSourceId());
+		OI_WRITEBUF(int, eventPacket, offset, evt.getDeviceTag());
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getServiceType());
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getType());
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getFlags());
+		OI_WRITEBUF(float, eventPacket, offset, evt.getPosition().x());
+		OI_WRITEBUF(float, eventPacket, offset, evt.getPosition().y());
+		OI_WRITEBUF(float, eventPacket, offset, evt.getPosition().z());
+		OI_WRITEBUF(float, eventPacket, offset, evt.getOrientation().w());
+		OI_WRITEBUF(float, eventPacket, offset, evt.getOrientation().x());
+		OI_WRITEBUF(float, eventPacket, offset, evt.getOrientation().y());
+		OI_WRITEBUF(float, eventPacket, offset, evt.getOrientation().z());
+
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getExtraDataType());
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getExtraDataItems());
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getExtraDataMask());
+
+		memcpy(&eventPacket[offset], evt.getExtraDataBuffer(), evt.getExtraDataSize());
+
+		offset += evt.getExtraDataSize();
+	}
+	else
+	{
+		eventPacketLarge = new char[LargeBufferSize];
+
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getTimestamp());
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getSourceId());
+		OI_WRITEBUF(int, eventPacketLarge, offset, evt.getDeviceTag());
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getServiceType());
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getType());
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getFlags());
+		OI_WRITEBUF(float, eventPacketLarge, offset, evt.getPosition().x());
+		OI_WRITEBUF(float, eventPacketLarge, offset, evt.getPosition().y());
+		OI_WRITEBUF(float, eventPacketLarge, offset, evt.getPosition().z());
+		OI_WRITEBUF(float, eventPacketLarge, offset, evt.getOrientation().w());
+		OI_WRITEBUF(float, eventPacketLarge, offset, evt.getOrientation().x());
+		OI_WRITEBUF(float, eventPacketLarge, offset, evt.getOrientation().y());
+		OI_WRITEBUF(float, eventPacketLarge, offset, evt.getOrientation().z());
+
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getExtraDataType());
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getExtraDataItems());
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getExtraDataMask());
+
+		void* buffer = evt.getExtraDataBuffer();
+		int bufferSize = evt.getExtraDataSize();
+		//eventPacketLarge = (char*)buffer;
+
+		//memcpy(&eventPacketLarge[offset], evt.getExtraDataBuffer(), evt.getExtraDataSize());
+
+		offset += evt.getExtraDataSize();
+	}
         
     //validLegacyEvent = handleLegacyEvent(evt);
 	validTacTileEvent = handleTacTileEvent(evt);
@@ -215,7 +248,14 @@ void InputServer::handleEvent(const Event& evt)
 			if (evt.getType() == Event::Update || evt.getType() == Event::Move)
 			{
 				// Send continual data streams as UDP
-				client->sendEvent(eventPacket, DEFAULT_BUFLEN);
+				if (!evt.isExtraDataLarge())
+				{
+					client->sendEvent(eventPacket, DEFAULT_BUFLEN);
+				}
+				else
+				{
+					client->sendMsg(eventPacketLarge, 10000000);
+				}
 			}
 			else
 			{
@@ -232,6 +272,11 @@ void InputServer::handleEvent(const Event& evt)
 			}
 		}
 		itr++;
+	}
+
+	if (evt.isExtraDataLarge())
+	{
+		delete(eventPacketLarge);
 	}
 }
     

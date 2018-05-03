@@ -128,6 +128,9 @@ namespace omicron
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 class MSKinectService: public Service
 {
+	static const int        cColorWidth = 1920;
+	static const int        cColorHeight = 1080;
+
 public:
 	// Allocator function
 	MSKinectService();
@@ -153,6 +156,7 @@ private:
 
 	void pollBody();
 	void pollSpeech();
+	void pollColor();
 
 	void ProcessBody(INT64, int, IBody**, Vector4*);
 	void GenerateMocapEvent(IBody*, Joint*, Vector4*);
@@ -231,11 +235,17 @@ private:
 	int						m_TrackedSkeletons;
 	int						skeletonEngineKinectID;
 
+	// Color reader
+	IColorFrameReader*      m_pColorFrameReader;
+	RGBQUAD*                m_pColorRGBX;
+
 	std::map<String,IKinectSensor*> sensorList;
 	std::map<String,int> sensorIndexList;
 
 	bool debugInfo;
 	bool caveSimulator;
+	bool enableKinectBody;
+	bool enableKinectColor;
 	bool enableKinectAudio;
 	bool enableKinectSpeechGrammar;
 	bool enableKinectSpeechDictation;

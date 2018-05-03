@@ -58,6 +58,7 @@ void GestureService::poll()
 	int av = serviceManager->getAvailableEvents();
 	if(av != 0)
 	{
+		/*
 		// TODO: Instead of copying the event list, we can lock the main one.
 		Event evts[OMICRON_MAX_EVENTS];
 		serviceManager->getEvents(evts, OMICRON_MAX_EVENTS);
@@ -65,6 +66,7 @@ void GestureService::poll()
 		{
 			mocapManager->processEvent(evts[evtNum]);
 		}
+		*/
 	}
 }
 

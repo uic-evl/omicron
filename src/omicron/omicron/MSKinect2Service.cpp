@@ -78,6 +78,9 @@ void MSKinectService::setup(Setting& settings)
 
 	debugInfo = Config::getBoolValue("debug", settings, false);
 
+	enableKinectBody = Config::getBoolValue("enableKinectBody", settings, false);
+	enableKinectColor = Config::getBoolValue("enableKinectColor", settings, false);
+
 	enableKinectAudio = Config::getBoolValue("enableKinectSpeech", settings, false);
 	enableKinectSpeechGrammar = Config::getBoolValue("useGrammar", settings, true);
 	enableKinectSpeechDictation = Config::getBoolValue("useDictation", settings, false);
@@ -133,7 +136,14 @@ void MSKinectService::initialize()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void MSKinectService::poll()
 {
-	pollBody();
+	if (enableKinectBody)
+	{
+		pollBody();
+	}
+	if (enableKinectColor)
+	{
+		pollColor();
+	}
 
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
 	if( enableKinectAudio )
@@ -202,12 +212,94 @@ void MSKinectService::pollSpeech()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void MSKinectService::pollColor()
+{
+	if (!m_pColorFrameReader)
+	{
+		return;
+	}
+
+	IColorFrame* pColorFrame = NULL;
+
+	HRESULT hr = m_pColorFrameReader->AcquireLatestFrame(&pColorFrame);
+
+	if (SUCCEEDED(hr))
+	{
+		INT64 nTime = 0;
+		IFrameDescription* pFrameDescription = NULL;
+		int nWidth = 0;
+		int nHeight = 0;
+		ColorImageFormat imageFormat = ColorImageFormat_None;
+		UINT nBufferSize = 0;
+		RGBQUAD *pBuffer = NULL;
+
+		hr = pColorFrame->get_RelativeTime(&nTime);
+
+		if (SUCCEEDED(hr))
+		{
+			hr = pColorFrame->get_FrameDescription(&pFrameDescription);
+		}
+
+		if (SUCCEEDED(hr))
+		{
+			hr = pFrameDescription->get_Width(&nWidth);
+		}
+
+		if (SUCCEEDED(hr))
+		{
+			hr = pFrameDescription->get_Height(&nHeight);
+		}
+
+		if (SUCCEEDED(hr))
+		{
+			hr = pColorFrame->get_RawColorImageFormat(&imageFormat);
+		}
+
+		if (SUCCEEDED(hr))
+		{
+			if (imageFormat == ColorImageFormat_Bgra)
+			{
+				hr = pColorFrame->AccessRawUnderlyingBuffer(&nBufferSize, reinterpret_cast<BYTE**>(&pBuffer));
+			}
+			else if (m_pColorRGBX)
+			{
+				pBuffer = m_pColorRGBX;
+				nBufferSize = cColorWidth * cColorHeight * sizeof(RGBQUAD);
+				hr = pColorFrame->CopyConvertedFrameDataToArray(nBufferSize, reinterpret_cast<BYTE*>(pBuffer), ColorImageFormat_Bgra);
+			}
+			else
+			{
+				hr = E_FAIL;
+			}
+		}
+
+		if (SUCCEEDED(hr))
+		{
+			BYTE* pImage = reinterpret_cast<BYTE*>(pBuffer);
+			unsigned long pImageSize = cColorWidth * cColorHeight * sizeof(RGBQUAD);
+
+			Event* evt = mysInstance->writeHead();
+			evt->reset(Event::Update, Service::Generic, 0);
+
+			evt->setExtraData(EventBase::ExtraDataString, pImageSize, 1, pImage);
+			mysInstance->unlockEvents();
+		}
+
+		SafeRelease(pFrameDescription);
+	}
+
+	SafeRelease(pColorFrame);
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void MSKinectService::dispose() 
 {
 	omsg("MSKinectService: Shutting down.");
 
 	if (kinectSensor)
 	{
+		// done with color frame reader
+		SafeRelease(m_pColorFrameReader);
+
 		kinectSensor->Close();
 	}
 
@@ -243,22 +335,48 @@ HRESULT MSKinectService::InitializeDefaultKinect()
 
 		hr = kinectSensor->Open();
 
-		if (SUCCEEDED(hr))
+		if (enableKinectBody)
 		{
-		    hr = kinectSensor->get_CoordinateMapper(&m_pCoordinateMapper);
+			if (SUCCEEDED(hr))
+			{
+				hr = kinectSensor->get_CoordinateMapper(&m_pCoordinateMapper);
+			}
+
+			if (SUCCEEDED(hr))
+			{
+				hr = kinectSensor->get_BodyFrameSource(&pBodyFrameSource);
+			}
+
+			if (SUCCEEDED(hr))
+			{
+				hr = pBodyFrameSource->OpenReader(&bodyFrameReader);
+			}
+			SafeRelease(pBodyFrameSource);
+			omsg("MSKinect2Service: Body tracking started.");
 		}
 
-		if (SUCCEEDED(hr))
-		{
-			hr = kinectSensor->get_BodyFrameSource(&pBodyFrameSource);
-		}
+		// Initialize the Kinect and get the color reader
+		IColorFrameSource* pColorFrameSource = NULL;
 
-		if (SUCCEEDED(hr))
+		if (enableKinectColor)
 		{
-			hr = pBodyFrameSource->OpenReader(&bodyFrameReader);
-		}
+			if (SUCCEEDED(hr))
+			{
+				hr = kinectSensor->get_ColorFrameSource(&pColorFrameSource);
+			}
 
-		SafeRelease(pBodyFrameSource);
+			if (SUCCEEDED(hr))
+			{
+				hr = pColorFrameSource->OpenReader(&m_pColorFrameReader);
+			}
+
+			SafeRelease(pColorFrameSource);
+
+			// create heap storage for color pixel data in RGBX format
+			m_pColorRGBX = new RGBQUAD[cColorWidth * cColorHeight];
+
+			omsg("MSKinect2Service: Color camera started.");
+		}
 	}
 
 	if (!kinectSensor || FAILED(hr))

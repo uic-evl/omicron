@@ -365,7 +365,8 @@ namespace omicron
             ExtraDataIntArray,
             ExtraDataVector3Array,
             ExtraDataString,
-            ExtraDataKinectSpeech
+            ExtraDataKinectSpeech,
+			ExtraDataByte
         };
 
         //! Joint enumerations for Kinect (Uses OpenNI's enumerations with additional Kinect for Windows values)

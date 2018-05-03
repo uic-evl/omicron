@@ -86,7 +86,7 @@ int main(int argc, char** argv)
 	{
 		// Poll services for new events.
 		sm->poll(); 
-
+		/*
 		// Get available events
 		Event evts[OMICRON_MAX_EVENTS];
 		int av;
@@ -97,7 +97,7 @@ int main(int argc, char** argv)
 				logEvent(evts[evtNum]);
 			}
 		}// if
-
+		*/
 	}// while
 	
 	delete cfg;

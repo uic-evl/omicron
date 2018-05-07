@@ -78,6 +78,7 @@ void MSKinectService::setup(Setting& settings)
 
 	debugInfo = Config::getBoolValue("debug", settings, false);
 
+	enableKinectBody = Config::getBoolValue("enableKinectBody", settings, true);
 	enableKinectAudio = Config::getBoolValue("enableKinectSpeech", settings, false);
 	enableKinectSpeechGrammar = Config::getBoolValue("useGrammar", settings, true);
 	enableKinectSpeechDictation = Config::getBoolValue("useDictation", settings, false);
@@ -133,7 +134,10 @@ void MSKinectService::initialize()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void MSKinectService::poll()
 {
-	pollBody();
+	if (enableKinectBody)
+	{
+		pollBody();
+	}
 
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
 	if( enableKinectAudio )
@@ -714,6 +718,8 @@ HRESULT MSKinectService::CreateSpeechRecognizer()
         if (SUCCEEDED(hr))
         {
             m_pSpeechRecognizer->SetRecognizer(pEngineToken);
+
+			// If this fails, make sure both the Speech 11 SDK and redist runtime is installed
             hr = m_pSpeechRecognizer->CreateRecoContext(&m_pSpeechContext);
 
             // For long recognition sessions (a few hours or more), it may be beneficial to turn off adaptation of the acoustic model. 
@@ -872,6 +878,8 @@ void MSKinectService::ProcessSpeech()
     ULONG fetched = 0;
     HRESULT hr = S_OK;
 
+	if (m_pSpeechContext == NULL)
+		return;
     m_pSpeechContext->GetEvents(1, &curEvent, &fetched);
     while (fetched > 0)
     {

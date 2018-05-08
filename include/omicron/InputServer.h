@@ -217,6 +217,12 @@ public:
 		}
 	}// CTOR
 
+	void updateClientSocket(SOCKET clientSocket)
+	{
+		tcpSocket = clientSocket;
+		tcpConnected = true;
+	}
+
 	void sendEvent(char* eventPacket, int length)
 	{
 		// Send a datagram to the receiver

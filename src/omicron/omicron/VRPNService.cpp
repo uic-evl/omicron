@@ -168,7 +168,10 @@ void VRPNService::setup(Setting& settings)
 			trackerInfo.lastUpdateTime = 0;
 
 			trackerNames[trackerInfo.trackableId] = (trackerInfo);
+			if(trackerInfo.trackableId == 5)
+			{
 
+			}
         }
 
         myUpdateInterval = 0.0f;
@@ -190,9 +193,9 @@ void VRPNService::initialize()
     mysInstance = this;
 
 
-	for (int i = 0; i < trackerNames.size(); i++)
+	for (std::map<int, TrackerInfo>::iterator it = trackerNames.begin(); it != trackerNames.end(); ++it)
 	{
-		TrackerInfo& t = trackerNames[i];
+		TrackerInfo& t = it->second;
 		char trackerName[256];
 		strcpy(trackerName, t.object_name);
 		strcat(trackerName, "@");

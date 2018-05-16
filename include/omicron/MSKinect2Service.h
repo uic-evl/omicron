@@ -236,6 +236,7 @@ private:
 
 	bool debugInfo;
 	bool caveSimulator;
+	bool enableKinectBody;
 	bool enableKinectAudio;
 	bool enableKinectSpeechGrammar;
 	bool enableKinectSpeechDictation;

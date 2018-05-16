@@ -366,6 +366,7 @@ private:
     bool showStreamSpeed;
 	bool showEventMessages;
 	bool showIncomingStream;
+	bool showIncomingMessages;
     int lastOutgoingEventTime;
     int eventCount;
 

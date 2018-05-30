@@ -551,6 +551,7 @@ void InputServer::startConnection(Config* cfg)
     showStreamSpeed = Config::getBoolValue("showStreamSpeed", sCfg, false );
 	showEventMessages = Config::getBoolValue("showEventMessages", sCfg, false);
 	showIncomingStream = Config::getBoolValue("showIncomingStream", sCfg, false);
+	showIncomingMessages = Config::getBoolValue("showIncomingMessages", sCfg, false);
 
     if( checkForDisconnectedClients )
         omsg("Check for disconnected clients enabled.");
@@ -825,6 +826,12 @@ void InputServer::loop()
 				if (showIncomingStream)
 				{
 					printf("InputServer: Data in id: %d pos: %f %f %f\n", ed.sourceId, ed.posx, ed.posy, ed.posz);
+				}
+				if (showIncomingMessages && ed.serviceType == EventBase::ServiceTypeSpeech)
+				{
+					Event e;
+					e.deserialize(&ed);
+					printf("NetService: Speech in: (speech text, condidence) '%s' %f\n", e.getExtraDataString(), ed.posx);
 				}
 
 				// Add to local service manager's event list

@@ -427,7 +427,7 @@ void TouchGroup::generateGestures(){
       
 	  gestureManager->generateZoomEvent(Event::Down, centerTouch, 0);
 	  ofmsg("TouchGroup ID: %1% zoom start", %ID);
-    } else if( touchList.size() != 2 && zoomGestureTriggered ){
+    } else if( touchList.size() < 2 && zoomGestureTriggered ){
       zoomGestureTriggered = false;
       
 	  gestureManager->generateZoomEvent(Event::Up, centerTouch, 0);
@@ -447,56 +447,59 @@ void TouchGroup::generateGestures(){
 			ofmsg("TouchGroup ID: %1% zoom delta: %2%", %ID %zoomDelta);
 		}
 	}
+	else
+	{
 
-	// 5-finger gesture
-	if( touchList.size() == 5 && idleTouchList.size() > 3 && !fiveFingerGestureTriggered )
-    {
-		gestureManager->generatePQServiceEvent( Event::Down, centerTouch, GESTURE_FIVE_FINGER_HOLD );
-		fiveFingerGestureTriggered = true;
+		// 5-finger gesture
+		if (touchList.size() == 5 && idleTouchList.size() > 3 && !fiveFingerGestureTriggered)
+		{
+			gestureManager->generatePQServiceEvent(Event::Down, centerTouch, GESTURE_FIVE_FINGER_HOLD);
+			fiveFingerGestureTriggered = true;
 
-		ofmsg("TouchGroup ID: %1% 5-finger gesture triggered", %ID);
-		if( groupHandedness == LEFT )
-			omsg("   - Left-hand detected");
-		else if( groupHandedness == RIGHT )
-			omsg("   - Right-hand detected");
-    }
-    else if( touchList.size() == 5 && idleTouchList.size() > 3 && fiveFingerGestureTriggered )
-    {
-		gestureManager->generatePQServiceEvent( Event::Move, centerTouch, GESTURE_FIVE_FINGER_HOLD );
-		//ofmsg("TouchGroup ID: %1% 5-finger gesture hold", %ID);
-    }
-	else if( touchList.size() != 5 && fiveFingerGestureTriggered )
-    {
-		gestureManager->generatePQServiceEvent( Event::Up, centerTouch, GESTURE_FIVE_FINGER_HOLD );
-		fiveFingerGestureTriggered = false;
+			ofmsg("TouchGroup ID: %1% 5-finger gesture triggered", %ID);
+			if (groupHandedness == LEFT)
+				omsg("   - Left-hand detected");
+			else if (groupHandedness == RIGHT)
+				omsg("   - Right-hand detected");
+		}
+		else if (touchList.size() == 5 && idleTouchList.size() > 3 && fiveFingerGestureTriggered)
+		{
+			gestureManager->generatePQServiceEvent(Event::Move, centerTouch, GESTURE_FIVE_FINGER_HOLD);
+			//ofmsg("TouchGroup ID: %1% 5-finger gesture hold", %ID);
+		}
+		else if (touchList.size() != 5 && fiveFingerGestureTriggered)
+		{
+			gestureManager->generatePQServiceEvent(Event::Up, centerTouch, GESTURE_FIVE_FINGER_HOLD);
+			fiveFingerGestureTriggered = false;
 
-		ofmsg("TouchGroup ID: %1% 5-finger gesture ended", %ID);
-    }
+			ofmsg("TouchGroup ID: %1% 5-finger gesture ended", %ID);
+		}
 
-	// 3-finger gesture
-	if( touchList.size() == 3 && idleTouchList.size() > 2 && !threeFingerGestureTriggered )
-    {
-		gestureManager->generatePQServiceEvent( Event::Down, centerTouch, GESTURE_THREE_FINGER_HOLD );
-		threeFingerGestureTriggered = true;
+		// 3-finger gesture
+		if (touchList.size() == 3 && idleTouchList.size() > 2 && !threeFingerGestureTriggered)
+		{
+			gestureManager->generatePQServiceEvent(Event::Down, centerTouch, GESTURE_THREE_FINGER_HOLD);
+			threeFingerGestureTriggered = true;
 
-		ofmsg("TouchGroup ID: %1% 3-finger gesture triggered", %ID);
-		if( groupHandedness == LEFT )
-			omsg("   - Left-hand detected");
-		else if( groupHandedness == RIGHT )
-			omsg("   - Right-hand detected");
-    }
-    else if( touchList.size() == 3 && idleTouchList.size() > 2 && threeFingerGestureTriggered )
-    {
-		gestureManager->generatePQServiceEvent( Event::Move, centerTouch, GESTURE_THREE_FINGER_HOLD );
-		//ofmsg("TouchGroup ID: %1% 5-finger gesture hold", %ID);
-    }
-	else if( touchList.size() != 3 && threeFingerGestureTriggered )
-    {
-		gestureManager->generatePQServiceEvent( Event::Up, centerTouch, GESTURE_THREE_FINGER_HOLD );
-		threeFingerGestureTriggered = false;
+			ofmsg("TouchGroup ID: %1% 3-finger gesture triggered", %ID);
+			if (groupHandedness == LEFT)
+				omsg("   - Left-hand detected");
+			else if (groupHandedness == RIGHT)
+				omsg("   - Right-hand detected");
+		}
+		else if (touchList.size() == 3 && idleTouchList.size() > 2 && threeFingerGestureTriggered)
+		{
+			gestureManager->generatePQServiceEvent(Event::Move, centerTouch, GESTURE_THREE_FINGER_HOLD);
+			//ofmsg("TouchGroup ID: %1% 5-finger gesture hold", %ID);
+		}
+		else if (touchList.size() != 3 && threeFingerGestureTriggered)
+		{
+			gestureManager->generatePQServiceEvent(Event::Up, centerTouch, GESTURE_THREE_FINGER_HOLD);
+			threeFingerGestureTriggered = false;
 
-		ofmsg("TouchGroup ID: %1% 3-finger gesture ended", %ID);
-    }
+			ofmsg("TouchGroup ID: %1% 3-finger gesture ended", %ID);
+		}
+	}
 }
 
 

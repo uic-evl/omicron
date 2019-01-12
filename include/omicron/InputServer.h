@@ -356,7 +356,7 @@ private:
     char legacyPacket[DEFAULT_BUFLEN];
 	char tacTilePacket[DEFAULT_BUFLEN];
 
-	char* eventPacketLarge;
+	char eventPacketLarge[51200];
 
 	bool validLegacyEvent;
 	bool validTacTileEvent;
@@ -374,6 +374,7 @@ private:
     bool showStreamSpeed;
 	bool showEventMessages;
 	bool showIncomingStream;
+	bool showIncomingMessages;
     int lastOutgoingEventTime;
     int eventCount;
 

@@ -64,7 +64,7 @@ namespace omicron
     friend class EventUtils; 
     friend class Service; 
     public:
-		static const int ExtraDataSize = 1024;
+		static const int ExtraDataSize = 41472;
         static const int MaxExtraDataItems = 32;
         static Event::Flags parseButtonName(const String& name);
         static int parseJointName(const String& name);

@@ -174,10 +174,12 @@ void InputServer::handleEvent(const Event& evt)
 		memcpy(&eventPacket[offset], evt.getExtraDataBuffer(), evt.getExtraDataSize());
 
 		offset += evt.getExtraDataSize();
+
+		validTacTileEvent = handleTacTileEvent(evt);
 	}
 	else
 	{
-		eventPacketLarge = new char[LargeBufferSize];
+		// eventPacketLarge = new char[LargeBufferSize];
 
 		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getTimestamp());
 		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getSourceId());
@@ -201,13 +203,10 @@ void InputServer::handleEvent(const Event& evt)
 		int bufferSize = evt.getExtraDataSize();
 		//eventPacketLarge = (char*)buffer;
 
-		//memcpy(&eventPacketLarge[offset], evt.getExtraDataBuffer(), evt.getExtraDataSize());
+		memcpy(&eventPacketLarge[offset], evt.getExtraDataBuffer(), evt.getExtraDataSize());
 
 		offset += evt.getExtraDataSize();
 	}
-        
-    //validLegacyEvent = handleLegacyEvent(evt);
-	validTacTileEvent = handleTacTileEvent(evt);
 
     if( showStreamSpeed )
     {
@@ -254,7 +253,7 @@ void InputServer::handleEvent(const Event& evt)
 				}
 				else
 				{
-					client->sendMsg(eventPacketLarge, 10000000);
+					client->sendEvent(eventPacketLarge, 51200);
 				}
 			}
 			else
@@ -276,7 +275,7 @@ void InputServer::handleEvent(const Event& evt)
 
 	if (evt.isExtraDataLarge())
 	{
-		delete(eventPacketLarge);
+		// delete(eventPacketLarge);
 	}
 }
     
@@ -596,6 +595,7 @@ void InputServer::startConnection(Config* cfg)
     showStreamSpeed = Config::getBoolValue("showStreamSpeed", sCfg, false );
 	showEventMessages = Config::getBoolValue("showEventMessages", sCfg, false);
 	showIncomingStream = Config::getBoolValue("showIncomingStream", sCfg, false);
+	showIncomingMessages = Config::getBoolValue("showIncomingMessages", sCfg, false);
 
     if( checkForDisconnectedClients )
         omsg("Check for disconnected clients enabled.");
@@ -870,6 +870,12 @@ void InputServer::loop()
 				if (showIncomingStream)
 				{
 					printf("InputServer: Data in id: %d pos: %f %f %f\n", ed.sourceId, ed.posx, ed.posy, ed.posz);
+				}
+				if (showIncomingMessages && ed.serviceType == EventBase::ServiceTypeSpeech)
+				{
+					Event e;
+					e.deserialize(&ed);
+					printf("NetService: Speech in: (speech text, condidence) '%s' %f\n", e.getExtraDataString(), ed.posx);
 				}
 
 				// Add to local service manager's event list

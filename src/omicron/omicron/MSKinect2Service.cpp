@@ -277,11 +277,18 @@ void MSKinectService::pollColor()
 			BYTE* pImage = reinterpret_cast<BYTE*>(pBuffer);
 			unsigned long pImageSize = cColorWidth * cColorHeight * sizeof(RGBQUAD);
 
-			Event* evt = mysInstance->writeHead();
-			evt->reset(Event::Update, Service::Generic, 0);
+			int dataPacketSize = pImageSize / 8640; // Color image: 8294400 / 200 = 41472
+						
+			for (int i = 0; i < 8640; i++)
+			{
+				memcpy(imageBuffer, pImage + i * dataPacketSize, dataPacketSize);
+				Event* evt = mysInstance->writeHead();
+				evt->reset(Event::Update, Service::Generic, 0);
+				evt->setFlags(i);
 
-			evt->setExtraData(EventBase::ExtraDataString, pImageSize, 1, pImage);
-			mysInstance->unlockEvents();
+				evt->setExtraData(EventBase::ExtraDataString, dataPacketSize, 1, imageBuffer);
+				mysInstance->unlockEvents();
+			}
 		}
 
 		SafeRelease(pFrameDescription);

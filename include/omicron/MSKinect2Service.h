@@ -239,6 +239,7 @@ private:
 	IColorFrameReader*      m_pColorFrameReader;
 	RGBQUAD*                m_pColorRGBX;
 
+	byte					imageBuffer[41472];
 	std::map<String,IKinectSensor*> sensorList;
 	std::map<String,int> sensorIndexList;
 

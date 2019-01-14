@@ -281,7 +281,7 @@ void MSKinectService::pollColor()
 						
 			for (int i = 0; i < 8640; i++)
 			{
-				memcpy(imageBuffer, pImage + i * dataPacketSize, dataPacketSize);
+				memcpy(imageBuffer, &pImage[i * dataPacketSize], dataPacketSize);
 				Event* evt = mysInstance->writeHead();
 				evt->reset(Event::Update, Service::Generic, 0);
 				evt->setFlags(i);

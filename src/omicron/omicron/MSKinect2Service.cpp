@@ -405,7 +405,7 @@ void MSKinectService::pollDepth()
 				{
 					memcpy(imageBuffer, &pImage[i * dataPacketSize], dataPacketSize);
 					Event* evt = mysInstance->writeHead();
-					evt->reset(Event::Update, Service::Generic, 0);
+					evt->reset(Event::Update, Service::Generic, 1);
 					evt->setFlags(i);
 
 					evt->setExtraData(EventBase::ExtraDataString, dataPacketSize, 1, imageBuffer);

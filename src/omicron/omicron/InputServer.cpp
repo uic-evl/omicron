@@ -148,7 +148,7 @@ void InputServer::handleEvent(const Event& evt)
 #endif
             
     int offset = 0;
-	int LargeBufferSize = 10000000;
+	int LargeBufferSize = 65535;
 
 	if (!evt.isExtraDataLarge())
 	{
@@ -199,8 +199,8 @@ void InputServer::handleEvent(const Event& evt)
 		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getExtraDataItems());
 		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getExtraDataMask());
 
-		void* buffer = evt.getExtraDataBuffer();
-		int bufferSize = evt.getExtraDataSize();
+		//void* buffer = evt.getExtraDataBuffer();
+		//int bufferSize = evt.getExtraDataSize();
 		//eventPacketLarge = (char*)buffer;
 
 		memcpy(&eventPacketLarge[offset], evt.getExtraDataBuffer(), evt.getExtraDataSize());
@@ -253,7 +253,7 @@ void InputServer::handleEvent(const Event& evt)
 				}
 				else
 				{
-					client->sendEvent(eventPacketLarge, 51200);
+					client->sendEvent(eventPacketLarge, 32768);
 				}
 			}
 			else

@@ -64,7 +64,7 @@ namespace omicron
     friend class EventUtils; 
     friend class Service; 
     public:
-		static const int ExtraDataSize = 41472;
+		static const int ExtraDataSize = 1024;
         static const int MaxExtraDataItems = 32;
         static Event::Flags parseButtonName(const String& name);
         static int parseJointName(const String& name);
@@ -576,7 +576,14 @@ namespace omicron
     ///////////////////////////////////////////////////////////////////////////
     inline void* Event::getExtraDataBuffer() const
     {
-        return (void*)myExtraData;
+		if (usingExtraDataLarge)
+		{
+			return (void*)myExtraDataLarge;
+		}
+		else
+		{
+			return (void*)myExtraData;
+		}
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -592,7 +599,7 @@ namespace omicron
 		else
 		{
 			usingExtraDataLarge = true;
-			myExtraDataLarge = new char[10000000];
+			myExtraDataLarge = new char[41472];
 			memcpy(myExtraDataLarge, data, getExtraDataSize());
 		}
     }

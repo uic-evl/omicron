@@ -281,9 +281,10 @@ void MSKinectService::pollColor()
 			BYTE* pImage = reinterpret_cast<BYTE*>(pBuffer);
 			unsigned long pImageSize = cColorWidth * cColorHeight * sizeof(RGBQUAD);
 
-			int dataPacketSize = pImageSize / 8640; // Color image: 8294400 / 200 = 41472
+			int nPackets = 270; // 1920 * 1080 = 2073600 * 4 = 8294400 / 256 = 32400 (max imageBuffer size = 41472)
+			int dataPacketSize = pImageSize / nPackets;
 						
-			for (int i = 0; i < 8640; i++)
+			for (int i = 0; i < nPackets; i++)
 			{
 				memcpy(imageBuffer, &pImage[i * dataPacketSize], dataPacketSize);
 				Event* evt = mysInstance->writeHead();
@@ -397,9 +398,10 @@ void MSKinectService::pollDepth()
 				BYTE* pImage = reinterpret_cast<BYTE*>(m_pDepthRGBX);
 				unsigned long pImageSize = cDepthWidth * cDepthHeight * sizeof(RGBQUAD);
 
-				int dataPacketSize = pImageSize / 1696;
+				int nPackets = 32; // 512 * 424 = 217088 * 4 = 868352 / 32 = 27136 (max imageBuffer size = 41472)
+				int dataPacketSize = pImageSize / nPackets;
 
-				for (int i = 0; i < 1696; i++)
+				for (int i = 0; i < nPackets; i++)
 				{
 					memcpy(imageBuffer, &pImage[i * dataPacketSize], dataPacketSize);
 					Event* evt = mysInstance->writeHead();

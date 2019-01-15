@@ -83,7 +83,7 @@ void MSKinectService::setup(Setting& settings)
 
 	enableKinectDepth = Config::getBoolValue("enableKinectDepth", settings, false);
 	depthReliableDataOnly = Config::getBoolValue("useReliableDepthOnly", settings, false);
-	highDetailDepth = Config::getFloatValue("highDetailDepth", settings, false);
+	highDetailDepth = Config::getBoolValue("highDetailDepth", settings, false);
 	lowDetailMaxDistance = Config::getFloatValue("lowDetailMaxDistance", settings, 8000); // mm
 
 	enableKinectAudio = Config::getBoolValue("enableKinectSpeech", settings, false);

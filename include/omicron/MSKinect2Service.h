@@ -255,7 +255,12 @@ private:
 	bool caveSimulator;
 	bool enableKinectBody;
 	bool enableKinectColor;
+
 	bool enableKinectDepth;
+	bool depthReliableDataOnly;
+	bool highDetailDepth;
+	float lowDetailMaxDistance;
+
 	bool enableKinectAudio;
 	bool enableKinectSpeechGrammar;
 	bool enableKinectSpeechDictation;

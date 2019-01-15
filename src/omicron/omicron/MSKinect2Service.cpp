@@ -80,7 +80,12 @@ void MSKinectService::setup(Setting& settings)
 
 	enableKinectBody = Config::getBoolValue("enableKinectBody", settings, true);
 	enableKinectColor = Config::getBoolValue("enableKinectColor", settings, false);
+
 	enableKinectDepth = Config::getBoolValue("enableKinectDepth", settings, false);
+	depthReliableDataOnly = Config::getBoolValue("useReliableDepthOnly", settings, false);
+	highDetailDepth = Config::getFloatValue("highDetailDepth", settings, false);
+	lowDetailMaxDistance = Config::getFloatValue("lowDetailMaxDistance", settings, 8000); // mm
+
 	enableKinectAudio = Config::getBoolValue("enableKinectSpeech", settings, false);
 	enableKinectSpeechGrammar = Config::getBoolValue("useGrammar", settings, true);
 	enableKinectSpeechDictation = Config::getBoolValue("useDictation", settings, false);
@@ -354,7 +359,10 @@ void MSKinectService::pollDepth()
 			nDepthMaxDistance = USHRT_MAX;
 
 			// Note:  If you wish to filter by reliable depth distance, uncomment the following line.
-			//// hr = pDepthFrame->get_DepthMaxReliableDistance(&nDepthMaxDistance);
+			if (depthReliableDataOnly)
+			{
+				hr = pDepthFrame->get_DepthMaxReliableDistance(&nDepthMaxDistance);
+			}
 		}
 
 		if (SUCCEEDED(hr))
@@ -385,7 +393,15 @@ void MSKinectService::pollDepth()
 
 					// Note: Using conditionals in this loop could degrade performance.
 					// Consider using a lookup table instead when writing production code.
-					BYTE intensity = static_cast<BYTE>((depth >= nDepthMinReliableDistance) && (depth <= nDepthMaxDistance) ? (depth % 256) : 0);
+					BYTE intensity;
+					if (highDetailDepth)
+					{
+						intensity = static_cast<BYTE>((depth >= nDepthMinReliableDistance) && (depth <= nDepthMaxDistance) ? (depth % 256) : 0);
+					}
+					else
+					{
+						intensity = static_cast<BYTE>(((depth >= nDepthMinReliableDistance) && depth < lowDetailMaxDistance) ? (256 * (1 - (depth / (float)lowDetailMaxDistance))) : 0);
+					}
 
 					pRGBX->rgbRed = intensity;
 					pRGBX->rgbGreen = intensity;

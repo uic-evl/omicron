@@ -130,7 +130,8 @@ class MSKinectService: public Service
 {
 	static const int        cColorWidth = 1920;
 	static const int        cColorHeight = 1080;
-
+	static const int        cDepthWidth = 512;
+	static const int        cDepthHeight = 424;
 public:
 	// Allocator function
 	MSKinectService();
@@ -157,6 +158,7 @@ private:
 	void pollBody();
 	void pollSpeech();
 	void pollColor();
+	void pollDepth();
 
 	void ProcessBody(INT64, int, IBody**, Vector4*);
 	void GenerateMocapEvent(IBody*, Joint*, Vector4*);
@@ -239,7 +241,13 @@ private:
 	IColorFrameReader*      m_pColorFrameReader;
 	RGBQUAD*                m_pColorRGBX;
 
+	// Color event buffer
 	byte					imageBuffer[41472];
+
+	// Depth reader
+	IDepthFrameReader*      m_pDepthFrameReader;
+	RGBQUAD*                m_pDepthRGBX;
+
 	std::map<String,IKinectSensor*> sensorList;
 	std::map<String,int> sensorIndexList;
 
@@ -247,6 +255,7 @@ private:
 	bool caveSimulator;
 	bool enableKinectBody;
 	bool enableKinectColor;
+	bool enableKinectDepth;
 	bool enableKinectAudio;
 	bool enableKinectSpeechGrammar;
 	bool enableKinectSpeechDictation;

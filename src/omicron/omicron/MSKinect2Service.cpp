@@ -80,6 +80,7 @@ void MSKinectService::setup(Setting& settings)
 
 	enableKinectBody = Config::getBoolValue("enableKinectBody", settings, true);
 	enableKinectColor = Config::getBoolValue("enableKinectColor", settings, false);
+	enableKinectDepth = Config::getBoolValue("enableKinectDepth", settings, false);
 	enableKinectAudio = Config::getBoolValue("enableKinectSpeech", settings, false);
 	enableKinectSpeechGrammar = Config::getBoolValue("useGrammar", settings, true);
 	enableKinectSpeechDictation = Config::getBoolValue("useDictation", settings, false);
@@ -143,7 +144,10 @@ void MSKinectService::poll()
 	{
 		pollColor();
 	}
-
+	if (enableKinectDepth)
+	{
+		pollDepth();
+	}
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
 	if( enableKinectAudio )
 	{
@@ -296,6 +300,125 @@ void MSKinectService::pollColor()
 
 	SafeRelease(pColorFrame);
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void MSKinectService::pollDepth()
+{
+	if (!m_pDepthFrameReader)
+	{
+		return;
+	}
+
+	IDepthFrame* pDepthFrame = NULL;
+
+	HRESULT hr = m_pDepthFrameReader->AcquireLatestFrame(&pDepthFrame);
+
+	if (SUCCEEDED(hr))
+	{
+		INT64 nTime = 0;
+		IFrameDescription* pFrameDescription = NULL;
+		int nWidth = 0;
+		int nHeight = 0;
+		USHORT nDepthMinReliableDistance = 0;
+		USHORT nDepthMaxDistance = 0;
+		UINT nBufferSize = 0;
+		UINT16 *pBuffer = NULL;
+
+		hr = pDepthFrame->get_RelativeTime(&nTime);
+
+		if (SUCCEEDED(hr))
+		{
+			hr = pDepthFrame->get_FrameDescription(&pFrameDescription);
+		}
+
+		if (SUCCEEDED(hr))
+		{
+			hr = pFrameDescription->get_Width(&nWidth);
+		}
+
+		if (SUCCEEDED(hr))
+		{
+			hr = pFrameDescription->get_Height(&nHeight);
+		}
+
+		if (SUCCEEDED(hr))
+		{
+			hr = pDepthFrame->get_DepthMinReliableDistance(&nDepthMinReliableDistance);
+		}
+
+		if (SUCCEEDED(hr))
+		{
+			// In order to see the full range of depth (including the less reliable far field depth)
+			// we are setting nDepthMaxDistance to the extreme potential depth threshold
+			nDepthMaxDistance = USHRT_MAX;
+
+			// Note:  If you wish to filter by reliable depth distance, uncomment the following line.
+			//// hr = pDepthFrame->get_DepthMaxReliableDistance(&nDepthMaxDistance);
+		}
+
+		if (SUCCEEDED(hr))
+		{
+			hr = pDepthFrame->AccessUnderlyingBuffer(&nBufferSize, &pBuffer);
+		}
+
+		if (SUCCEEDED(hr))
+		{
+			// ProcessDepth(nTime, pBuffer, nWidth, nHeight, nDepthMinReliableDistance, nDepthMaxDistance);
+
+			// Make sure we've received valid data
+			if (m_pDepthRGBX && pBuffer && (nWidth == cDepthWidth) && (nHeight == cDepthHeight))
+			{
+				RGBQUAD* pRGBX = m_pDepthRGBX;
+
+				// end pixel is start + width*height - 1
+				const UINT16* pBufferEnd = pBuffer + (nWidth * nHeight);
+
+				while (pBuffer < pBufferEnd)
+				{
+					USHORT depth = *pBuffer;
+
+					// To convert to a byte, we're discarding the most-significant
+					// rather than least-significant bits.
+					// We're preserving detail, although the intensity will "wrap."
+					// Values outside the reliable depth range are mapped to 0 (black).
+
+					// Note: Using conditionals in this loop could degrade performance.
+					// Consider using a lookup table instead when writing production code.
+					BYTE intensity = static_cast<BYTE>((depth >= nDepthMinReliableDistance) && (depth <= nDepthMaxDistance) ? (depth % 256) : 0);
+
+					pRGBX->rgbRed = intensity;
+					pRGBX->rgbGreen = intensity;
+					pRGBX->rgbBlue = intensity;
+
+					++pRGBX;
+					++pBuffer;
+				}
+
+				BYTE* pImage = reinterpret_cast<BYTE*>(m_pDepthRGBX);
+				unsigned long pImageSize = cDepthWidth * cDepthHeight * sizeof(RGBQUAD);
+
+				int dataPacketSize = pImageSize / 1696;
+
+				for (int i = 0; i < 1696; i++)
+				{
+					memcpy(imageBuffer, &pImage[i * dataPacketSize], dataPacketSize);
+					Event* evt = mysInstance->writeHead();
+					evt->reset(Event::Update, Service::Generic, 0);
+					evt->setFlags(i);
+
+					evt->setExtraData(EventBase::ExtraDataString, dataPacketSize, 1, imageBuffer);
+					mysInstance->unlockEvents();
+				}
+			}
+			
+		}
+
+		SafeRelease(pFrameDescription);
+	}
+
+	SafeRelease(pDepthFrame);
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void MSKinectService::dispose() 
 {
@@ -382,6 +505,29 @@ HRESULT MSKinectService::InitializeDefaultKinect()
 			m_pColorRGBX = new RGBQUAD[cColorWidth * cColorHeight];
 
 			omsg("MSKinect2Service: Color camera started.");
+		}
+
+		// Initialize the Kinect and get the depth reader
+		IDepthFrameSource* pDepthFrameSource = NULL;
+
+		if (enableKinectDepth)
+		{
+			if (SUCCEEDED(hr))
+			{
+				hr = kinectSensor->get_DepthFrameSource(&pDepthFrameSource);
+			}
+
+			if (SUCCEEDED(hr))
+			{
+				hr = pDepthFrameSource->OpenReader(&m_pDepthFrameReader);
+			}
+
+			SafeRelease(pDepthFrameSource);
+
+			// create heap storage for depth pixel data in RGBX format
+			m_pDepthRGBX = new RGBQUAD[cDepthWidth * cDepthHeight];
+
+			omsg("MSKinect2Service: Depth camera started.");
 		}
 	}
 

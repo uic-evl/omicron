@@ -1,11 +1,11 @@
 /**************************************************************************************************
  * THE OMICRON PROJECT
  *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2016		Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2019		Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto		anishimoto42@gmail.com
  *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2016, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2019, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted 
  * provided that the following conditions are met:
@@ -217,6 +217,9 @@ private:
 	MSKinectService* mysInstance;
 	float myUpdateInterval;
 	float myCheckKinectInterval;
+	float lastUpdateTime;
+	float lastSendTime;
+	int currentPacket = 0;
 
 	static const int        cScreenWidth  = 320;
     static const int        cScreenHeight = 240;
@@ -240,9 +243,12 @@ private:
 	// Color reader
 	IColorFrameReader*      m_pColorFrameReader;
 	RGBQUAD*                m_pColorRGBX;
+	BYTE*					color_pImage;
+	bool					color_pImageReady = false;
+	int						currentFrameTimestamp;
 
 	// Color event buffer
-	byte					imageBuffer[41472];
+	byte					imageEventBuffer[41472];
 
 	// Depth reader
 	IDepthFrameReader*      m_pDepthFrameReader;

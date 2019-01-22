@@ -1,11 +1,11 @@
 /**************************************************************************************************
 * THE OMICRON PROJECT
 *-------------------------------------------------------------------------------------------------
-* Copyright 2010-2016		Electronic Visualization Laboratory, University of Illinois at Chicago
+* Copyright 2010-2019		Electronic Visualization Laboratory, University of Illinois at Chicago
 * Authors:										
 *  Arthur Nishimoto		anishimoto42@gmail.com
 *-------------------------------------------------------------------------------------------------
-* Copyright (c) 2010-2016, Electronic Visualization Laboratory, University of Illinois at Chicago
+* Copyright (c) 2010-2019, Electronic Visualization Laboratory, University of Illinois at Chicago
 * All rights reserved.
 * Redistribution and use in source and binary forms, with or without modification, are permitted 
 * provided that the following conditions are met:
@@ -72,7 +72,7 @@ MSKinectService::MSKinectService(){
 void MSKinectService::setup(Setting& settings)
 {
 	myUpdateInterval = Config::getFloatValue("updateInterval", settings, 0.01f);
-	myCheckKinectInterval = Config::getFloatValue("checkInterval", settings, 2.00f);
+	myCheckKinectInterval = Config::getFloatValue("imageStreamInterval", settings, 0.2f);
 
 	m_bSeatedMode = Config::getBoolValue("seatedMode", settings, false);
 
@@ -145,13 +145,57 @@ void MSKinectService::poll()
 	{
 		pollBody();
 	}
-	if (enableKinectColor)
+
+	float lastt = lastUpdateTime;
+
+	float curt = (float)((double)clock() / CLOCKS_PER_SEC);
+	if (curt - lastt > mysInstance->myUpdateInterval)
 	{
-		pollColor();
+		if (!color_pImageReady)
+		{
+			if (enableKinectColor)
+			{
+				pollColor();
+			}
+		}
+
+		if (enableKinectDepth)
+		{
+			pollDepth();
+		}
+		lastUpdateTime = curt;
 	}
-	if (enableKinectDepth)
+
+	if (color_pImageReady && curt - lastSendTime > mysInstance->myCheckKinectInterval)
 	{
-		pollDepth();
+		unsigned long pImageSize = cColorWidth * cColorHeight * sizeof(RGBQUAD);
+
+		int nPackets = 270; // 1920 * 1080 = 2073600 * 4 = 8294400 / 256 = 32400 (max imageBuffer size = 41472)
+		int dataPacketSize = pImageSize / nPackets;
+
+		int eventsPerUpdate = 10;
+
+		for (int i = 0; i < eventsPerUpdate; i++)
+		{
+			memcpy(imageEventBuffer, &color_pImage[currentPacket * dataPacketSize], dataPacketSize);
+			Event* evt = mysInstance->writeHead();
+			evt->reset(Event::Update, Service::Generic, currentFrameTimestamp);
+			evt->setPosition(cColorWidth, cColorHeight, 0); // Position: imageWidth, imageHeight, typeFlag (Color = 0, Depth = 1)
+			evt->setFlags(currentPacket);
+
+			evt->setExtraData(EventBase::ExtraDataString, dataPacketSize, 1, imageEventBuffer);
+			mysInstance->unlockEvents();
+			currentPacket++;
+
+			if (currentPacket > nPackets - 1)
+			{
+				currentPacket = 0;
+				color_pImageReady = false;
+				break;
+			}
+		}
+
+		lastSendTime = curt;
 	}
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
 	if( enableKinectAudio )
@@ -283,22 +327,13 @@ void MSKinectService::pollColor()
 
 		if (SUCCEEDED(hr))
 		{
-			BYTE* pImage = reinterpret_cast<BYTE*>(pBuffer);
-			unsigned long pImageSize = cColorWidth * cColorHeight * sizeof(RGBQUAD);
+			color_pImage = reinterpret_cast<BYTE*>(pBuffer);
 
-			int nPackets = 270; // 1920 * 1080 = 2073600 * 4 = 8294400 / 256 = 32400 (max imageBuffer size = 41472)
-			int dataPacketSize = pImageSize / nPackets;
-						
-			for (int i = 0; i < nPackets; i++)
-			{
-				memcpy(imageBuffer, &pImage[i * dataPacketSize], dataPacketSize);
-				Event* evt = mysInstance->writeHead();
-				evt->reset(Event::Update, Service::Generic, 0);
-				evt->setFlags(i);
+			color_pImageReady = true;
 
-				evt->setExtraData(EventBase::ExtraDataString, dataPacketSize, 1, imageBuffer);
-				mysInstance->unlockEvents();
-			}
+			timeb tb;
+			ftime(&tb);
+			currentFrameTimestamp = tb.millitm + (tb.time & 0xfffff) * 1000;
 		}
 
 		SafeRelease(pFrameDescription);
@@ -417,14 +452,19 @@ void MSKinectService::pollDepth()
 				int nPackets = 32; // 512 * 424 = 217088 * 4 = 868352 / 32 = 27136 (max imageBuffer size = 41472)
 				int dataPacketSize = pImageSize / nPackets;
 
+				timeb tb;
+				ftime(&tb);
+				int timestamp = tb.millitm + (tb.time & 0xfffff) * 1000;
+
 				for (int i = 0; i < nPackets; i++)
 				{
-					memcpy(imageBuffer, &pImage[i * dataPacketSize], dataPacketSize);
+					memcpy(imageEventBuffer, &pImage[i * dataPacketSize], dataPacketSize);
 					Event* evt = mysInstance->writeHead();
-					evt->reset(Event::Update, Service::Generic, 1);
+					evt->reset(Event::Update, Service::Generic, timestamp);
+					evt->setPosition(cDepthWidth, cDepthHeight, 1); // Position: imageWidth, imageHeight, typeFlag (Color = 0, Depth = 1)
 					evt->setFlags(i);
 
-					evt->setExtraData(EventBase::ExtraDataString, dataPacketSize, 1, imageBuffer);
+					evt->setExtraData(EventBase::ExtraDataString, dataPacketSize, 1, imageEventBuffer);
 					mysInstance->unlockEvents();
 				}
 			}

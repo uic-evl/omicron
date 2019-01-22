@@ -253,7 +253,8 @@ void InputServer::handleEvent(const Event& evt)
 				}
 				else
 				{
-					client->sendEvent(eventPacketLarge, 32768);
+					client->sendEvent(eventPacketLarge, 51200);
+					//ofmsg("Sent frame %1% %2%", %evt.getSourceId() %evt.getFlags());
 				}
 			}
 			else

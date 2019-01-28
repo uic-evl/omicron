@@ -64,16 +64,18 @@ namespace omicron
 		//! This enumeration is kept for compatibility reason and may be removed in the future.
 		//! To add new service types modify the relative enumeration in the EventBase class
 		//! (connector/omicronConnectorClient.h)
-		enum ServiceType { 
-			Pointer = EventBase::ServiceTypePointer, 
-			Mocap = EventBase::ServiceTypeMocap, 
-			Keyboard = EventBase::ServiceTypeKeyboard, 
-			Controller = EventBase::ServiceTypeController, 
-			Ui = EventBase::ServiceTypeUi, 
-			Generic = EventBase::ServiceTypeGeneric, 
-			Brain = EventBase::ServiceTypeBrain, 
-			Wand = EventBase::ServiceTypeWand, 
-			Speech = EventBase::ServiceTypeSpeech }; 
+		enum ServiceType {
+			Pointer = EventBase::ServiceTypePointer,
+			Mocap = EventBase::ServiceTypeMocap,
+			Keyboard = EventBase::ServiceTypeKeyboard,
+			Controller = EventBase::ServiceTypeController,
+			Ui = EventBase::ServiceTypeUi,
+			Generic = EventBase::ServiceTypeGeneric,
+			Brain = EventBase::ServiceTypeBrain,
+			Wand = EventBase::ServiceTypeWand,
+			Speech = EventBase::ServiceTypeSpeech,
+			Image = EventBase::ServiceTypeImage
+		};
 
 		enum ServicePollPriority { PollFirst, PollNormal, PollLast }; 
 

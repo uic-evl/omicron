@@ -233,7 +233,9 @@ namespace omicron
             ServiceTypeGeneric, 
             ServiceTypeBrain, 
             ServiceTypeWand, 
-            ServiceTypeSpeech }; 
+            ServiceTypeSpeech,
+			ServiceTypeImage
+		}; 
 
         //! #PYAPI Supported event types.
         //! The python API exposed this enum in the EventType object.

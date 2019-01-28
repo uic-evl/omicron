@@ -102,7 +102,15 @@ void NetService::poll()
 
 				char* eventPacket = InputServer::createOmicronPacketFromEvent(e);
 
-				streamClient->sendEvent(eventPacket, DEFAULT_BUFLEN);
+				if (!e->isExtraDataLarge())
+				{
+					streamClient->sendEvent(eventPacket, DEFAULT_BUFLEN);
+				}
+				else
+				{
+					streamClient->sendEvent(eventPacket, DEFAULT_LRGBUFLEN);
+				}
+
 				delete eventPacket;
 			}
 		}

@@ -58,34 +58,70 @@ const char* InputServer::tactileHandshake = "tactile_data_on";
 // Creates an event packet from an Omicron event. Returns the buffer.
 char* InputServer::createOmicronPacketFromEvent(const Event* evt)
 {
-    int offset = 0;
-	char* eventPacket = new char[DEFAULT_BUFLEN];
+	int offset = 0;
 
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getTimestamp()); 
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getSourceId()); 
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getDeviceTag()); 
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getServiceType()); 
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getType()); 
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getFlags()); 
-    OI_WRITEBUF(float, eventPacket, offset, evt->getPosition().x()); 
-    OI_WRITEBUF(float, eventPacket, offset, evt->getPosition().y()); 
-    OI_WRITEBUF(float, eventPacket, offset, evt->getPosition().z()); 
-    OI_WRITEBUF(float, eventPacket, offset, evt->getOrientation().w()); 
-    OI_WRITEBUF(float, eventPacket, offset, evt->getOrientation().x()); 
-    OI_WRITEBUF(float, eventPacket, offset, evt->getOrientation().y()); 
-    OI_WRITEBUF(float, eventPacket, offset, evt->getOrientation().z()); 
-        
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getExtraDataType()); 
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getExtraDataItems()); 
-    OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getExtraDataMask());
-        
-    if(evt->getExtraDataType() != Event::ExtraDataNull)
-    {
-        memcpy(&eventPacket[offset], evt->getExtraDataBuffer(), evt->getExtraDataSize());
-    }
-    offset += evt->getExtraDataSize();
+	if (!evt->isExtraDataLarge())
+	{
+		char* eventPacket = new char[DEFAULT_BUFLEN];
 
-    return eventPacket;
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getTimestamp());
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getSourceId());
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getDeviceTag());
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getServiceType());
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getType());
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getFlags());
+		OI_WRITEBUF(float, eventPacket, offset, evt->getPosition().x());
+		OI_WRITEBUF(float, eventPacket, offset, evt->getPosition().y());
+		OI_WRITEBUF(float, eventPacket, offset, evt->getPosition().z());
+		OI_WRITEBUF(float, eventPacket, offset, evt->getOrientation().w());
+		OI_WRITEBUF(float, eventPacket, offset, evt->getOrientation().x());
+		OI_WRITEBUF(float, eventPacket, offset, evt->getOrientation().y());
+		OI_WRITEBUF(float, eventPacket, offset, evt->getOrientation().z());
+
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getExtraDataType());
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getExtraDataItems());
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getExtraDataMask());
+
+		if (evt->getExtraDataType() != Event::ExtraDataNull)
+		{
+			memcpy(&eventPacket[offset], evt->getExtraDataBuffer(), evt->getExtraDataSize());
+		}
+		offset += evt->getExtraDataSize();
+
+		return eventPacket;
+	}
+	else
+	{
+		char* eventPacketLarge = new char[DEFAULT_LRGBUFLEN];
+
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt->getTimestamp());
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt->getSourceId());
+		OI_WRITEBUF(int, eventPacketLarge, offset, evt->getDeviceTag());
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt->getServiceType());
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt->getType());
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt->getFlags());
+		OI_WRITEBUF(float, eventPacketLarge, offset, evt->getPosition().x());
+		OI_WRITEBUF(float, eventPacketLarge, offset, evt->getPosition().y());
+		OI_WRITEBUF(float, eventPacketLarge, offset, evt->getPosition().z());
+		OI_WRITEBUF(float, eventPacketLarge, offset, evt->getOrientation().w());
+		OI_WRITEBUF(float, eventPacketLarge, offset, evt->getOrientation().x());
+		OI_WRITEBUF(float, eventPacketLarge, offset, evt->getOrientation().y());
+		OI_WRITEBUF(float, eventPacketLarge, offset, evt->getOrientation().z());
+
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt->getExtraDataType());
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt->getExtraDataItems());
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt->getExtraDataMask());
+
+		//void* buffer = evt->getExtraDataBuffer();
+		//int bufferSize = evt->getExtraDataSize();
+		//eventPacketLarge = (char*)buffer;
+
+		memcpy(&eventPacketLarge[offset], evt->getExtraDataBuffer(), evt->getExtraDataSize());
+
+		offset += evt->getExtraDataSize();
+
+		return eventPacketLarge;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -179,8 +215,6 @@ void InputServer::handleEvent(const Event& evt)
 	}
 	else
 	{
-		// eventPacketLarge = new char[LargeBufferSize];
-
 		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getTimestamp());
 		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getSourceId());
 		OI_WRITEBUF(int, eventPacketLarge, offset, evt.getDeviceTag());
@@ -198,10 +232,6 @@ void InputServer::handleEvent(const Event& evt)
 		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getExtraDataType());
 		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getExtraDataItems());
 		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getExtraDataMask());
-
-		//void* buffer = evt.getExtraDataBuffer();
-		//int bufferSize = evt.getExtraDataSize();
-		//eventPacketLarge = (char*)buffer;
 
 		memcpy(&eventPacketLarge[offset], evt.getExtraDataBuffer(), evt.getExtraDataSize());
 

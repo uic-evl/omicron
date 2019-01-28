@@ -495,6 +495,7 @@ namespace omicronConnector
 // if OMICRON_CONNECTOR_LEAN_AND_MEAN, only define the omicron::EventBase and omicronConnector::EventData classes.
 // Skip the OmicronConnectorClient class and all socket functionality.
 #define DEFAULT_BUFLEN 1024 // Moved out of OmicronConnectorClient as NetClient/InputServer also uses this
+#define DEFAULT_LRGBUFLEN 51200 // Moved out of OmicronConnectorClient as NetClient/InputServer also uses this
 
 #ifndef OMICRON_CONNECTOR_LEAN_AND_MEAN
 #ifndef OMICRON_CONNECTORCLIENT_DEFINED

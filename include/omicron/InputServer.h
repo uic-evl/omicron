@@ -356,7 +356,7 @@ private:
     char legacyPacket[DEFAULT_BUFLEN];
 	char tacTilePacket[DEFAULT_BUFLEN];
 
-	char eventPacketLarge[51200];
+	char eventPacketLarge[DEFAULT_LRGBUFLEN];
 
 	bool validLegacyEvent;
 	bool validTacTileEvent;

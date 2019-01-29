@@ -892,7 +892,7 @@ void InputServer::loop()
 		if ( client->isReceivingData() )
 		{
 			// Grab data from client
-			int iresult = client->recvEvent(eventPacket, DEFAULT_BUFLEN);
+			int iresult = client->recvEvent(eventPacket, DEFAULT_LRGBUFLEN);
 			if (iresult > 0)
 			{
 				// Convert client packet to omicron event

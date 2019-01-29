@@ -141,30 +141,34 @@ void MSKinectService::initialize()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void MSKinectService::poll()
 {
+	float curt = (float)((double)clock() / CLOCKS_PER_SEC);
+
 	if (enableKinectBody)
 	{
 		pollBody();
 	}
 
+	if (enableKinectColor)
+	{
+		pollColor();
+	}
+
+
+	if (enableKinectDepth)
+	{
+		pollDepth();
+	}
+
+	/*
 	float lastt = lastUpdateTime;
 
-	float curt = (float)((double)clock() / CLOCKS_PER_SEC);
+	
 	if (curt - lastt > mysInstance->myUpdateInterval)
 	{
-		if (!color_pImageReady)
-		{
-			if (enableKinectColor)
-			{
-				pollColor();
-			}
-		}
-
-		if (enableKinectDepth)
-		{
-			pollDepth();
-		}
+		
 		lastUpdateTime = curt;
 	}
+	*/
 
 	if (color_pImageReady && curt - lastSendTime > mysInstance->myCheckKinectInterval)
 	{
@@ -192,6 +196,18 @@ void MSKinectService::poll()
 				currentPacket = 0;
 				color_pImageReady = false;
 				break;
+			}
+		}
+
+		if (debugInfo)
+		{
+			if (color_pImageReady == true)
+			{
+				ofmsg("Kinect Color Frame %1% packet %2% to %3% generated", %currentFrameTimestamp % (currentPacket - 10) % (currentPacket - 1));
+			}
+			else
+			{
+				ofmsg("Kinect Color Frame %1% packet %2% to %3% generated", %currentFrameTimestamp % (nPackets - 10) % (nPackets - 1));
 			}
 		}
 
@@ -327,13 +343,21 @@ void MSKinectService::pollColor()
 
 		if (SUCCEEDED(hr))
 		{
-			color_pImage = reinterpret_cast<BYTE*>(pBuffer);
+			if (color_pImageReady == false)
+			{
+				color_pImage = reinterpret_cast<BYTE*>(pBuffer);
 
-			color_pImageReady = true;
+				color_pImageReady = true;
 
-			timeb tb;
-			ftime(&tb);
-			currentFrameTimestamp = tb.millitm + (tb.time & 0xfffff) * 1000;
+				timeb tb;
+				ftime(&tb);
+				currentFrameTimestamp = tb.millitm + (tb.time & 0xfffff) * 1000;
+
+				if (debugInfo)
+				{
+					ofmsg("Kinect Color Frame %1% Ready", %currentFrameTimestamp);
+				}
+			}
 		}
 
 		SafeRelease(pFrameDescription);
@@ -466,6 +490,11 @@ void MSKinectService::pollDepth()
 
 					evt->setExtraData(EventBase::ExtraDataString, dataPacketSize, 1, imageEventBuffer);
 					mysInstance->unlockEvents();
+				}
+
+				if (debugInfo)
+				{
+					ofmsg("Kinect Depth Frame %1% Ready", %timestamp);
 				}
 			}
 			

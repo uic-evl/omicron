@@ -237,11 +237,11 @@ endif()
 
 # PQLabs touch surface module
 if(WIN32)
-    set(OMICRON_USE_PQLABS true CACHE BOOL "Enable/disable PqLabs multitouch support")
-    if(OMICRON_USE_PQLABS)
-        set( srcs	 ${srcs} omicron/PQService.cpp )
-        set( headers ${headers} ${CMAKE_SOURCE_DIR}/include/omicron/PQService.h )
-    endif()
+	set(OMICRON_USE_PQLABS true CACHE BOOL "Enable/disable PqLabs multitouch support")
+	if(OMICRON_USE_PQLABS)
+		set( srcs	 ${srcs} omicron/PQService.cpp )
+		set( headers ${headers} ${CMAKE_SOURCE_DIR}/include/omicron/PQService.h )
+	endif()
 endif()
 
 # DirectInput support
@@ -352,7 +352,12 @@ if(OMICRON_USE_PQLABS)
         # Copy the PQLabs dll into the destination bin directory
         configure_file(${EXT_LIB_DIR}/PQMTClient.dll ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG} COPYONLY)
         configure_file(${EXT_LIB_DIR}/PQMTClient.dll ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE} COPYONLY)
-    endif(WIN32)
+	else(WIN32)
+	# target_link_libraries( omicron ${EXT_LIB_DIR}/libPQMTClient.a)
+        # Copy the PQLabs dll into the destination bin directory
+        # configure_file(${EXT_LIB_DIR}/libPQMTClient.a ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG} COPYONLY)
+        # configure_file(${EXT_LIB_DIR}/libPQMTClient.a ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE} COPYONLY)
+	endif(WIN32)
 endif(OMICRON_USE_PQLABS)
 
 if(OMICRON_USE_NETSERVICE)

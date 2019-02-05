@@ -92,7 +92,7 @@
 #define INVALID_SOCKET            (0)
 #endif
 
-enum DataMode { data_omicron, data_omicron_legacy, data_omicron_in, data_tactile, data_omicronV2 };
+enum DataMode { data_omicron, data_omicron_legacy, data_omicron_in, data_tactile, data_omicronV2, data_omicronV3 };
 
 ///////////////////////////////////////////////////////////////////////////////
 // Based on Winsock UDP Server Example:
@@ -121,6 +121,24 @@ private:
 
 	const char* clientAddress;
 	int clientPort;
+	int clientFlags;
+
+	enum ClientFlags
+	{
+		DataIn = 1 << 0,
+		ServicePointer = 1 << 1,
+		ServiceMocap = 1 << 2,
+		ServiceKeyboard = 1 << 3,
+		ServiceController = 1 << 4,
+		ServiceUI = 1 << 5,
+		ServiceGeneric = 1 << 6,
+		ServiceBrain = 1 << 7,
+		ServiceWand = 1 << 8,
+		ServiceSpeech = 1 << 9,
+		ServiceImage = 1 << 10,
+		AlwaysTCP = 1 << 11,
+		AlwaysUDP = 1 << 12
+	};
 public:
 	NetClient(const char* address, int port)
 	{
@@ -128,6 +146,7 @@ public:
 		clientPort = port;
 
 		clientMode = data_omicron;
+		clientFlags = 0;
 
 		// Create a UDP socket for sending data
 		udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -142,13 +161,13 @@ public:
 		udpConnected = true;
 	}
 
-	NetClient(const char* address, int port, SOCKET clientSocket)
+	NetClient(const char* address, int port, SOCKET clientSocket, int flags = 0)
 	{
 		clientAddress = address;
 		clientPort = port;
 
 		clientMode = data_omicron;
-		
+		clientFlags = flags;
 
 		// Create a UDP socket for sending data
 		udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -165,13 +184,14 @@ public:
 		tcpConnected = true;
 	}// CTOR
 
-	NetClient(const char* address, int port, DataMode mode, SOCKET clientSocket)
+	NetClient(const char* address, int port, DataMode mode, SOCKET clientSocket, int flags = 0)
 	{
 		clientAddress = address;
 		clientPort = port;
 
 		clientMode = mode;
-		
+		updateFlags(flags);
+
 		// Create a UDP socket for sending data
 		udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
@@ -286,6 +306,26 @@ public:
 		}
 	}// SendMsg
 
+	void updateFlags(int flags)
+	{
+		clientFlags = flags;
+
+		printf("NetClient %s:%i has flags.\n", clientAddress, clientPort);
+		printf("   Flag: DataIn %i\n", (clientFlags & ClientFlags::DataIn) == ClientFlags::DataIn);
+		printf("   Flag: ServicePointerEnabled %i\n", (clientFlags & ClientFlags::ServicePointer) == ClientFlags::ServicePointer);
+		printf("   Flag: ServiceMocapEnabled %i\n", (clientFlags & ClientFlags::ServiceMocap) == ClientFlags::ServiceMocap);
+		printf("   Flag: ServiceKeyboardEnabled %i\n", (clientFlags & ClientFlags::ServiceKeyboard) == ClientFlags::ServiceKeyboard);
+		printf("   Flag: ServiceControllerEnabled %i\n", (clientFlags & ClientFlags::ServiceController) == ClientFlags::ServiceController);
+		printf("   Flag: ServiceUIEnabled %i\n", (clientFlags & ClientFlags::ServiceUI) == ClientFlags::ServiceUI);
+		printf("   Flag: ServiceGenericEnabled %i\n", (clientFlags & ClientFlags::ServiceGeneric) == ClientFlags::ServiceGeneric);
+		printf("   Flag: ServiceBrainEnabled %i\n", (clientFlags & ClientFlags::ServiceBrain) == ClientFlags::ServiceBrain);
+		printf("   Flag: ServiceWandEnabled %i\n", (clientFlags & ClientFlags::ServiceWand) == ClientFlags::ServiceWand);
+		printf("   Flag: ServiceSpeechEnabled %i\n", (clientFlags & ClientFlags::ServiceSpeech) == ClientFlags::ServiceSpeech);
+		printf("   Flag: ServiceImageEnabled %i\n", (clientFlags & ClientFlags::ServiceImage) == ClientFlags::ServiceImage);
+		printf("   Flag: AlwaysTCP %i\n", (clientFlags & ClientFlags::AlwaysTCP) == ClientFlags::AlwaysTCP);
+		printf("   Flag: AlwaysUDP %i\n", (clientFlags & ClientFlags::AlwaysUDP) == ClientFlags::AlwaysUDP);
+	}
+
 	DataMode getMode()
 	{
 		return clientMode;
@@ -340,7 +380,7 @@ public:
 
 protected:
     void sendToClients(char*);
-    void createClient(const char*, int, DataMode mode, SOCKET);
+    void createClient(const char*, int, DataMode mode, SOCKET, int flags = 0);
 private:
     const char* serverPort;
     SOCKET listenSocket;    
@@ -351,6 +391,7 @@ private:
 	const static char* omicronStreamInHandshake;
 	const static char* legacyHandshake;
 	const static char* tactileHandshake;
+	const static char* omicronV3Handshake;
 
     char eventPacket[DEFAULT_BUFLEN];
     char legacyPacket[DEFAULT_BUFLEN];

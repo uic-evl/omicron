@@ -142,33 +142,28 @@ void MSKinectService::initialize()
 void MSKinectService::poll()
 {
 	float curt = (float)((double)clock() / CLOCKS_PER_SEC);
+	float lastt = lastUpdateTime;
 
 	if (enableKinectBody)
 	{
 		pollBody();
 	}
 
-	if (enableKinectColor)
-	{
-		pollColor();
-	}
+	//if (curt - lastt > mysInstance->myUpdateInterval)
+	//{
+		if (enableKinectColor)
+		{
+			pollColor();
+		}
 
 
-	if (enableKinectDepth)
-	{
-		pollDepth();
-	}
+		if (enableKinectDepth)
+		{
+			pollDepth();
+		}
 
-	/*
-	float lastt = lastUpdateTime;
-
-	
-	if (curt - lastt > mysInstance->myUpdateInterval)
-	{
-		
-		lastUpdateTime = curt;
-	}
-	*/
+	//	lastUpdateTime = curt;
+	//}
 
 	if (color_pImageReady && curt - lastSendTime > mysInstance->myCheckKinectInterval)
 	{
@@ -177,7 +172,7 @@ void MSKinectService::poll()
 		int nPackets = 270; // 1920 * 1080 = 2073600 * 4 = 8294400 / 256 = 32400 (max imageBuffer size = 41472)
 		int dataPacketSize = pImageSize / nPackets;
 
-		int eventsPerUpdate = 10;
+		int eventsPerUpdate = 1;
 
 		for (int i = 0; i < eventsPerUpdate; i++)
 		{
@@ -203,11 +198,11 @@ void MSKinectService::poll()
 		{
 			if (color_pImageReady == true)
 			{
-				ofmsg("Kinect Color Frame %1% packet %2% to %3% generated", %currentFrameTimestamp % (currentPacket - 10) % (currentPacket - 1));
+				ofmsg("Kinect Color Frame %1% packet %2% to %3% generated", %currentFrameTimestamp % (currentPacket - eventsPerUpdate) % (currentPacket - 1));
 			}
 			else
 			{
-				ofmsg("Kinect Color Frame %1% packet %2% to %3% generated", %currentFrameTimestamp % (nPackets - 10) % (nPackets - 1));
+				ofmsg("Kinect Color Frame %1% packet %2% to %3% generated", %currentFrameTimestamp % (nPackets - eventsPerUpdate) % (nPackets - 1));
 			}
 		}
 

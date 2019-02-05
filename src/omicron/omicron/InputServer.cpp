@@ -53,6 +53,7 @@ const char* InputServer::omicronV2Handshake = "omicronV2_data_on";
 const char* InputServer::omicronStreamInHandshake = "omicron_data_in";
 const char* InputServer::legacyHandshake = "omicron_legacy_data_on";
 const char* InputServer::tactileHandshake = "tactile_data_on";
+const char* InputServer::omicronV3Handshake = "omicronV3_data_on";
 
 ///////////////////////////////////////////////////////////////////////////////
 // Creates an event packet from an Omicron event. Returns the buffer.
@@ -253,7 +254,7 @@ void InputServer::handleEvent(const Event& evt)
     }
 
 	if (showEventStream)
-		printf("oinputserver: Event %d type: %d sent at pos %f %f\n", evt.getSourceId(), evt.getType(), evt.getPosition().x(), evt.getPosition().y());
+		printf("oinputserver: Event %d type: %d flags: %d sent at pos %f %f\n", evt.getSourceId(), evt.getType(), evt.getFlags(), evt.getPosition().x(), evt.getPosition().y());
 
 	// Send to clients
 	std::map<char*, NetClient*>::iterator itr = netClients.begin();
@@ -283,7 +284,7 @@ void InputServer::handleEvent(const Event& evt)
 				}
 				else
 				{
-					client->sendEvent(eventPacketLarge, 51200);
+					client->sendEvent(eventPacketLarge, DEFAULT_LRGBUFLEN);
 					//ofmsg("Sent frame %1% %2%", %evt.getSourceId() %evt.getFlags());
 				}
 			}
@@ -292,12 +293,26 @@ void InputServer::handleEvent(const Event& evt)
 				// If client supports dual TCP/UDP (V2), send single events as TCP
 				if (client->getMode() == data_omicronV2)
 				{
-					client->sendMsg(eventPacket, DEFAULT_BUFLEN);
+					if (!evt.isExtraDataLarge())
+					{
+						client->sendMsg(eventPacket, DEFAULT_BUFLEN);
+					}
+					else
+					{
+						client->sendMsg(eventPacketLarge, DEFAULT_LRGBUFLEN);
+					}
 				}
 				else
 				{
 					// Legacy support, send single events as UDP
-					client->sendEvent(eventPacket, DEFAULT_BUFLEN);
+					if (!evt.isExtraDataLarge())
+					{
+						client->sendEvent(eventPacket, DEFAULT_BUFLEN);
+					}
+					else
+					{
+						client->sendEvent(eventPacketLarge, DEFAULT_LRGBUFLEN);
+					}
 				}
 			}
 		}
@@ -773,28 +788,43 @@ SOCKET InputServer::startListening()
             //printf("Service: Bytes received: %d\n", iResult);
             char* inMessage;
             char* portCStr;
+			char* flagsCStr;
             inMessage = new char[iResult];
             portCStr = new char[iResult];
+			flagsCStr = new char[iResult];
 
+			int readState = 0; // 0 = message, 1 = dataPort, 2 = clientParameters
             // Iterate through message string and
             // separate 'data_on,' from the port number
             int portIndex = iResult;
+			int flagIndex = iResult;
             for( int i = 0; i < iResult; i++ )
             {
-                if( recvbuf[i] == ',' )
+                if( recvbuf[i] == ',' && readState == 0)
                 {
                     portIndex = i + 1;
                     inMessage[i] = '\0';
+					readState = 1;
                 }
+				else if (recvbuf[i] == ',' && readState == 1)
+				{
+					flagIndex = i + 1;
+					readState = 2;
+				}
                 else if( i < portIndex )
                 {
                     inMessage[i] = recvbuf[i];
                 } 
-                else 
+                else if(readState == 1)
                 {
                     portCStr[i-portIndex] = recvbuf[i];
                     portCStr[i-portIndex+1] = '\n';
                 }
+				else if (readState == 2)
+				{
+					flagsCStr[i - flagIndex] = recvbuf[i];
+					flagsCStr[i - flagIndex + 1] = '\n';
+				}
             }
 
             // Make sure handshake is correct
@@ -821,6 +851,14 @@ SOCKET InputServer::startListening()
 				dataPort = atoi(portCStr);
 				printf("OInputServer: '%s' requests omicron 2.0 (Dual TCP/UDP) data to be sent on port '%d'\n", clientAddress, dataPort);
 				createClient(clientAddress, dataPort, data_omicronV2, clientSocket);
+			}
+			else if (strcmp(inMessage, omicronV3Handshake) == 0)
+			{
+				// Get data port number
+				dataPort = atoi(portCStr);
+				int flags = atoi(flagsCStr);
+				printf("OInputServer: '%s' requests omicron 3.0 (Client flags) data to be sent on port '%d' with flag '%d'\n", clientAddress, dataPort, flags);
+				createClient(clientAddress, dataPort, data_omicronV2, clientSocket, flags);
 			}
 			else if (strcmp(inMessage, omicronStreamInHandshake) == 0)
 			{
@@ -928,7 +966,7 @@ void InputServer::loop()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void InputServer::createClient(const char* clientAddress, int dataPort, DataMode mode, SOCKET clientSocket)
+void InputServer::createClient(const char* clientAddress, int dataPort, DataMode mode, SOCKET clientSocket, int flags)
 {
     // Generate a unique name for client "address:port"
     char* addr = new char[128];
@@ -955,6 +993,7 @@ void InputServer::createClient(const char* clientAddress, int dataPort, DataMode
             printf("OInputServer: NetClient already exists: %s \n", addr );
 			clientExists = true;
 			p->second->updateClientSocket(clientSocket);
+			p->second->updateFlags(flags);
 
             // Check dataMode: if different, update client
             if( p->second->getMode() != mode )
@@ -985,6 +1024,6 @@ void InputServer::createClient(const char* clientAddress, int dataPort, DataMode
 
 	if (!clientExists)
 	{
-		netClients[addr] = new NetClient(clientAddress, dataPort, mode, clientSocket);
+		netClients[addr] = new NetClient(clientAddress, dataPort, mode, clientSocket, flags);
 	}
 }

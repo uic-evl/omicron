@@ -24,7 +24,7 @@
  *********************************************************************************************************************/
 #include "omicron/PQService.h"
 #include "omicron/StringUtils.h"
-#include <Windows.h>
+//#include <Windows.h>
 
 using namespace omicron;
 

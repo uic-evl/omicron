@@ -126,27 +126,27 @@ private:
 	enum ClientFlags
 	{
 		DataIn = 1 << 0,
-		ServicePointer = 1 << 1,
-		ServiceMocap = 1 << 2,
-		ServiceKeyboard = 1 << 3,
-		ServiceController = 1 << 4,
-		ServiceUI = 1 << 5,
-		ServiceGeneric = 1 << 6,
-		ServiceBrain = 1 << 7,
-		ServiceWand = 1 << 8,
-		ServiceSpeech = 1 << 9,
-		ServiceImage = 1 << 10,
+		ServiceTypePointer = 1 << 1,
+		ServiceTypeMocap = 1 << 2,
+		ServiceTypeKeyboard = 1 << 3,
+		ServiceTypeController = 1 << 4,
+		ServiceTypeUi = 1 << 5,
+		ServiceTypeGeneric = 1 << 6,
+		ServiceTypeBrain = 1 << 7,
+		ServiceTypeWand = 1 << 8,
+		ServiceTypeSpeech = 1 << 9,
+		ServiceTypeImage = 1 << 10,
 		AlwaysTCP = 1 << 11,
 		AlwaysUDP = 1 << 12
 	};
 public:
-	NetClient(const char* address, int port)
+	NetClient(const char* address, int port, int flags = 2046)
 	{
 		clientAddress = address;
 		clientPort = port;
 
 		clientMode = data_omicron;
-		clientFlags = 0;
+		updateFlags(flags);
 
 		// Create a UDP socket for sending data
 		udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -161,13 +161,13 @@ public:
 		udpConnected = true;
 	}
 
-	NetClient(const char* address, int port, SOCKET clientSocket, int flags = 0)
+	NetClient(const char* address, int port, SOCKET clientSocket, int flags)
 	{
 		clientAddress = address;
 		clientPort = port;
 
 		clientMode = data_omicron;
-		clientFlags = flags;
+		updateFlags(flags);
 
 		// Create a UDP socket for sending data
 		udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -184,7 +184,7 @@ public:
 		tcpConnected = true;
 	}// CTOR
 
-	NetClient(const char* address, int port, DataMode mode, SOCKET clientSocket, int flags = 0)
+	NetClient(const char* address, int port, DataMode mode, SOCKET clientSocket, int flags)
 	{
 		clientAddress = address;
 		clientPort = port;
@@ -245,14 +245,21 @@ public:
 
 	void sendEvent(char* eventPacket, int length)
 	{
-		// Send a datagram to the receiver
-		sendto(udpSocket,
-			eventPacket,
-			length,
-			0,
-			(const struct sockaddr*)&recvAddr,
-			sizeof(recvAddr)
-		);
+		if (isFlagEnabled(ClientFlags::AlwaysTCP))
+		{
+			sendMsg(eventPacket, length);
+		}
+		else
+		{
+			// Send a datagram to the receiver
+			sendto(udpSocket,
+				eventPacket,
+				length,
+				0,
+				(const struct sockaddr*)&recvAddr,
+				sizeof(recvAddr)
+			);
+		}
 	}// SendEvent
 
 	int recvEvent(char* eventPacket, int length)
@@ -292,24 +299,31 @@ public:
 
 	void sendMsg(char* eventPacket, int length)
 	{
-		// Ping the client to see if still active
-		int result = sendto(tcpSocket,
-			eventPacket,
-			length,
-			0,
-			(const struct sockaddr*)&recvAddr,
-			sizeof(recvAddr));
-
-		if (result == SOCKET_ERROR)
+		if (isFlagEnabled(ClientFlags::AlwaysUDP))
 		{
-			tcpConnected = false;
+			sendEvent(eventPacket, length);
+		}
+		else
+		{
+			// Ping the client to see if still active
+			int result = sendto(tcpSocket,
+				eventPacket,
+				length,
+				0,
+				(const struct sockaddr*)&recvAddr,
+				sizeof(recvAddr));
+
+			if (result == SOCKET_ERROR)
+			{
+				tcpConnected = false;
+			}
 		}
 	}// SendMsg
 
 	void updateFlags(int flags)
 	{
 		clientFlags = flags;
-
+		/*
 		printf("NetClient %s:%i has flags.\n", clientAddress, clientPort);
 		printf("   Flag: DataIn %i\n", (clientFlags & ClientFlags::DataIn) == ClientFlags::DataIn);
 		printf("   Flag: ServicePointerEnabled %i\n", (clientFlags & ClientFlags::ServicePointer) == ClientFlags::ServicePointer);
@@ -324,6 +338,12 @@ public:
 		printf("   Flag: ServiceImageEnabled %i\n", (clientFlags & ClientFlags::ServiceImage) == ClientFlags::ServiceImage);
 		printf("   Flag: AlwaysTCP %i\n", (clientFlags & ClientFlags::AlwaysTCP) == ClientFlags::AlwaysTCP);
 		printf("   Flag: AlwaysUDP %i\n", (clientFlags & ClientFlags::AlwaysUDP) == ClientFlags::AlwaysUDP);
+		*/
+
+		if(isFlagEnabled(ClientFlags::DataIn))
+		{
+			clientMode = data_omicron_in;
+		}
 	}
 
 	DataMode getMode()
@@ -340,6 +360,39 @@ public:
 	{
 		return clientMode == data_omicron_in;
 	}// isReceivingData
+
+	bool isFlagEnabled(ClientFlags flag)
+	{
+		return (clientFlags & flag) == flag;
+	}
+
+	bool requestedServiceType(omicron::Service::ServiceType type)
+	{
+		switch (type)
+		{
+		case(omicron::Service::ServiceType::Pointer):
+			return (clientFlags & ClientFlags::ServiceTypePointer) == ClientFlags::ServiceTypePointer;
+		case(omicron::Service::ServiceType::Mocap):
+			return (clientFlags & ClientFlags::ServiceTypeMocap) == ClientFlags::ServiceTypeMocap;
+		case(omicron::Service::ServiceType::Keyboard):
+			return (clientFlags & ClientFlags::ServiceTypeKeyboard) == ClientFlags::ServiceTypeKeyboard;
+		case(omicron::Service::ServiceType::Controller):
+			return (clientFlags & ClientFlags::ServiceTypeController) == ClientFlags::ServiceTypeController;
+		case(omicron::Service::ServiceType::Ui):
+			return (clientFlags & ClientFlags::ServiceTypeUi) == ClientFlags::ServiceTypeUi;
+		case(omicron::Service::ServiceType::Generic):
+			return (clientFlags & ClientFlags::ServiceTypeGeneric) == ClientFlags::ServiceTypeGeneric;
+		case(omicron::Service::ServiceType::Brain):
+			return (clientFlags & ClientFlags::ServiceTypeBrain) == ClientFlags::ServiceTypeBrain;
+		case(omicron::Service::ServiceType::Wand):
+			return (clientFlags & ClientFlags::ServiceTypeWand) == ClientFlags::ServiceTypeWand;
+		case(omicron::Service::ServiceType::Speech):
+			return (clientFlags & ClientFlags::ServiceTypeSpeech) == ClientFlags::ServiceTypeSpeech;
+		case(omicron::Service::ServiceType::Image):
+			return (clientFlags & ClientFlags::ServiceTypeImage) == ClientFlags::ServiceTypeImage;
+		}
+		return false;
+	}
 
 	void dispose()
 	{
@@ -380,7 +433,7 @@ public:
 
 protected:
     void sendToClients(char*);
-    void createClient(const char*, int, DataMode mode, SOCKET, int flags = 0);
+    void createClient(const char*, int, DataMode mode, SOCKET, int flags = 2046);
 private:
     const char* serverPort;
     SOCKET listenSocket;    

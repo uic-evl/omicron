@@ -262,6 +262,12 @@ void InputServer::handleEvent(const Event& evt)
 	{
 		NetClient* client = itr->second;
 
+		// If client did not request a service, don't sent that service type event
+		if (!client->requestedServiceType(evt.getServiceType()))
+		{
+			continue;
+		}
+
 		if (client->getMode() == data_omicron_legacy)
 		{
 			//client->sendEvent(legacyPacket, 512);

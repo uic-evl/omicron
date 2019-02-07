@@ -343,7 +343,7 @@ private:
         continue;
 
       if (binding) {
-        if (bind(handle, rp->ai_addr, (int)rp->ai_addrlen) != 0) {
+        if (::bind(handle, rp->ai_addr, (int)rp->ai_addrlen) != 0) {
           close();
         } else {
           socklen_t len = (socklen_t)local_addr.maxLen();

@@ -205,13 +205,11 @@ void PQService::poll()
 
 					if (aliveState[id] == 1)
 					{
-						ofmsg("  Touch ID %1% (%2%, %3%) DOWN", %id %x %y);
 						tp.point_event = 0;
 						aliveState[id] = 2;
 					}
 					else if (aliveState[id] == 2)
 					{
-						ofmsg("  Touch ID %1% (%2%, %3%) MOVE", %id %x %y);
 						tp.point_event = 1;
 					}
 					
@@ -219,7 +217,6 @@ void PQService::poll()
 				}
 				else if (MSG_ALIVE)
 				{
-					ofmsg("  Alive: %1%", %aliveIDs.size());
 					map<int, int>::iterator it;
 
 					for ( it = aliveState.begin(); it != aliveState.end(); it++ )

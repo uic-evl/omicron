@@ -642,7 +642,7 @@ void InputServer::startConnection(Config* cfg)
 
     Setting& sCfg = cfg->lookup("config");
     serverPort = strdup(Config::getStringValue("serverPort", sCfg, "27000").c_str());
-    serverIP = strdup(Config::getStringValue("serverListenIP", sCfg, "127.0.0.1").c_str());
+    serverIP = strdup(Config::getStringValue("serverListenIP", sCfg, "").c_str());
 
     checkForDisconnectedClients = Config::getBoolValue("checkForDisconnectedClients", sCfg, false );
     showEventStream = Config::getBoolValue("showEventStream", sCfg, false );

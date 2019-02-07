@@ -264,55 +264,26 @@ void InputServer::handleEvent(const Event& evt)
 	{
 		NetClient* client = itr->second;
 
-		// If client did not request a service, don't sent that service type event
-		if (!client->requestedServiceType(evt.getServiceType()))
+		// Only send service types client requested
+		if (client->requestedServiceType(evt.getServiceType()))
 		{
-			continue;
-		}
 
-		if (client->getMode() == data_omicron_legacy)
-		{
-			//client->sendEvent(legacyPacket, 512);
-		}
-		else if (client->getMode() == data_tactile)
-		{
-			if (validTacTileEvent)
+			if (client->getMode() == data_omicron_legacy)
 			{
-				client->sendEvent(tacTilePacket, 512);
+				//client->sendEvent(legacyPacket, 512);
 			}
-		}
-		else
-		{
-			if (evt.getType() == Event::Update || evt.getType() == Event::Move)
+			else if (client->getMode() == data_tactile)
 			{
-				// Send continual data streams as UDP
-				if (!evt.isExtraDataLarge())
+				if (validTacTileEvent)
 				{
-					client->sendEvent(eventPacket, DEFAULT_BUFLEN);
-				}
-				else
-				{
-					client->sendEvent(eventPacketLarge, DEFAULT_LRGBUFLEN);
-					//ofmsg("Sent frame %1% %2%", %evt.getSourceId() %evt.getFlags());
+					client->sendEvent(tacTilePacket, 512);
 				}
 			}
 			else
 			{
-				// If client supports dual TCP/UDP (V2), send single events as TCP
-				if (client->getMode() == data_omicronV2)
+				if (evt.getType() == Event::Update || evt.getType() == Event::Move)
 				{
-					if (!evt.isExtraDataLarge())
-					{
-						client->sendMsg(eventPacket, DEFAULT_BUFLEN);
-					}
-					else
-					{
-						client->sendMsg(eventPacketLarge, DEFAULT_LRGBUFLEN);
-					}
-				}
-				else
-				{
-					// Legacy support, send single events as UDP
+					// Send continual data streams as UDP
 					if (!evt.isExtraDataLarge())
 					{
 						client->sendEvent(eventPacket, DEFAULT_BUFLEN);
@@ -320,6 +291,34 @@ void InputServer::handleEvent(const Event& evt)
 					else
 					{
 						client->sendEvent(eventPacketLarge, DEFAULT_LRGBUFLEN);
+						//ofmsg("Sent frame %1% %2%", %evt.getSourceId() %evt.getFlags());
+					}
+				}
+				else
+				{
+					// If client supports dual TCP/UDP (V2), send single events as TCP
+					if (client->getMode() == data_omicronV2)
+					{
+						if (!evt.isExtraDataLarge())
+						{
+							client->sendMsg(eventPacket, DEFAULT_BUFLEN);
+						}
+						else
+						{
+							client->sendMsg(eventPacketLarge, DEFAULT_LRGBUFLEN);
+						}
+					}
+					else
+					{
+						// Legacy support, send single events as UDP
+						if (!evt.isExtraDataLarge())
+						{
+							client->sendEvent(eventPacket, DEFAULT_BUFLEN);
+						}
+						else
+						{
+							client->sendEvent(eventPacketLarge, DEFAULT_LRGBUFLEN);
+						}
 					}
 				}
 			}

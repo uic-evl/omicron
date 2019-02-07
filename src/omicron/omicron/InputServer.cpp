@@ -1,13 +1,13 @@
 /******************************************************************************
  * THE OMICRON SDK
  *-----------------------------------------------------------------------------
- * Copyright 2010-2018		Electronic Visualization Laboratory, 
+ * Copyright 2010-2019		Electronic Visualization Laboratory, 
  *							University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto		anishimoto42@gmail.com
  *  Alessandro Febretti		febret@gmail.com
  *-----------------------------------------------------------------------------
- * Copyright (c) 2010-2018, Electronic Visualization Laboratory,  
+ * Copyright (c) 2010-2019, Electronic Visualization Laboratory,  
  * University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, 
@@ -43,6 +43,8 @@
 using namespace omicron;
 
 #include <stdio.h>
+#include <iostream>
+#include <fstream>
 
 #define OI_WRITEBUF(type, buf, offset, val) *((type*)&buf[offset]) = val; offset += sizeof(type);
 #define OI_READBUF(type, buf, offset, val) val = *((type*)&buf[offset]); offset += sizeof(type);
@@ -640,7 +642,7 @@ void InputServer::startConnection(Config* cfg)
 
     Setting& sCfg = cfg->lookup("config");
     serverPort = strdup(Config::getStringValue("serverPort", sCfg, "27000").c_str());
-    String serverIP = Config::getStringValue("serverListenIP", sCfg, "");
+    serverIP = strdup(Config::getStringValue("serverListenIP", sCfg, "127.0.0.1").c_str());
 
     checkForDisconnectedClients = Config::getBoolValue("checkForDisconnectedClients", sCfg, false );
     showEventStream = Config::getBoolValue("showEventStream", sCfg, false );
@@ -648,6 +650,9 @@ void InputServer::startConnection(Config* cfg)
 	showEventMessages = Config::getBoolValue("showEventMessages", sCfg, false);
 	showIncomingStream = Config::getBoolValue("showIncomingStream", sCfg, false);
 	showIncomingMessages = Config::getBoolValue("showIncomingMessages", sCfg, false);
+
+	logClientConnectionsToFile = Config::getBoolValue("logClientConnectionsToFile", sCfg, false);
+	clientConnectLogFilePath = strdup(Config::getStringValue("clientLogPath", sCfg, "connectionLog.txt").c_str());
 
     if( checkForDisconnectedClients )
         omsg("Check for disconnected clients enabled.");
@@ -680,8 +685,8 @@ void InputServer::startConnection(Config* cfg)
     hints.ai_flags = AI_PASSIVE;
 
     // Resolve the local address and port to be used by the server
-    if( serverIP.length() != 0 )
-        iResult = getaddrinfo(strdup(serverIP.c_str()), serverPort, &hints, &result);
+    if( strlen(serverIP) != 0 )
+        iResult = getaddrinfo(strdup(serverIP), serverPort, &hints, &result);
     else
         iResult = getaddrinfo(NULL, serverPort, &hints, &result);
 
@@ -689,7 +694,7 @@ void InputServer::startConnection(Config* cfg)
     {
         ofmsg("OInputServer: getaddrinfo failed: %1%", %iResult);
         SOCKET_CLEANUP();
-    } 
+    }
     
     // Create a SOCKET for the server to listen for client connections
     listenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
@@ -836,6 +841,26 @@ SOCKET InputServer::startListening()
             // Make sure handshake is correct
             int dataPort = 7000; // default port
 
+			std::ofstream clientLogFile;
+
+			if (logClientConnectionsToFile)
+			{
+				timeb tb;
+				ftime(&tb);
+				int timestamp = tb.time;
+
+				clientLogFile.open(clientConnectLogFilePath, std::ios::app);
+
+				std::string clientAddrStr(clientAddress);
+				std::string serverAddrStr(serverIP);
+				clientLogFile << timestamp;
+				clientLogFile << " " + serverAddrStr + ":";
+				clientLogFile << atoi(serverPort);
+				clientLogFile << " " + clientAddrStr;
+				clientLogFile << ":";
+				clientLogFile << atoi(portCStr);
+			}
+
             if( strcmp(inMessage, legacyHandshake) == 0 )
             {
                 // Get data port number
@@ -843,6 +868,8 @@ SOCKET InputServer::startListening()
                 printf("OInputServer: '%s' requests omicron legacy data to be sent on port '%d'\n", clientAddress, dataPort);
                 printf("OInputServer: WARNING - This server does not support legacy data!\n");
                 createClient( clientAddress, dataPort, data_omicron_legacy, clientSocket );
+
+				if (logClientConnectionsToFile) clientLogFile << " ACCEPTED LEGACY";
             }
             else if( strcmp(inMessage, omicronHandshake) == 0 )
             {
@@ -850,6 +877,8 @@ SOCKET InputServer::startListening()
                 dataPort = atoi(portCStr);
                 printf("OInputServer: '%s' requests omicron data to be sent on port '%d'\n", clientAddress, dataPort);
                 createClient( clientAddress, dataPort, data_omicron, clientSocket );
+
+				if (logClientConnectionsToFile) clientLogFile << " ACCEPTED OMICRON V1";
             }
 			else if (strcmp(inMessage, omicronV2Handshake) == 0)
 			{
@@ -857,6 +886,8 @@ SOCKET InputServer::startListening()
 				dataPort = atoi(portCStr);
 				printf("OInputServer: '%s' requests omicron 2.0 (Dual TCP/UDP) data to be sent on port '%d'\n", clientAddress, dataPort);
 				createClient(clientAddress, dataPort, data_omicronV2, clientSocket);
+
+				if (logClientConnectionsToFile) clientLogFile << " ACCEPTED OMICRON V2";
 			}
 			else if (strcmp(inMessage, omicronV3Handshake) == 0)
 			{
@@ -865,6 +896,8 @@ SOCKET InputServer::startListening()
 				int flags = atoi(flagsCStr);
 				printf("OInputServer: '%s' requests omicron 3.0 (Client flags) data to be sent on port '%d' with flag '%d'\n", clientAddress, dataPort, flags);
 				createClient(clientAddress, dataPort, data_omicronV2, clientSocket, flags);
+
+				if (logClientConnectionsToFile) clientLogFile << " ACCEPTED OMICRON V3";
 			}
 			else if (strcmp(inMessage, omicronStreamInHandshake) == 0)
 			{
@@ -872,6 +905,8 @@ SOCKET InputServer::startListening()
 				dataPort = atoi(portCStr);
 				printf("OInputServer: '%s' requests to SEND omicron data to be RECEIVED on port '%d'\n", clientAddress, dataPort);
 				createClient(clientAddress, dataPort, data_omicron_in, clientSocket);
+
+				if (logClientConnectionsToFile) clientLogFile << " ACCEPTED OMICRON DATAIN";
 			}
 			else if (strcmp(inMessage, tactileHandshake) == 0)
 			{
@@ -879,6 +914,8 @@ SOCKET InputServer::startListening()
 				dataPort = atoi(portCStr);
 				printf("OInputServer: '%s' requests TacTile dgram data to be sent on port '%d'\n", clientAddress, dataPort);
 				createClient(clientAddress, dataPort, data_tactile, clientSocket);
+
+				if (logClientConnectionsToFile) clientLogFile << " ACCEPTED TACTILE";
 			}
             else if( strcmp(inMessage, handshake) == 0 )
             {
@@ -886,6 +923,8 @@ SOCKET InputServer::startListening()
                 dataPort = atoi(portCStr);
                 printf("OInputServer: '%s' requests data (old handshake) to be sent on port '%d'\n", clientAddress, dataPort);
                 createClient( clientAddress, dataPort, data_omicron, clientSocket );
+
+				if (logClientConnectionsToFile) clientLogFile << " ACCEPTED OMICRON OLD";
             }
             else
             {
@@ -893,7 +932,21 @@ SOCKET InputServer::startListening()
                 dataPort = atoi(portCStr);
                 printf("OInputServer: '%s' requests data to be sent on port '%d'\n", clientAddress, dataPort);
                 printf("OInputServer: '%s' using unknown handshake '%s'\n", clientAddress, inMessage);
+
+				if (logClientConnectionsToFile)
+				{
+					std::string inMsgStr(inMessage);
+					clientLogFile << " REJECTED '";
+					clientLogFile << inMsgStr;
+					clientLogFile << "'";
+				}
             }
+
+			if (logClientConnectionsToFile)
+			{
+				clientLogFile << "\n";
+				clientLogFile.close();
+			}
 
             gotData = true;
             delete inMessage;

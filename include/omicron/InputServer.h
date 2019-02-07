@@ -1,13 +1,13 @@
 /******************************************************************************
 * THE OMICRON SDK
 *-----------------------------------------------------------------------------
-* Copyright 2010-2018		Electronic Visualization Laboratory,
+* Copyright 2010-2019		Electronic Visualization Laboratory,
 *							University of Illinois at Chicago
 * Authors:
 *  Arthur Nishimoto		anishimoto42@gmail.com
 *  Alessandro Febretti		febret@gmail.com
 *-----------------------------------------------------------------------------
-* Copyright (c) 2010-2018, Electronic Visualization Laboratory,
+* Copyright (c) 2010-2019, Electronic Visualization Laboratory,
 * University of Illinois at Chicago
 * All rights reserved.
 * Redistribution and use in source and binary forms, with or without modification,
@@ -440,6 +440,7 @@ protected:
     void sendToClients(char*);
     void createClient(const char*, int, DataMode mode, SOCKET, int flags = 2046);
 private:
+	const char* serverIP;
     const char* serverPort;
     SOCKET listenSocket;    
 
@@ -476,6 +477,9 @@ private:
 	bool showIncomingMessages;
     int lastOutgoingEventTime;
     int eventCount;
+
+	bool logClientConnectionsToFile;
+	const char* clientConnectLogFilePath;
 
 	ServiceManager* serviceManager;
 #ifdef OMICRON_USE_VRPN

@@ -1,11 +1,11 @@
 /********************************************************************************************************************** 
 * THE OMICRON PROJECT
  *---------------------------------------------------------------------------------------------------------------------
- * Copyright 2010-2017							Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2019							Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto								anishimoto42@gmail.com
  *---------------------------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2017, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2019, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the 
  * following conditions are met:
@@ -24,7 +24,6 @@
  *********************************************************************************************************************/
 #include "omicron/PQService.h"
 #include "omicron/StringUtils.h"
-//#include <Windows.h>
 
 using namespace omicron;
 
@@ -112,6 +111,156 @@ void PQService::poll()
 	{
 		touchGestureManager->poll();
 	}
+	
+#ifndef OMICRON_OS_WIN
+	// Check for response to query
+	if (tuioMsgSocket.receiveNextPacket(1)) {// Paramater is timeout in milliseconds. -1 (default) will wait indefinatly 
+		PacketReader pr(tuioMsgSocket.packetData(), tuioMsgSocket.packetSize());
+		Message *incoming_msg;
+
+		while (pr.isOk() && (incoming_msg = pr.popMessage()) != 0) {
+			// ofmsg("OSC In: %1%", %incoming_msg->addressPattern());
+			if (incoming_msg->addressPattern() == "/tuio/2Dcur")
+			{
+				bool MSG_SET = false;
+				bool MSG_ALIVE = false;
+
+				int curSetArg = 0;
+				int id = 0;
+				float x = 0;
+				float y = 0;
+				
+				std::vector<int> aliveIDs;
+				
+				Message::ArgReader arg(incoming_msg->arg());
+				while (arg.nbArgRemaining())
+				{
+					if (arg.isBlob()) {
+						std::vector<char> b; arg.popBlob(b);
+						//omsg("  received Blob");
+					}
+					else if (arg.isBool()) {
+						bool b; arg.popBool(b);
+						//ofmsg( "  received Bool %1%", %b );
+					}
+					else if (arg.isInt32()) {
+						int i; arg.popInt32(i);
+
+						if (MSG_SET)
+						{
+							id = i;
+						}
+						else if (MSG_ALIVE)
+						{
+							if (aliveState[i] == 0)
+							{
+								aliveState[i] = 1;
+							}
+							aliveIDs.push_back(i);
+						}
+						//ofmsg( "  received Int32 %1%", %i );
+					}
+					else if (arg.isInt64()) {
+						int64_t h; arg.popInt64(h);
+						//ofmsg( "  received Int64 %1%", %h );
+					}
+					else if (arg.isFloat()) {
+						float f; arg.popFloat(f);
+						switch (curSetArg)
+						{
+							case(3): x = f; break;
+							case(4): y = f; break;
+						}
+						//ofmsg( "  received Float %1%", %f );
+					}
+					else if (arg.isDouble()) {
+						double d; arg.popDouble(d);
+						//ofmsg( "  received Double %1%", %d );
+					}
+					else if (arg.isStr()) {
+						std::string s; arg.popStr(s);
+						//ofmsg( "  received Str %1%", %s );
+						if (s == "set")
+						{
+							MSG_SET = true;
+						}
+						else if (s == "alive")
+						{
+							MSG_ALIVE = true;
+							aliveIDs.clear();
+						}
+					}
+					curSetArg++;
+				}
+
+				if (MSG_SET)
+				{
+					TouchPoint tp;
+					tp.point_event = 0;
+					tp.id = id;
+					tp.x = x * serverResolution[0];
+					tp.y = y * serverResolution[1];
+					tp.dx = 10;
+					tp.dy = 10;
+
+					if (aliveState[id] == 1)
+					{
+						ofmsg("  Touch ID %1% (%2%, %3%) DOWN", %id %x %y);
+						tp.point_event = 0;
+						aliveState[id] = 2;
+					}
+					else if (aliveState[id] == 2)
+					{
+						ofmsg("  Touch ID %1% (%2%, %3%) MOVE", %id %x %y);
+						tp.point_event = 1;
+					}
+					
+					OnTouchPoint(tp);
+				}
+				else if (MSG_ALIVE)
+				{
+					ofmsg("  Alive: %1%", %aliveIDs.size());
+					map<int, int>::iterator it;
+
+					for ( it = aliveState.begin(); it != aliveState.end(); it++ )
+					{
+						int id = it->first;
+						int state = it->second;
+						bool stillAlive = false;
+						if (state == 2)
+						{
+							for (int i = 0; i < aliveIDs.size(); i++)
+							{
+								if (aliveIDs.at(i) == id)
+								{
+									stillAlive = true;
+									break;
+								}
+							}
+							
+							if( !stillAlive)
+							{
+								aliveState[id] = 0;
+								
+								Touch touch = touchlist[touchID[id]];
+								
+								TouchPoint tp;
+								tp.point_event = 2;
+								tp.id = id;
+								tp.x = touch.xPos * serverResolution[0];
+								tp.y = touch.yPos * serverResolution[1];
+								tp.dx = 10;
+								tp.dy = 10;
+								
+								OnTouchPoint(tp);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -132,6 +281,7 @@ int PQService::init()
 		touchGestureManager->registerPQService(mysInstance);
 	}
 
+#ifdef OMICRON_OS_WIN
 	// set the functions on server callback
 	SetFuncsOnReceiveProc();
 
@@ -173,7 +323,22 @@ int PQService::init()
 	};
 	//
 	// start receiving
-	printf("PQService: send request succeeded, start recv.\n");
+	printf("PQService: send request succeeded, start recv.\n");;
+#else
+	int TUIO_Port = 3333;
+
+	
+
+	tuioMsgSocket.connectTo(server_ip, TUIO_Port);
+	tuioMsgSocket.bindTo(TUIO_Port);
+	
+	if (!tuioMsgSocket.isOk()) {
+		ofmsg( "PQService: connect to server failed: %1%", %tuioMsgSocket.errorMessage() );
+	} else {
+		ofmsg("PQService: connected to server on %1% using TUIO port %2%...", %server_ip %TUIO_Port);
+	}
+#endif
+
 	printf("PQService: Maximum blob size set to %i pixels \n", maxBlobSize);
 	return err_code;
 }
@@ -181,11 +346,13 @@ int PQService::init()
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void PQService::SetFuncsOnReceiveProc()
 {
+#ifdef OMICRON_OS_WIN
 	PFuncOnReceivePointFrame old_rf_func = SetOnReceivePointFrame(&PQService::OnReceivePointFrame,this);
 	//PFuncOnReceiveGesture old_rg_func = SetOnReceiveGesture(&PQService::OnReceiveGesture,this);
 	PFuncOnServerBreak old_svr_break = SetOnServerBreak(&PQService::OnServerBreak,NULL);
 	PFuncOnReceiveError old_rcv_err_func = SetOnReceiveError(&PQService::OnReceiveError,NULL);
 	PFuncOnGetDeviceInfo old_gdi_func = SetOnGetDeviceInfo(&PQService::OnGetDeviceInfo,NULL);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -236,8 +403,10 @@ void PQService::OnReceivePointFrame(int frame_id, int time_stamp, int moving_poi
 void PQService::OnServerBreak(void * param, void * call_back_object)
 {
 	// when the server break, disconenct server;
-	omsg("PQService: server disconnected");;
+	omsg("PQService: server disconnected");
+#ifdef OMICRON_OS_WIN
 	DisconnectServer();
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -390,5 +559,7 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 void PQService::dispose() 
 {
 	mysInstance = NULL;
+#ifdef OMICRON_OS_WIN
 	DisconnectServer();
+#endif
 }

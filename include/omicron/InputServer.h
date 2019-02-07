@@ -322,6 +322,11 @@ public:
 
 	void updateFlags(int flags)
 	{
+		if (clientFlags != flags)
+		{
+			printf("NetClient %s:%i updated flags.\n", clientAddress, clientPort);
+		}
+
 		clientFlags = flags;
 		/*
 		printf("NetClient %s:%i has flags.\n", clientAddress, clientPort);

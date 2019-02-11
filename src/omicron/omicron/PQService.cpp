@@ -168,8 +168,8 @@ void PQService::poll()
 						float f; arg.popFloat(f);
 						switch (curSetArg)
 						{
-							case(3): x = f; break;
-							case(4): y = f; break;
+							case(2): x = f; break;
+							case(3): y = f; break;
 						}
 						//ofmsg( "  received Float %1%", %f );
 					}
@@ -560,3 +560,4 @@ void PQService::dispose()
 	DisconnectServer();
 #endif
 }
+

@@ -64,7 +64,7 @@ namespace omicron
     friend class EventUtils; 
     friend class Service; 
     public:
-		static const int ExtraDataSize = 1024;
+		static const int ExtraDataSize = DEFAULT_BUFLEN;
         static const int MaxExtraDataItems = 32;
         static Event::Flags parseButtonName(const String& name);
         static int parseJointName(const String& name);
@@ -187,8 +187,6 @@ namespace omicron
 
         //! Returns the raw etra data buffer.
         void* getExtraDataBuffer() const;
-
-		bool isExtraDataLarge() const;
 
     private:
         unsigned int mySourceId;
@@ -657,12 +655,6 @@ namespace omicron
         // Default: return data length
         return myExtraDataItems;
     }
-
-	///////////////////////////////////////////////////////////////////////////
-	inline bool Event::isExtraDataLarge() const
-	{
-		return usingExtraDataLarge;
-	}
 
     ///////////////////////////////////////////////////////////////////////////
     inline bool Event::getChar(char* c) const

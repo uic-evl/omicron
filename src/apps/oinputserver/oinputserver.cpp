@@ -85,11 +85,6 @@ int main(int argc, char** argv)
 
 				// Mark the original event as processed
 				e->setProcessed();
-
-				if (e->isExtraDataLarge())
-				{
-					e->resetExtraData();
-				}
 			}
 			sm->unlockEvents();
         }

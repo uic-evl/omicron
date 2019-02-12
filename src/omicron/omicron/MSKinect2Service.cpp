@@ -180,7 +180,7 @@ void MSKinectService::poll()
 			Event* evt = mysInstance->writeHead();
 			evt->reset(Event::Update, Service::Image, currentFrameTimestamp);
 			evt->setPosition(cColorWidth, cColorHeight, 0); // Position: imageWidth, imageHeight, typeFlag (Color = 0, Depth = 1)
-			evt->setFlags(currentPacket);
+			evt->setOrientation(currentPacket, nPackets, 0, 0);
 
 			evt->setExtraData(EventBase::ExtraDataString, dataPacketSize, 1, imageEventBuffer);
 			mysInstance->unlockEvents();
@@ -481,7 +481,7 @@ void MSKinectService::pollDepth()
 					Event* evt = mysInstance->writeHead();
 					evt->reset(Event::Update, Service::Image, timestamp);
 					evt->setPosition(cDepthWidth, cDepthHeight, 1); // Position: imageWidth, imageHeight, typeFlag (Color = 0, Depth = 1)
-					evt->setFlags(i);
+					evt->setOrientation(i, nPackets, 0, 0);
 
 					evt->setExtraData(EventBase::ExtraDataString, dataPacketSize, 1, imageEventBuffer);
 					mysInstance->unlockEvents();

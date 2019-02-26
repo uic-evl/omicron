@@ -910,7 +910,7 @@ void InputServer::loop()
 				{
 					Event e;
 					e.deserialize(&ed);
-					printf("NetService: Speech in: (speech text, condidence) '%s' %f\n", e.getExtraDataString(), ed.posx);
+					printf("NetService: Speech in: (speech text, condidence) '%.*s' %f\n", e.getExtraDataItems(), e.getExtraDataString(), ed.posx);
 				}
 
 				// Add to local service manager's event list

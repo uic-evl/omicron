@@ -180,9 +180,10 @@ private:
 	HRESULT                 LoadSpeechDictation();
 	HRESULT                 StartSpeechRecognition();
     void                    ProcessSpeech();
+	void                    ProcessAudio();
 	String WStringToString(LPCWSTR speechWString);
 	void                    ProcessSpeechDictation();
-	void					GenerateSpeechEvent( String, float );
+	void					GenerateSpeechEvent( String, float, float, float );
 #endif
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
@@ -307,6 +308,33 @@ private:
     bool m_bSpeechActive;
 
 	float confidenceThreshold;
+
+	// Time interval, in milliseconds, for timer that drives audio capture.
+	static const int        cAudioReadTimerInterval = 50;
+
+	// Audio samples per second in Kinect audio stream
+	static const int        cAudioSamplesPerSecond = 16000;
+
+	// Number of float samples in the audio beffer we allocate for reading every time the audio capture timer fires
+	// (should be larger than the amount of audio corresponding to cAudioReadTimerInterval msec).
+	static const int        cAudioBufferLength = 2 * cAudioReadTimerInterval * cAudioSamplesPerSecond / 1000;
+
+	// Number of energy samples that will be stored in the circular buffer.
+	// Always keep it higher than the energy display length to avoid overflow.
+	static const int        cEnergyBufferLength = 1000;
+
+	// Number of audio samples captured from Kinect audio stream accumulated into a single
+	// energy measurement that will get displayed.
+	static const int        cAudioSamplesPerEnergySample = 40;
+
+	// Minimum energy of audio to display (in dB value, where 0 dB is full scale)
+	static const int        cMinEnergy = 0;
+
+	// Sum of squares of audio samples being accumulated to compute the next energy value.
+	float                   m_fAccumulatedSquareSum;
+
+	// Number of audio samples accumulated so far to compute the next energy value.
+	int                     m_nAccumulatedSampleCount;
 #endif
 };
 

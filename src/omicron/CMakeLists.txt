@@ -236,12 +236,10 @@ if(WIN32)
 endif()
 
 # PQLabs touch surface module
-if(WIN32)
-	set(OMICRON_USE_PQLABS true CACHE BOOL "Enable/disable PqLabs multitouch support")
-	if(OMICRON_USE_PQLABS)
-		set( srcs	 ${srcs} omicron/PQService.cpp )
-		set( headers ${headers} ${CMAKE_SOURCE_DIR}/include/omicron/PQService.h )
-	endif()
+set(OMICRON_USE_PQLABS true CACHE BOOL "Enable/disable PqLabs multitouch support")
+if(OMICRON_USE_PQLABS)
+	set( srcs	 ${srcs} omicron/PQService.cpp )
+	set( headers ${headers} ${CMAKE_SOURCE_DIR}/include/omicron/PQService.h )
 endif()
 
 # DirectInput support

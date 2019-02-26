@@ -1,12 +1,12 @@
 /**************************************************************************************************
 * THE OMICRON PROJECT
  *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2017		Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2019		Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto		anishimoto42@gmail.com
  *  Alessandro Febretti		febret@gmail.com
  *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2017, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-20199, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted 
  * provided that the following conditions are met:
@@ -29,6 +29,8 @@
 #include "omicron/ServiceManager.h"
 #include "omicron/TouchGestureManager.h"
 #include "pqlabs/PQMTClient.h"
+#include "osc/oscpkt.h"
+#include "osc/udp.h"
 
 //#include "input/Touches.h"
 //#include <vector>
@@ -38,6 +40,7 @@
 #define __PQ_LAB_TOUCH__SERVICE_H__
 
 using namespace PQ_SDK_MultiTouch;
+using namespace oscpkt;
 /* // Replaced with TouchGestureManager version
 struct Touch{
 	int ID;
@@ -117,6 +120,10 @@ private:
 
 	// OnTouchPoint: function to handle TouchPoint
 	void OnTouchPoint(const TouchPoint & tp);
+	
+	// OSC Sockets for TUIO connection (Linux)
+	UdpSocket tuioMsgSocket;
+	std::map<int,int> aliveState; // Internal touch list to generate custom gestures
 };
 
 }; // namespace omicron

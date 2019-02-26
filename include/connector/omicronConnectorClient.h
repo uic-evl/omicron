@@ -234,7 +234,8 @@ namespace omicron
             ServiceTypeBrain, 
             ServiceTypeWand, 
             ServiceTypeSpeech,
-			ServiceTypeImage
+			ServiceTypeImage,
+			ServiceTypeAudio
 		}; 
 
         //! #PYAPI Supported event types.

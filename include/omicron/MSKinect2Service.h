@@ -184,6 +184,7 @@ private:
 	String WStringToString(LPCWSTR speechWString);
 	void                    ProcessSpeechDictation();
 	void					GenerateSpeechEvent( String, float, float, float );
+	void					GenerateAudioEvent(float, float, float);
 #endif
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
@@ -269,6 +270,7 @@ private:
 	float lowDetailMaxDistance;
 
 	bool enableKinectAudio;
+	bool enableKinectSpeech;
 	bool enableKinectSpeechGrammar;
 	bool enableKinectSpeechDictation;
 	int caveSimulatorHeadID;
@@ -308,6 +310,7 @@ private:
     bool m_bSpeechActive;
 
 	float confidenceThreshold;
+	float beamConfidenceThreshold;
 
 	// Time interval, in milliseconds, for timer that drives audio capture.
 	static const int        cAudioReadTimerInterval = 50;

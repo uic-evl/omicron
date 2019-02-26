@@ -74,7 +74,8 @@ namespace omicron
 			Brain = EventBase::ServiceTypeBrain,
 			Wand = EventBase::ServiceTypeWand,
 			Speech = EventBase::ServiceTypeSpeech,
-			Image = EventBase::ServiceTypeImage
+			Image = EventBase::ServiceTypeImage,
+			Audio = EventBase::ServiceTypeAudio
 		};
 
 		enum ServicePollPriority { PollFirst, PollNormal, PollLast }; 

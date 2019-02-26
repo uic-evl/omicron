@@ -86,9 +86,11 @@ void MSKinectService::setup(Setting& settings)
 	highDetailDepth = Config::getBoolValue("highDetailDepth", settings, false);
 	lowDetailMaxDistance = Config::getFloatValue("lowDetailMaxDistance", settings, 8000); // mm
 
-	enableKinectAudio = Config::getBoolValue("enableKinectSpeech", settings, false);
+	enableKinectSpeech = Config::getBoolValue("enableKinectSpeech", settings, false);
 	enableKinectSpeechGrammar = Config::getBoolValue("useGrammar", settings, true);
 	enableKinectSpeechDictation = Config::getBoolValue("useDictation", settings, false);
+
+	enableKinectAudio = Config::getBoolValue("enableKinectAudio", settings, false);
 
 	caveSimulator = Config::getBoolValue("caveSimulator", settings, false);
 	caveSimulatorHeadID = Config::getIntValue("caveSimulatorHeadID", settings, 0);
@@ -107,6 +109,7 @@ void MSKinectService::setup(Setting& settings)
 	speechGrammerFilePath = Config::getStringValue("speechGrammerFilePath", settings, "kinectSpeech.grxml");
 
 	confidenceThreshold = Config::getFloatValue("confidenceThreshold", settings, 0.3f);
+	beamConfidenceThreshold = Config::getFloatValue("beamConfidenceThreshold", settings, 0.1f);
 #endif
 }
 
@@ -209,10 +212,16 @@ void MSKinectService::poll()
 		lastSendTime = curt;
 	}
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
-	if( enableKinectAudio )
+	if (enableKinectAudio)
+	{
+		ProcessAudio();
+	}
+
+	if( enableKinectSpeech )
 	{
 		pollSpeech();
 	}
+
 #endif
 }
 
@@ -1229,7 +1238,6 @@ void MSKinectService::ProcessSpeech()
 	if (m_pSpeechContext == NULL)
 		return;
     m_pSpeechContext->GetEvents(1, &curEvent, &fetched);
-	ProcessAudio();
 
     while (fetched > 0)
     {
@@ -1288,8 +1296,7 @@ void MSKinectService::ProcessSpeech()
 						// Convert to degrees
 						fBeamAngle = fBeamAngle * 180.0f / static_cast<float>(M_PI);
 
-						ofmsg("MSKinect2Service: Speech recognized '%1%' confidence: %2%", %speechString %speechStringConfidence);
-						ofmsg("MSKinect2Service:   Speech angle '%1%' confidence: %2%", %fBeamAngle %fBeamAngleConfidence);
+						ofmsg("MSKinect2Service: Speech recognized '%1%' confidence: %2% angle: %3% confidence: %4%", %speechString %speechStringConfidence %fBeamAngle %fBeamAngleConfidence);
 
 						GenerateSpeechEvent( speechString, speechStringConfidence, fBeamAngle, fBeamAngleConfidence);
                     }
@@ -1334,9 +1341,7 @@ void MSKinectService::ProcessAudio()
 
 		// Convert to degrees
 		fBeamAngle = fBeamAngle * 180.0f / static_cast<float>(M_PI);
-
-		// Calculate energy from audio
-		float fEnergy = cMinEnergy;
+		
 		for (UINT i = 0; i < nSampleCount; i++)
 		{
 			// Compute the sum of squares of audio samples that will get accumulated
@@ -1360,18 +1365,21 @@ void MSKinectService::ProcessAudio()
 				fMeanSquare = 1.0f;
 			}
 			
+			// Calculate energy from audio
+			float fEnergy = cMinEnergy;
 			if (fMeanSquare > 0.f)
 			{
 				// Convert to dB
 				fEnergy = 10.0f*log10(fMeanSquare);
-			}
 
-			m_fAccumulatedSquareSum = 0.f;
-			m_nAccumulatedSampleCount = 0;
+				if(fBeamAngleConfidence >= beamConfidenceThreshold)
+					GenerateAudioEvent(fEnergy, fBeamAngle, fBeamAngleConfidence);
+			}
 		}
 
-		ofmsg("MSKinect2Service: Audio '%1%' db at angle %2% confidence: %3%", %fEnergy %fBeamAngle %fBeamAngleConfidence);
-	}
+		m_fAccumulatedSquareSum = 0.f;
+		m_nAccumulatedSampleCount = 0;
+	}		
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1422,8 +1430,18 @@ void MSKinectService::ProcessSpeechDictation()
 					speechString.resize(wstr.size()); //make enough room in copy for the string 
 					std::copy(wstr.begin(), wstr.end(), speechString.begin()); //copy it
 
+					float fBeamAngle = 0.f;
+					float fBeamAngleConfidence = 0.f;
+
+					// Get most recent audio beam angle and confidence
+					m_pAudioBeam->get_BeamAngle(&fBeamAngle);
+					m_pAudioBeam->get_BeamAngleConfidence(&fBeamAngleConfidence);
+
+					// Convert to degrees
+					fBeamAngle = fBeamAngle * 180.0f / static_cast<float>(M_PI);
+
 					ofmsg("MSKinect2Service: Dictation speech recognized '%1%'", %speechString);
-					GenerateSpeechEvent(speechString, 1.0f);
+					GenerateSpeechEvent(speechString, 1.0f, fBeamAngle, fBeamAngleConfidence);
 				}
 			}
 			break;
@@ -1444,6 +1462,17 @@ void MSKinectService::GenerateSpeechEvent( String speechString, float speechConf
 	evt->setExtraDataType(Event::ExtraDataString);
 
 	evt->setExtraDataString(speechString);
+
+	mysInstance->unlockEvents();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void MSKinectService::GenerateAudioEvent(float energy, float beamAngle, float angleConfidence)
+{
+	Event* evt = mysInstance->writeHead();
+	evt->reset(Event::Update, Service::Audio, 0, 0);
+
+	evt->setPosition(energy, beamAngle, angleConfidence);
 
 	mysInstance->unlockEvents();
 }

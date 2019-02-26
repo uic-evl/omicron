@@ -881,6 +881,8 @@ void MSKinectService::ProcessSpeech()
 	if (m_pSpeechContext == NULL)
 		return;
     m_pSpeechContext->GetEvents(1, &curEvent, &fetched);
+	ProcessAudio();
+
     while (fetched > 0)
     {
         switch (curEvent.eEventId)
@@ -928,9 +930,20 @@ void MSKinectService::ProcessSpeech()
 							speechString += WStringToString(speechWString);
 						}
 
-						ofmsg("MSKinect2Service: Speech recognized '%1%' confidence: %2%", %speechString %speechStringConfidence);
+						float fBeamAngle = 0.f;
+						float fBeamAngleConfidence = 0.f;
 
-						GenerateSpeechEvent( speechString, speechStringConfidence );
+						// Get most recent audio beam angle and confidence
+						m_pAudioBeam->get_BeamAngle(&fBeamAngle);
+						m_pAudioBeam->get_BeamAngleConfidence(&fBeamAngleConfidence);
+
+						// Convert to degrees
+						fBeamAngle = fBeamAngle * 180.0f / static_cast<float>(M_PI);
+
+						ofmsg("MSKinect2Service: Speech recognized '%1%' confidence: %2%", %speechString %speechStringConfidence);
+						ofmsg("MSKinect2Service:   Speech angle '%1%' confidence: %2%", %fBeamAngle %fBeamAngleConfidence);
+
+						GenerateSpeechEvent( speechString, speechStringConfidence, fBeamAngle, fBeamAngleConfidence);
                     }
                     ::CoTaskMemFree(pPhrase);
                 }
@@ -941,6 +954,76 @@ void MSKinectService::ProcessSpeech()
         m_pSpeechContext->GetEvents(1, &curEvent, &fetched);
     }
     return;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// <summary>
+/// Process audio (Ampliture and direction)
+/// </summary>
+void MSKinectService::ProcessAudio()
+{
+	float audioBuffer[cAudioBufferLength];
+	DWORD cbRead = 0;
+
+	// S_OK will be returned when cbRead == sizeof(audioBuffer).
+	// E_PENDING will be returned when cbRead < sizeof(audioBuffer).
+	// For both return codes we will continue to process the audio written into the buffer.
+	HRESULT hr = m_pAudioStream->Read((void *)audioBuffer, sizeof(audioBuffer), &cbRead);
+
+	if (FAILED(hr) && hr != E_PENDING)
+	{
+		omsg("MSKinect2Service: Failed to read from audio stream.");
+	}
+	else if (cbRead > 0)
+	{
+		DWORD nSampleCount = cbRead / sizeof(float);
+		float fBeamAngle = 0.f;
+		float fBeamAngleConfidence = 0.f;
+
+		// Get most recent audio beam angle and confidence
+		m_pAudioBeam->get_BeamAngle(&fBeamAngle);
+		m_pAudioBeam->get_BeamAngleConfidence(&fBeamAngleConfidence);
+
+		// Convert to degrees
+		fBeamAngle = fBeamAngle * 180.0f / static_cast<float>(M_PI);
+
+		// Calculate energy from audio
+		float fEnergy = cMinEnergy;
+		for (UINT i = 0; i < nSampleCount; i++)
+		{
+			// Compute the sum of squares of audio samples that will get accumulated
+			// into a single energy value.
+			m_fAccumulatedSquareSum += audioBuffer[i] * audioBuffer[i];
+			++m_nAccumulatedSampleCount;
+
+			if (m_nAccumulatedSampleCount < cAudioSamplesPerEnergySample)
+			{
+				continue;
+			}
+
+			// Each energy value will represent the logarithm of the mean of the
+			// sum of squares of a group of audio samples.
+			float fMeanSquare = m_fAccumulatedSquareSum / cAudioSamplesPerEnergySample;
+
+			if (fMeanSquare > 1.0f)
+			{
+				// A loud audio source right next to the sensor may result in mean square values
+				// greater than 1.0. Cap it at 1.0f for display purposes.
+				fMeanSquare = 1.0f;
+			}
+			
+			if (fMeanSquare > 0.f)
+			{
+				// Convert to dB
+				fEnergy = 10.0f*log10(fMeanSquare);
+			}
+
+			m_fAccumulatedSquareSum = 0.f;
+			m_nAccumulatedSampleCount = 0;
+		}
+
+		ofmsg("MSKinect2Service: Audio '%1%' db at angle %2% confidence: %3%", %fEnergy %fBeamAngle %fBeamAngleConfidence);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1004,12 +1087,12 @@ void MSKinectService::ProcessSpeechDictation()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void MSKinectService::GenerateSpeechEvent( String speechString, float speechConfidence )
+void MSKinectService::GenerateSpeechEvent( String speechString, float speechConfidence, float beamAngle, float angleConfidence )
 {
 	Event* evt = mysInstance->writeHead();
 	evt->reset(Event::Update, Service::Speech, 0, 0);
 
-	evt->setPosition( speechConfidence, 0 );
+	evt->setPosition( speechConfidence, beamAngle, angleConfidence);
 	evt->setExtraDataType(Event::ExtraDataString);
 
 	evt->setExtraDataString(speechString);

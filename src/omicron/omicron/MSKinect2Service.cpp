@@ -134,7 +134,7 @@ void MSKinectService::initialize()
 	InitializeDefaultKinect();
 
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
-	if (enableKinectAudio)
+	if (enableKinectAudio || enableKinectSpeech)
 	{
 		InitializeAudioStream();
 	}
@@ -212,16 +212,7 @@ void MSKinectService::poll()
 		lastSendTime = curt;
 	}
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
-	if (enableKinectAudio)
-	{
-		ProcessAudio();
-	}
-
-	if( enableKinectSpeech )
-	{
-		pollSpeech();
-	}
-
+	pollSpeech();
 #endif
 }
 
@@ -273,12 +264,14 @@ void MSKinectService::pollBody()
 void MSKinectService::pollSpeech() 
 {
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
+	if (enableKinectSpeechGrammar)
+		ProcessSpeech();
+	if (enableKinectSpeechDictation)
+		ProcessSpeechDictation();
+
 	if (enableKinectAudio)
 	{
-		if (enableKinectSpeechGrammar)
-			ProcessSpeech();
-		if (enableKinectSpeechDictation)
-			ProcessSpeechDictation();
+		ProcessAudio();
 	}
 #endif
 }
@@ -991,6 +984,11 @@ HRESULT MSKinectService::InitializeAudioStream()
 		m_p16BitAudioStream = new KinectAudioStream(m_pAudioStream);
 	}
 
+	if (SUCCEEDED(hr))
+	{
+		hr = m_pAudioBeam->OpenInputStream(&m_pAudioStream2);
+	}
+
 	if (FAILED(hr))
 	{
 		omsg("MSKinect2Service: Failed opening an audio stream!");
@@ -1305,7 +1303,6 @@ void MSKinectService::ProcessSpeech()
             }
             break;
         }
-
         m_pSpeechContext->GetEvents(1, &curEvent, &fetched);
     }
     return;
@@ -1323,7 +1320,7 @@ void MSKinectService::ProcessAudio()
 	// S_OK will be returned when cbRead == sizeof(audioBuffer).
 	// E_PENDING will be returned when cbRead < sizeof(audioBuffer).
 	// For both return codes we will continue to process the audio written into the buffer.
-	HRESULT hr = m_pAudioStream->Read((void *)audioBuffer, sizeof(audioBuffer), &cbRead);
+	HRESULT hr = m_pAudioStream2->Read((void *)audioBuffer, sizeof(audioBuffer), &cbRead);
 
 	if (FAILED(hr) && hr != E_PENDING)
 	{
@@ -1366,13 +1363,10 @@ void MSKinectService::ProcessAudio()
 			}
 			
 			// Calculate energy from audio
-			
 			if (fMeanSquare > 0.f)
 			{
 				// Convert to dB
 				fEnergy = 10.0f*log10(fMeanSquare);
-
-				
 			}
 		}
 		if (fBeamAngleConfidence >= beamConfidenceThreshold)

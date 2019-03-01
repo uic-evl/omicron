@@ -280,11 +280,17 @@ private:
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS_AUDIO
     String                  speechGrammerFilePath;
 
-    // A single audio beam off the Kinect sensor.
+    // A single audio beam off the Kinect sensor (for speech)
     IAudioBeam*             m_pAudioBeam;
+
+	// Secondary audio beam off the Kinect sensor (for beam audio)
+	IAudioBeam*             m_pAudioBeam2;
 
     // An IStream derived from the audio beam, used to read audio samples
     IStream*                m_pAudioStream;
+
+	// An IStream derived from the audio beam, used to read audio samples
+	IStream*                m_pAudioStream2;
 
     // Stream for converting 32bit Audio provided by Kinect to 16bit required by speeck
     KinectAudioStream*     m_p16BitAudioStream;

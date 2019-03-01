@@ -1341,7 +1341,7 @@ void MSKinectService::ProcessAudio()
 
 		// Convert to degrees
 		fBeamAngle = fBeamAngle * 180.0f / static_cast<float>(M_PI);
-		
+		float fEnergy = cMinEnergy;
 		for (UINT i = 0; i < nSampleCount; i++)
 		{
 			// Compute the sum of squares of audio samples that will get accumulated
@@ -1366,15 +1366,19 @@ void MSKinectService::ProcessAudio()
 			}
 			
 			// Calculate energy from audio
-			float fEnergy = cMinEnergy;
+			
 			if (fMeanSquare > 0.f)
 			{
 				// Convert to dB
 				fEnergy = 10.0f*log10(fMeanSquare);
 
-				if(fBeamAngleConfidence >= beamConfidenceThreshold)
-					GenerateAudioEvent(fEnergy, fBeamAngle, fBeamAngleConfidence);
+				
 			}
+		}
+		if (fBeamAngleConfidence >= beamConfidenceThreshold)
+		{
+			// ofmsg("MSKinect2Service: Audio at %1% deg. (%2%) energy: %3% db", %fEnergy %fBeamAngle %fBeamAngleConfidence);
+			GenerateAudioEvent(fEnergy, fBeamAngle, fBeamAngleConfidence);
 		}
 
 		m_fAccumulatedSquareSum = 0.f;
@@ -1456,7 +1460,7 @@ void MSKinectService::ProcessSpeechDictation()
 void MSKinectService::GenerateSpeechEvent( String speechString, float speechConfidence, float beamAngle, float angleConfidence )
 {
 	Event* evt = mysInstance->writeHead();
-	evt->reset(Event::Update, Service::Speech, 0, 0);
+	evt->reset(Event::Select, Service::Speech, 0, 0);
 
 	evt->setPosition( speechConfidence, beamAngle, angleConfidence);
 	evt->setExtraDataType(Event::ExtraDataString);

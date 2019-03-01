@@ -137,11 +137,33 @@ private:
 		ServiceTypeSpeech = 1 << 9,
 		ServiceTypeImage = 1 << 10,
 		AlwaysTCP = 1 << 11,
-		AlwaysUDP = 1 << 12
+		AlwaysUDP = 1 << 12,
+		ServiceTypeAudio = 1 << 13
 	};
+
 public:
-	NetClient(const char* address, int port, int flags = 2046)
+	static int GetDefaultFlag()
 	{
+		int flag = 0;
+		flag |= ClientFlags::ServiceTypePointer;
+		flag |= ClientFlags::ServiceTypeMocap;
+		flag |= ClientFlags::ServiceTypeKeyboard;
+		flag |= ClientFlags::ServiceTypeController;
+		flag |= ClientFlags::ServiceTypeUi;
+		flag |= ClientFlags::ServiceTypeGeneric;
+		flag |= ClientFlags::ServiceTypeBrain;
+		flag |= ClientFlags::ServiceTypeWand;
+		flag |= ClientFlags::ServiceTypeSpeech;
+		flag |= ClientFlags::ServiceTypeImage;
+		flag |= ClientFlags::ServiceTypeAudio;
+		return flag;
+	};
+
+	NetClient(const char* address, int port, int flags = -1)
+	{
+		if (flags == -1)
+			flags = NetClient::GetDefaultFlag();
+
 		clientAddress = address;
 		clientPort = port;
 
@@ -395,6 +417,8 @@ public:
 			return (clientFlags & ClientFlags::ServiceTypeSpeech) == ClientFlags::ServiceTypeSpeech;
 		case(omicron::Service::ServiceType::Image):
 			return (clientFlags & ClientFlags::ServiceTypeImage) == ClientFlags::ServiceTypeImage;
+		case(omicron::Service::ServiceType::Audio):
+			return (clientFlags & ClientFlags::ServiceTypeAudio) == ClientFlags::ServiceTypeAudio;
 		}
 		return false;
 	}
@@ -438,7 +462,7 @@ public:
 
 protected:
     void sendToClients(char*);
-    void createClient(const char*, int, DataMode mode, SOCKET, int flags = 2046);
+    void createClient(const char*, int, DataMode mode, SOCKET, int flags = -1);
 private:
 	const char* serverIP;
     const char* serverPort;

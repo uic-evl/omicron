@@ -802,7 +802,7 @@ SOCKET InputServer::startListening()
 				dataPort = atoi(portCStr);
 				int flags = atoi(flagsCStr);
 				printf("OInputServer: '%s' requests omicron 3.0 (Client flags) data to be sent on port '%d' with flag '%d'\n", clientAddress, dataPort, flags);
-				createClient(clientAddress, dataPort, data_omicronV2, clientSocket, flags);
+				createClient(clientAddress, dataPort, data_omicronV3, clientSocket, flags);
 
 				if (logClientConnectionsToFile) clientLogFile << " ACCEPTED OMICRON V3";
 			}
@@ -934,6 +934,11 @@ void InputServer::loop()
 ///////////////////////////////////////////////////////////////////////////////
 void InputServer::createClient(const char* clientAddress, int dataPort, DataMode mode, SOCKET clientSocket, int flags)
 {
+	if (flags == -1)
+	{
+		flags = NetClient::GetDefaultFlag();
+	}
+
     // Generate a unique name for client "address:port"
     char* addr = new char[128];
     strcpy( addr, clientAddress );
@@ -980,6 +985,10 @@ void InputServer::createClient(const char* clientAddress, int dataPort, DataMode
 				else if (mode == data_omicronV2)
 				{
 					printf("OInputServer: NetClient '%s' now requesting omicron 2.0 (Dual TCP/UDP) data \n", addr);
+				}
+				else if (mode == data_omicronV3)
+				{
+					printf("OInputServer: NetClient '%s' now requesting omicron 3.0 (Client flags) data \n", addr);
 				}
                 else
                     printf("OInputServer: NetClient %s now requesting to receive omicron data \n", addr );

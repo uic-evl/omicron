@@ -221,6 +221,7 @@ private:
 	float myCheckKinectInterval;
 	float lastUpdateTime;
 	float lastSendTime;
+	int serviceId = 0;
 	int currentPacket = 0;
 
 	static const int        cScreenWidth  = 320;

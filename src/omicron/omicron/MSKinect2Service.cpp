@@ -73,6 +73,7 @@ void MSKinectService::setup(Setting& settings)
 {
 	myUpdateInterval = Config::getFloatValue("updateInterval", settings, 0.01f);
 	myCheckKinectInterval = Config::getFloatValue("imageStreamInterval", settings, 0.2f);
+	serviceId = Config::getIntValue("serviceId", settings, 0);
 
 	m_bSeatedMode = Config::getBoolValue("seatedMode", settings, false);
 
@@ -788,7 +789,7 @@ void MSKinectService::GenerateMocapEvent( IBody* body, Joint* joints, Vector4* f
 	body->get_HandRightState(&rightHandState);
 
 	Event* evt = mysInstance->writeHead();
-	evt->reset(Event::Update, Service::Mocap, skeletonID, 0);
+	evt->reset(Event::Update, Service::Mocap, skeletonID, serviceId);
 	
 	Joint joint = joints[JointType_Head];
 	Vector3f jointPos = Vector3f( head.Position.X, head.Position.Y, head.Position.Z );
@@ -1454,7 +1455,7 @@ void MSKinectService::ProcessSpeechDictation()
 void MSKinectService::GenerateSpeechEvent( String speechString, float speechConfidence, float beamAngle, float angleConfidence )
 {
 	Event* evt = mysInstance->writeHead();
-	evt->reset(Event::Select, Service::Speech, 0, 0);
+	evt->reset(Event::Select, Service::Speech, 0, serviceId);
 
 	evt->setPosition( speechConfidence, beamAngle, angleConfidence);
 	evt->setExtraDataType(Event::ExtraDataString);
@@ -1468,8 +1469,7 @@ void MSKinectService::GenerateSpeechEvent( String speechString, float speechConf
 void MSKinectService::GenerateAudioEvent(float energy, float beamAngle, float angleConfidence)
 {
 	Event* evt = mysInstance->writeHead();
-	evt->reset(Event::Update, Service::Audio, 0, 0);
-
+	evt->reset(Event::Update, Service::Audio, 0, serviceId);
 	evt->setPosition(energy, beamAngle, angleConfidence);
 
 	mysInstance->unlockEvents();

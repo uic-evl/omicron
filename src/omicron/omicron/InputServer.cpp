@@ -954,15 +954,16 @@ void InputServer::loop()
 		if ( client->isReceivingData() )
 		{
 			// Grab data from client
-			int iresult = client->recvEvent(eventPacket, DEFAULT_BUFLEN);
+			int iresult = client->recvEvent(eventPacketLarge, DEFAULT_LRGBUFLEN);
 			if (iresult > 0)
 			{
 				// Convert client packet to omicron event
-				omicronConnector::EventData ed = createOmicronEventDataFromEventPacket(eventPacket);
+				omicronConnector::EventData ed = createOmicronEventDataFromEventPacket(eventPacketLarge);
 
 				if (showIncomingStream)
 				{
 					printf("InputServer: Data in id: %d pos: %f %f %f\n", ed.sourceId, ed.posx, ed.posy, ed.posz);
+					printf("             rot: %f %f %f %f\n", ed.orw, ed.orx, ed.ory, ed.orz);
 				}
 				if (showIncomingMessages && ed.serviceType == EventBase::ServiceTypeSpeech)
 				{

@@ -63,7 +63,16 @@ char* InputServer::createOmicronPacketFromEvent(const Event* evt)
 {
 	int offset = 0;
 
-	char* eventPacket = new char[DEFAULT_BUFLEN];
+	char* eventPacket;
+
+	if (evt->isExtraDataLarge())
+	{
+		eventPacket = new char[DEFAULT_LRGBUFLEN];
+	}
+	else
+	{
+		eventPacket = new char[DEFAULT_BUFLEN];
+	}
 
 	OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getTimestamp());
 	OI_WRITEBUF(unsigned int, eventPacket, offset, evt->getSourceId());

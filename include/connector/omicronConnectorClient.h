@@ -453,7 +453,7 @@ namespace omicronConnector
         float orz;
         float orw;
 
-        static const int ExtraDataSize = DEFAULT_BUFLEN;
+        static const int ExtraDataSize = DEFAULT_LRGBUFLEN;
         unsigned int extraDataType;
 #if !defined(__GNUC__)
         unsigned int extraDataItems;
@@ -541,7 +541,7 @@ namespace omicronConnector
         int serverPort;
         int dataPort;
 
-        char recvbuf[DEFAULT_BUFLEN];
+        char recvbuf[DEFAULT_LRGBUFLEN];
         int iResult, iSendResult;
 
         int SenderAddrSize;
@@ -706,7 +706,7 @@ namespace omicronConnector
     {
         result = recvfrom(RecvSocket, 
             recvbuf,
-            DEFAULT_BUFLEN,
+            DEFAULT_LRGBUFLEN,
             0,
             (sockaddr *)&SenderAddr, 
             (socklen_t*)&SenderAddrSize);
@@ -737,7 +737,15 @@ namespace omicronConnector
             OI_READBUF(unsigned int, eventPacket, offset, ed.extraDataType); 
             OI_READBUF(unsigned int, eventPacket, offset, ed.extraDataItems); 
             OI_READBUF(unsigned int, eventPacket, offset, ed.extraDataMask); 
-            memcpy(ed.extraData, &eventPacket[offset], EventData::ExtraDataSize);
+
+			if (ed.extraDataItems > EventData::ExtraDataSize)
+			{
+				memcpy(ed.extraData, &eventPacket[offset], DEFAULT_LRGBUFLEN);
+			}
+			else
+			{
+				memcpy(ed.extraData, &eventPacket[offset], EventData::ExtraDataSize);
+			}
 
             listener->onEvent(ed);
         } 

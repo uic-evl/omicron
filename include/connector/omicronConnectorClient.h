@@ -431,7 +431,8 @@ namespace omicronConnector
 {
 #ifndef OMICRON_EVENTDATA_DEFINED
 #define OMICRON_EVENTDATA_DEFINED
-#define DEFAULT_BUFLEN 51200 // Moved out of OmicronConnectorClient as NetClient/InputServer also uses this
+#define DEFAULT_BUFLEN 1024 // Moved out of OmicronConnectorClient as NetClient/InputServer also uses this
+#define DEFAULT_LRGBUFLEN 51200 // Moved out of OmicronConnectorClient as NetClient/InputServer also uses this
     #define OFLOAT_PTR(x) *((float*)&x)
     #define OINT_PTR(x) *((int*)&x)
 

@@ -176,6 +176,7 @@ namespace omicron
         void setExtraDataString(const String& value);
 		void resetExtraData();
         bool isExtraDataNull(int pointId) const;
+		bool isExtraDataLarge() const;
         void setExtraData(ExtraDataType type, unsigned int items, int mask, void* data);
         uint getExtraDataMask() const { return myExtraDataValidMask; }
 
@@ -597,7 +598,7 @@ namespace omicron
 		else
 		{
 			usingExtraDataLarge = true;
-			myExtraDataLarge = new char[41472];
+			myExtraDataLarge = new char[DEFAULT_LRGBUFLEN];
 			memcpy(myExtraDataLarge, data, getExtraDataSize());
 		}
     }
@@ -633,6 +634,12 @@ namespace omicron
     inline int Event::getExtraDataItems() const
     { return myExtraDataItems; }
 
+	///////////////////////////////////////////////////////////////////////////
+	inline bool Event::isExtraDataLarge() const
+	{
+		return usingExtraDataLarge;
+	}
+
     ///////////////////////////////////////////////////////////////////////////
     inline int Event::getExtraDataSize() const
     {
@@ -647,6 +654,7 @@ namespace omicron
         case ExtraDataVector3Array:
             return myExtraDataItems * 4 * 3;
         case ExtraDataString:
+		case ExtraDataByte:
             return myExtraDataItems;
         default:
             oerror("Event::getExtraDataSize: unknown extra data type");

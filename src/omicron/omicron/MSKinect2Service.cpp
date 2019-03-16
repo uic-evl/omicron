@@ -186,7 +186,7 @@ void MSKinectService::poll()
 			evt->setPosition(cColorWidth, cColorHeight, 0); // Position: imageWidth, imageHeight, typeFlag (Color = 0, Depth = 1)
 			evt->setOrientation(currentPacket, nPackets, 0, 0);
 
-			evt->setExtraData(EventBase::ExtraDataString, dataPacketSize, 1, imageEventBuffer);
+			evt->setExtraData(EventBase::ExtraDataByte, dataPacketSize, 1, imageEventBuffer);
 			mysInstance->unlockEvents();
 			currentPacket++;
 
@@ -486,7 +486,7 @@ void MSKinectService::pollDepth()
 					evt->setPosition(cDepthWidth, cDepthHeight, 1); // Position: imageWidth, imageHeight, typeFlag (Color = 0, Depth = 1)
 					evt->setOrientation(i, nPackets, 0, 0);
 
-					evt->setExtraData(EventBase::ExtraDataString, dataPacketSize, 1, imageEventBuffer);
+					evt->setExtraData(EventBase::ExtraDataByte, dataPacketSize, 1, imageEventBuffer);
 					mysInstance->unlockEvents();
 				}
 

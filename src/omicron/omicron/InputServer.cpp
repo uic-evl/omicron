@@ -153,29 +153,57 @@ void InputServer::handleEvent(const Event& evt)
             
     int offset = 0;
 
-	OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getTimestamp());
-	OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getSourceId());
-	OI_WRITEBUF(int, eventPacket, offset, evt.getDeviceTag());
-	OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getServiceType());
-	OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getType());
-	OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getFlags());
-	OI_WRITEBUF(float, eventPacket, offset, evt.getPosition().x());
-	OI_WRITEBUF(float, eventPacket, offset, evt.getPosition().y());
-	OI_WRITEBUF(float, eventPacket, offset, evt.getPosition().z());
-	OI_WRITEBUF(float, eventPacket, offset, evt.getOrientation().w());
-	OI_WRITEBUF(float, eventPacket, offset, evt.getOrientation().x());
-	OI_WRITEBUF(float, eventPacket, offset, evt.getOrientation().y());
-	OI_WRITEBUF(float, eventPacket, offset, evt.getOrientation().z());
+	if (evt.isExtraDataLarge())
+	{
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getTimestamp());
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getSourceId());
+		OI_WRITEBUF(int, eventPacketLarge, offset, evt.getDeviceTag());
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getServiceType());
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getType());
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getFlags());
+		OI_WRITEBUF(float, eventPacketLarge, offset, evt.getPosition().x());
+		OI_WRITEBUF(float, eventPacketLarge, offset, evt.getPosition().y());
+		OI_WRITEBUF(float, eventPacketLarge, offset, evt.getPosition().z());
+		OI_WRITEBUF(float, eventPacketLarge, offset, evt.getOrientation().w());
+		OI_WRITEBUF(float, eventPacketLarge, offset, evt.getOrientation().x());
+		OI_WRITEBUF(float, eventPacketLarge, offset, evt.getOrientation().y());
+		OI_WRITEBUF(float, eventPacketLarge, offset, evt.getOrientation().z());
 
-	OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getExtraDataType());
-	OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getExtraDataItems());
-	OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getExtraDataMask());
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getExtraDataType());
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getExtraDataItems());
+		OI_WRITEBUF(unsigned int, eventPacketLarge, offset, evt.getExtraDataMask());
 
-	memcpy(&eventPacket[offset], evt.getExtraDataBuffer(), evt.getExtraDataSize());
+		memcpy(&eventPacketLarge[offset], evt.getExtraDataBuffer(), evt.getExtraDataSize());
 
-	offset += evt.getExtraDataSize();
+		offset += evt.getExtraDataSize();
+	}
+	else
+	{
 
-	validTacTileEvent = handleTacTileEvent(evt);
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getTimestamp());
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getSourceId());
+		OI_WRITEBUF(int, eventPacket, offset, evt.getDeviceTag());
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getServiceType());
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getType());
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getFlags());
+		OI_WRITEBUF(float, eventPacket, offset, evt.getPosition().x());
+		OI_WRITEBUF(float, eventPacket, offset, evt.getPosition().y());
+		OI_WRITEBUF(float, eventPacket, offset, evt.getPosition().z());
+		OI_WRITEBUF(float, eventPacket, offset, evt.getOrientation().w());
+		OI_WRITEBUF(float, eventPacket, offset, evt.getOrientation().x());
+		OI_WRITEBUF(float, eventPacket, offset, evt.getOrientation().y());
+		OI_WRITEBUF(float, eventPacket, offset, evt.getOrientation().z());
+
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getExtraDataType());
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getExtraDataItems());
+		OI_WRITEBUF(unsigned int, eventPacket, offset, evt.getExtraDataMask());
+
+		memcpy(&eventPacket[offset], evt.getExtraDataBuffer(), evt.getExtraDataSize());
+
+		offset += evt.getExtraDataSize();
+
+		validTacTileEvent = handleTacTileEvent(evt);
+	}
 
     if( showStreamSpeed )
     {
@@ -219,19 +247,40 @@ void InputServer::handleEvent(const Event& evt)
 			{
 				if (evt.getType() == Event::Update || evt.getType() == Event::Move)
 				{
-					client->sendEvent(eventPacket, DEFAULT_BUFLEN);
+					if (evt.isExtraDataLarge())
+					{
+						client->sendEvent(eventPacketLarge, DEFAULT_LRGBUFLEN);
+					}
+					else
+					{
+						client->sendEvent(eventPacket, DEFAULT_BUFLEN);
+					}
 				}
 				else
 				{
 					// If client supports dual TCP/UDP (V2), send single events as TCP
 					if (client->getMode() == data_omicronV2)
 					{
-						client->sendMsg(eventPacket, DEFAULT_BUFLEN);
+						if (evt.isExtraDataLarge())
+						{
+							client->sendMsg(eventPacketLarge, DEFAULT_LRGBUFLEN);
+						}
+						else
+						{
+							client->sendMsg(eventPacket, DEFAULT_BUFLEN);
+						}
 					}
 					else
 					{
-						// Legacy support, send single events as UDP
-						client->sendEvent(eventPacket, DEFAULT_BUFLEN);
+						if (evt.isExtraDataLarge())
+						{
+							client->sendEvent(eventPacketLarge, DEFAULT_LRGBUFLEN);
+						}
+						else
+						{
+							// Legacy support, send single events as UDP
+							client->sendEvent(eventPacket, DEFAULT_BUFLEN);
+						}
 					}
 				}
 			}

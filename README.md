@@ -1,6 +1,7 @@
 ![logo](https://github.com/uic-evl/omicron/blob/master/logo.png) omicron
 
 =======
+
 The omicron SDK is a library providing access to a variety of input devices, mostly used in immersive installations and stereo display systems. 
 
 Some of the devices currently supported by omicron are:
@@ -24,6 +25,8 @@ In addition to event services, omicron provides additional utility APIs to simpl
  * a mathematical/geometry library (eigen http://eigen.tuxfamily.org/index.php?title=Main_Page)
 
 omicron input support can be integrated into C++ applications as a static library, or it can be run as a standalone *input server*, streaming input data to multiple applications. Omicron comes with client-side interfaces for:
- * [http://unity3d.com/ Unity]
- * [http://processing.org/ Processing]
- * C++, using a *single header*. Only a few lines of code needed. For more information see the *omicronConnector* section on the [GettingStarted Getting started page].
+ * Unity (http://unity3d.com/)
+   * Example Project: (https://github.com/uic-evl/omicron-unity)
+ * Processing (http://processing.org/)
+   * Example Project: (https://github.com/uic-evl/omicron-examples)
+ * C++, using a *single header*. Only a few lines of code needed. For more information see (https://github.com/uic-evl/omicron/wiki/Adding).

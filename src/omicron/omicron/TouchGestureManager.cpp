@@ -325,7 +325,7 @@ void TouchGroup::process(){
 	// Double click should be the last gesture a touch group will generate
 	// to prevent an accidental drag or zoom
 	if( !doubleClickTriggered )
-		gestureManager->generatePQServiceEvent(Event::Move, touchList, ID, gestureFlag);
+		gestureManager->generatePQServiceEvent(Event::Move, centerTouch, touchList, gestureFlag);
 
 	// Determine the farthest point from the group center (thumb?)
 	int farthestTouchID = -1;
@@ -765,14 +765,14 @@ void TouchGestureManager::generatePQServiceEvent( Event::Type eventType, Touch t
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void TouchGestureManager::generatePQServiceEvent(Event::Type eventType, map<int, Touch> touchList, int mainId, int gesture)
+void TouchGestureManager::generatePQServiceEvent(Event::Type eventType, Touch mainTouch, map<int, Touch> touchList, int gesture)
 {
 	if (pqsInstance){
 		pqsInstance->lockEvents();
 
 		Event* evt = pqsInstance->writeHead();
 
-		Touch touch = touchList[mainId];
+		Touch touch = mainTouch;
 
 		switch (eventType)
 		{
@@ -795,19 +795,26 @@ void TouchGestureManager::generatePQServiceEvent(Event::Type eventType, map<int,
 		evt->setExtraDataFloat(2, touch.initXPos);
 		evt->setExtraDataFloat(3, touch.initYPos);
 		evt->setExtraDataFloat(4, -1); // Secondary event flag (used for zoom)
-		evt->setExtraDataFloat(5, touchList.size()-1); // Do not include self in count
+		evt->setExtraDataFloat(5, touchList.size()); // Includes self in count
 
 		map<int, Touch>::iterator it;
 		int extraDataIndex = 6;
 		for (it = touchList.begin(); it != touchList.end(); it++)
 		{
 			Touch t = (*it).second;
+
+			/*
 			if (t.ID != touch.ID) // Does not include itself in this list
 			{
 				evt->setExtraDataFloat(extraDataIndex++, t.ID);
 				evt->setExtraDataFloat(extraDataIndex++, t.xPos);
 				evt->setExtraDataFloat(extraDataIndex++, t.yPos);
 			}
+			*/
+
+			evt->setExtraDataFloat(extraDataIndex++, t.ID);
+			evt->setExtraDataFloat(extraDataIndex++, t.xPos);
+			evt->setExtraDataFloat(extraDataIndex++, t.yPos);
 		}
 
 		

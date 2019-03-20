@@ -149,7 +149,7 @@ namespace omicron {
 		void setNextID( int ID );
 
 		void generatePQServiceEvent(Event::Type eventType, Touch touch, int advancedGesture);
-		void generatePQServiceEvent(Event::Type eventType, map<int, Touch> touchList, int masterId, int advancedGesture);
+		void generatePQServiceEvent(Event::Type eventType, Touch mainTouch, map<int, Touch> touchList, int advancedGesture);
 		void generateZoomEvent(Event::Type eventType, Touch touch, float deltaDistance);
 	private:
 		Service* pqsInstance;

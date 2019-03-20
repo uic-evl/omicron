@@ -60,6 +60,7 @@ const int GESTURE_THREE_FINGER_HOLD = EventBase::User << 6;
 const int GESTURE_SINGLE_CLICK = EventBase::User << 7;
 const int GESTURE_DOUBLE_CLICK = EventBase::User << 8;
 const int GESTURE_MULTI_TOUCH = EventBase::User << 9;
+const int GESTURE_ZOOM = EventBase::User << 10;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Touch Group
@@ -309,7 +310,7 @@ void TouchGroup::process(){
 			if( distFromInitPos <= clickMaxDistance && !doubleClickTriggered && !bigTouchGestureTriggered )
 			{
 				ofmsg("Touchgroup %1% click event", %ID);
-				gestureManager->generatePQServiceEvent( Event::Down, touchList, ID, GESTURE_SINGLE_TOUCH );
+				gestureManager->generatePQServiceEvent( Event::Down, centerTouch, GESTURE_SINGLE_CLICK );
 			}
 			setRemove();
 		}
@@ -829,6 +830,7 @@ void TouchGestureManager::generateZoomEvent( Event::Type eventType, Touch touch,
 		evt->reset(Event::Zoom, Service::Pointer, touch.ID);
 	
 		evt->setPosition(touch.xPos, touch.yPos);
+		evt->setFlags(GESTURE_ZOOM);
 
 		evt->setExtraDataType(Event::ExtraDataFloatArray);
 		evt->setExtraDataFloat(0, touch.xWidth);

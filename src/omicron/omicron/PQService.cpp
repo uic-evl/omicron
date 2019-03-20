@@ -477,20 +477,24 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 
 		touch.timestamp = timestamp;
 
+		if (tp.point_event == TP_DOWN)
+		{
+			touch.ID = nextID;
+			touchID[tp.id] = nextID;
+			if (nextID < maxTouches - 100) {
+				nextID++;
+			}
+			else {
+				nextID = 0;
+			}
+		}
+
 		// Process touch gestures (this is done outside event creation
 		// for the case touchGestureManager needs to create an event)
 		if( useGestureManager ){
-
 			switch(tp.point_event)
 			{
 				case TP_DOWN:
-					touch.ID = nextID;
-					touchID[tp.id] = nextID;
-					if( nextID < maxTouches - 100 ){
-						nextID++;
-					} else {
-						nextID = 0;
-					}
 					touchGestureManager->addTouch( Event::Down, touch );
 					break;
 				case TP_MOVE:
@@ -501,54 +505,46 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 					break;
 			}
 			
-		} else {
-			mysInstance->lockEvents();
-
-			Event* evt = mysInstance->writeHead();
-			switch(tp.point_event)
-			{
-				case TP_DOWN:
-					evt->reset(Event::Down, Service::Pointer, nextID);
-					if (isDebugEnabled())
-					{
-						ofmsg("PQService: Touch ID: %1% as DOWN event at (%2%,%3%) size: (%4%,%5%)", %touch.ID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth);
-					}
-					touchID[tp.id] = nextID;
-					if( nextID < maxTouches - 100 ){
-						nextID++;
-					} else {
-						nextID = 0;
-					}
-					
-					break;
-				case TP_MOVE:
-					evt->reset(Event::Move, Service::Pointer, touch.ID);
-					touchlist[touch.ID] = touch;
-					if (isDebugEnabled())
-					{
-						ofmsg("PQService: Touch ID: %1% as MOVE event at (%2%,%3%) size: (%4%,%5%)", %touch.ID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth);
-					}
-					break;
-				case TP_UP:
-					evt->reset(Event::Up, Service::Pointer, touch.ID);
-					touchlist.erase( touch.ID );
-					if (isDebugEnabled())
-					{
-						ofmsg("PQService: Touch ID: %1% as UP event at (%2%,%3%) size: (%4%,%5%)", %touch.ID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth);
-					}
-					break;
-			}
-
-			evt->setPosition(touch.xPos, touch.yPos);
-
-			evt->setExtraDataType(Event::ExtraDataFloatArray);
-			evt->setExtraDataFloat(0, touch.xWidth);
-			evt->setExtraDataFloat(1, touch.yWidth);
-
-			//printf(" Server %d,%d Screen %d, %d\n", serverX, serverY, screenX, screenY );
-			//printf("      at %d,%d\n", tp.x, tp.y);
-			mysInstance->unlockEvents();
 		}
+		mysInstance->lockEvents();
+
+		Event* evt = mysInstance->writeHead();
+		switch(tp.point_event)
+		{
+			case TP_DOWN:
+				evt->reset(Event::Down, Service::Pointer, nextID);
+				if (isDebugEnabled())
+				{
+					ofmsg("PQService: Touch ID: %1% as DOWN event at (%2%,%3%) size: (%4%,%5%)", %touch.ID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth);
+				}
+				break;
+			case TP_MOVE:
+				evt->reset(Event::Move, Service::Pointer, touch.ID);
+				touchlist[touch.ID] = touch;
+				if (isDebugEnabled())
+				{
+					ofmsg("PQService: Touch ID: %1% as MOVE event at (%2%,%3%) size: (%4%,%5%)", %touch.ID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth);
+				}
+				break;
+			case TP_UP:
+				evt->reset(Event::Up, Service::Pointer, touch.ID);
+				touchlist.erase( touch.ID );
+				if (isDebugEnabled())
+				{
+					ofmsg("PQService: Touch ID: %1% as UP event at (%2%,%3%) size: (%4%,%5%)", %touch.ID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth);
+				}
+				break;
+		}
+
+		evt->setPosition(touch.xPos, touch.yPos);
+
+		evt->setExtraDataType(Event::ExtraDataFloatArray);
+		evt->setExtraDataFloat(0, touch.xWidth);
+		evt->setExtraDataFloat(1, touch.yWidth);
+
+		//printf(" Server %d,%d Screen %d, %d\n", serverX, serverY, screenX, screenY );
+		//printf("      at %d,%d\n", tp.x, tp.y);
+		mysInstance->unlockEvents();
 	}
 }
 

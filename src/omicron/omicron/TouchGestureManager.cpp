@@ -506,6 +506,11 @@ float TouchGroup::getZoomDelta(){
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+float TouchGroup::getDiameter() {
+	return diameter;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Gets the event type
 Event::Type TouchGroup::getEventType(){
 	return eventType;
@@ -813,7 +818,7 @@ void TouchGestureManager::generatePQServiceEvent(Event::Type eventType, TouchGro
 			break;
 		}
 		evt->setPosition(Vector3f(touch.xPos, touch.yPos, 0));
-		evt->setOrientation(centerTouch.xPos, centerTouch.yPos, 0, 0);
+		evt->setOrientation(centerTouch.xPos, centerTouch.yPos, touchGroup->getDiameter(), 0);
 		evt->setFlags(gesture);
 
 		evt->setExtraDataType(Event::ExtraDataFloatArray);

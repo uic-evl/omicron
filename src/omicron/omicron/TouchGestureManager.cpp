@@ -114,11 +114,11 @@ bool TouchGroup::isInsideGroup( Event::Type eventType, float x, float y, int tou
 		addTouch( eventType, x, y, touchID, w, h );
 		return true;
 	} else if( x > centerTouch.xPos - longRangeDiameter/2 && x < centerTouch.xPos + longRangeDiameter/2 && y > centerTouch.yPos - longRangeDiameter/2 && y < centerTouch.yPos + longRangeDiameter/2 ){
-		addLongRangeTouch( eventType, x, y, touchID, w, h );
+		//addLongRangeTouch( eventType, x, y, touchID, w, h );
 		return false;
 	} else {
-		if( longRangeTouchList.count( touchID ) > 0 )
-			longRangeTouchList.erase( touchID );
+		//if( longRangeTouchList.count( touchID ) > 0 )
+		//	longRangeTouchList.erase( touchID );
 		return false;
 	}
 }
@@ -129,31 +129,22 @@ void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID,
 	ftime( &tb );
 	int curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
 
-	if( eventType == Event::Up ){ // If up cleanup touch
+	
 
-		touchList.erase( touchID );
-		idleTouchList.erase( touchID );
-		movingTouchList.erase( touchID );
+	if( eventType == Event::Up ){
+		lockTouchList();
+		touchList.erase(touchID);
+		unlockTouchList();
+
 		ofmsg("TouchGroup %1% removed touch ID %2% new size: %3%", %ID %touchID %getTouchCount() );
 
-		if (touchList.size() > 0 && touchID == mainID)
+		if (getTouchCount() == 0)
 		{
-			map<int, Touch>::iterator it;
-			Touch t;
-			for (it = touchList.begin(); it != touchList.end(); it++)
-			{
-				t = (*it).second;
-				mainTouch = t;
-				mainID = t.ID;
-				mainTouch.groupID = ID;
-				ofmsg("TouchGroup %1% removed main ID %2% NEW main ID: %3%", %ID %touchID %mainID);
-
-				gestureManager->generatePQServiceEvent(Event::Move, mainTouch, touchList, gestureFlag);
-				break;
-			}
+			setRemove();
+			gestureManager->generatePQServiceEvent(Event::Up, this, GESTURE_SINGLE_TOUCH);
 		}
-	} else {
-
+	}
+	else {
 		Touch t;
 		t.xPos = x;
 		t.yPos = y;
@@ -163,62 +154,52 @@ void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID,
 		t.timestamp = curTime;
 		t.groupID = ID;
 
-		touchListLock->lock();
+		lockTouchList();
 
-		if( touchList.count(touchID) == 1 )
-		{
-			t.initXPos = touchList[touchID].initXPos;
-			t.initYPos = touchList[touchID].initYPos;
-		}
-		else
+		if (eventType == Event::Down)
 		{
 			t.initXPos = x;
 			t.initYPos = y;
 		}
+		else
+		{
+			t.initXPos = touchList[touchID].initXPos;
+			t.initYPos = touchList[touchID].initYPos;
+		}
+	
+		touchList[touchID] = t;
 
-		if( touchList.size() == 0 ) // Initial touch group
-		{ 
-			init_xPos = x;
-			init_yPos = y;
+		unlockTouchList();
 
-			t.state = t.IDLE;
-			t.idleTime = curTime;
-			t.prevPosResetTime = curTime;
+		if (eventType == Event::Down)
+		{
+			if (getTouchCount() == 0)
+			{
+				mainTouch = t;
+				centerTouch = t;
+			}
+			ofmsg("TouchGroup %1% added touch ID %2% new size: %3%", %ID %touchID %getTouchCount());
+		}
 
-			touchList[touchID] = t;
+		// If new touch ID == main ID, update ID
+		if (touchID == mainID)
+		{
 			mainTouch = t;
+		}
 
-			if( ID != touchID )
-			{
-				doubleClickTriggered = true;
-				ofmsg("TouchGroup %1% double click event", %ID );
-				gestureManager->generatePQServiceEvent( Event::Down, centerTouch, touchList, GESTURE_DOUBLE_CLICK );
-			}
-			else
-			{
-				// New touch down
-				gestureFlag = GESTURE_SINGLE_TOUCH;
-				gestureManager->generatePQServiceEvent( Event::Down, t, touchList, gestureFlag );
-
-				ofmsg("TouchGroup %1% down event", %ID );
-			}
+		if (getTouchCount() == 1)
+		{
+			gestureManager->generatePQServiceEvent(Event::Down, this, GESTURE_SINGLE_TOUCH);
 		}
 		else
 		{
-			// Update touch
-			t.state = touchList[touchID].state;
-			t.lastXPos = touchList[touchID].xPos;
-			t.lastYPos = touchList[touchID].yPos;
-			touchList[touchID] = t;
-
-			if (mainID == touchID)
-			{
-				mainTouch = t;
-			}
+			gestureManager->generatePQServiceEvent(Event::Move, this, GESTURE_MULTI_TOUCH);
 		}
-
-		touchListLock->unlock();			
+		
 	}
+
+	
+
 	lastUpdated = curTime;
 }
 
@@ -260,33 +241,33 @@ void TouchGroup::process(){
 	int curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
 	int timeSinceLastUpdate = curTime-lastUpdated;
 
-	touchListLock->lock();
+	lockTouchList();
 
 	// Reset group center position
 	float newCenterX = 0;
 	float newCenterY = 0;
 
-	map<int,Touch> activeTouchList;
+	map<int, Touch> activeTouchList;
 	idleTouchList.clear();
 
 	// Recalculate group center by averaging current touch points
-	map<int,Touch>::iterator it;
-	for ( it = touchList.begin() ; it != touchList.end(); it++ )
+	map<int, Touch>::iterator it;
+	for (it = touchList.begin(); it != touchList.end(); it++)
 	{
 		Touch t = (*it).second;
 
 		// Check touch update time, if too long remove from list
-		int lastTouchUpdate = curTime-t.timestamp;
-		if( lastTouchUpdate < touchTimeout )
+		int lastTouchUpdate = curTime - t.timestamp;
+		if (lastTouchUpdate < touchTimeout)
 		{
 			newCenterX += t.xPos;
 			newCenterY += t.yPos;
 
 			// Determine if touch is idle
 			t.prevPosTimer = curTime - t.prevPosResetTime;
-			if( t.prevPosTimer > idleTimeout )
+			if (t.prevPosTimer > idleTimeout)
 			{
-				if( t.state != t.IDLE )
+				if (t.state != t.IDLE)
 					t.idleTime = curTime;
 				t.state = t.IDLE;
 				idleTouchList[t.ID] = t;
@@ -297,16 +278,16 @@ void TouchGroup::process(){
 			}
 
 			// Determine distance from previous point
-			float distFromPrev = sqrt( abs( t.lastXPos - t.xPos ) * abs( t.lastXPos - t.xPos ) + abs( t.lastYPos - t.yPos ) * abs( t.lastYPos - t.yPos ) );
+			float distFromPrev = sqrt(abs(t.lastXPos - t.xPos) * abs(t.lastXPos - t.xPos) + abs(t.lastYPos - t.yPos) * abs(t.lastYPos - t.yPos));
 			//ofmsg("Touch ID %1% state: %2% dist from last: %3%", %t.ID %t.state %distFromPrev);
 
 			// TODO: Eventally we'll want to determine the movement vector
 			//if( distFromPrev > 0 )
 			//  angle = atan2( prevYPos - curYPos, prevXPos - curXPos ) + PI;
-			
+
 			// If far enough from previous and enough time has passed, updated previous position
 			// Or if previous position is too far away, update
-			if( distFromPrev > minPreviousPosDistance ){
+			if (distFromPrev > minPreviousPosDistance) {
 				t.prevPosResetTime = curTime;
 				//t.lastXPos = t.xPos;
 				//t.lastYPos = t.yPos;
@@ -321,77 +302,10 @@ void TouchGroup::process(){
 	newCenterX /= touchList.size();
 	newCenterY /= touchList.size();
 
-	touchListLock->unlock();
-
-	// Only update the center position if group still has active touches
-	// This allows for the empty touch up event to use the last good position
-	if( touchList.size() == 0 )
-	{
-		if( timeSinceLastUpdate > touchGroupTimeout )
-		{
-			float distFromInitPos = sqrt( abs( init_xPos - centerTouch.xPos ) * abs( init_xPos - centerTouch.xPos ) + abs(init_yPos - centerTouch.yPos ) * abs( init_yPos - centerTouch.yPos ) );
-			//ofmsg("Touchgroup %1% distance from initPos %2%", %ID %distFromInitPos);
-			
-			if( distFromInitPos <= clickMaxDistance && !doubleClickTriggered && !bigTouchGestureTriggered )
-			{
-				ofmsg("Touchgroup %1% click event", %ID);
-				gestureManager->generatePQServiceEvent( Event::Down, mainTouch, touchList, GESTURE_SINGLE_CLICK );
-			}
-			setRemove();
-		}
-		return;
-	}
+	unlockTouchList();
 
 	centerTouch.xPos = newCenterX;
 	centerTouch.yPos = newCenterY;
-	centerTouch.initXPos = init_xPos;
-	centerTouch.initYPos = init_yPos;
-
-	// Double click should be the last gesture a touch group will generate
-	// to prevent an accidental drag or zoom
-	if( !doubleClickTriggered )
-		gestureManager->generatePQServiceEvent(Event::Move, mainTouch, touchList, gestureFlag);
-
-	// Determine the farthest point from the group center (thumb?)
-	int farthestTouchID = -1;
-	farthestTouchDistance = 0;
-
-	for ( it = touchList.begin() ; it != touchList.end(); it++ )
-	{
-		Touch t = (*it).second;
-
-		float curDistance = sqrt( abs( centerTouch.xPos - t.xPos ) * abs( centerTouch.xPos - t.xPos ) + abs( centerTouch.yPos - t.yPos ) * abs( centerTouch.yPos - t.yPos ) );
-		if( curDistance > farthestTouchDistance ){
-			farthestTouchDistance = curDistance;
-			farthestTouchID = t.ID;
-		}
-	}
-
-	//ofmsg("TouchGroup: %1% Touches: %2% Idle: %3%", %ID %touchList.size() %idleTouchList.size());
-	if( touchList.count(farthestTouchID) != 0 )
-	{
-		Touch thumbPoint = touchList[farthestTouchID];
-		if( touchList.size() >= 3 && xPos < thumbPoint.xPos )
-		{
-			//omsg("TouchGroup: Left-handed");
-			groupHandedness = LEFT;
-		}
-		else if( touchList.size() >= 3 && xPos > thumbPoint.xPos )
-		{
-			//omsg("TouchGroup: Right-handed");
-			groupHandedness = RIGHT;
-		}
-		else
-		{
-			//omsg("TouchGroup: Not-handed");
-			groupHandedness = NONE;
-		}
-	}
-
-	// Double click should be the last gesture a touch group will generate
-	// to prevent an accidental drag or zoom
-	if( !doubleClickTriggered )
-		generateGestures();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -402,6 +316,7 @@ void TouchGroup::generateGestures(){
 	ftime( &tb );
 	int curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
 
+	/*
 	// Single finger gestures
 	if( touchList.size() == 1 )
     {
@@ -526,6 +441,7 @@ void TouchGroup::generateGestures(){
 			ofmsg("TouchGroup ID: %1% 3-finger gesture ended", %ID);
 		}
 	}
+	*/
 }
 
 
@@ -563,6 +479,21 @@ bool TouchGroup::isRemovable(){
 // Sets the remove flag
 void TouchGroup::setRemove(){
 	remove = true;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+map<int,Touch> TouchGroup::getTouchList() {
+	return touchList;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void TouchGroup::lockTouchList() {
+	touchListLock->lock();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void TouchGroup::unlockTouchList() {
+	touchListLock->unlock();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -642,7 +573,7 @@ void TouchGestureManager::poll()
 		else
 		{
 			ofmsg("TouchGestureManager: TouchGroup %1% empty. Removed.", %tg->getID());
-			generatePQServiceEvent( Event::Up, tg->getMainTouch(), tg->getGestureFlag() );
+			generatePQServiceEvent( Event::Up, tg, tg->getGestureFlag() );
 		}
 	}
 
@@ -710,6 +641,7 @@ bool TouchGestureManager::addTouchGroup( Event::Type eventType, float xPos, floa
 	return false;
 }
 
+/*
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void TouchGestureManager::generatePQServiceEvent(Event::Type eventType, Touch mainTouch, int gesture)
 {
@@ -796,15 +728,6 @@ void TouchGestureManager::generatePQServiceEvent(Event::Type eventType, Touch ma
 		{
 			Touch t = (*it).second;
 
-			/*
-			if (t.ID != touch.ID) // Does not include itself in this list
-			{
-				evt->setExtraDataFloat(extraDataIndex++, t.ID);
-				evt->setExtraDataFloat(extraDataIndex++, t.xPos);
-				evt->setExtraDataFloat(extraDataIndex++, t.yPos);
-			}
-			*/
-
 			evt->setExtraDataFloat(extraDataIndex++, t.ID);
 			evt->setExtraDataFloat(extraDataIndex++, t.xPos);
 			evt->setExtraDataFloat(extraDataIndex++, t.yPos);
@@ -860,6 +783,66 @@ void TouchGestureManager::generateZoomEvent( Event::Type eventType, Touch touch,
 
 		pqsInstance->unlockEvents();
 	} else {
+		printf("TouchGestureManager: No PQService Registered\n");
+	}
+}
+*/
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void TouchGestureManager::generatePQServiceEvent(Event::Type eventType, TouchGroup* touchGroup, int gesture)
+{
+	if (pqsInstance) {
+		pqsInstance->lockEvents();
+
+		Event* evt = pqsInstance->writeHead();
+
+		Touch touch = touchGroup->getMainTouch();
+		Touch centerTouch = touchGroup->getCenterTouch();
+		map<int, Touch> groupTouchList = touchGroup->getTouchList();
+
+		switch (eventType)
+		{
+		case Event::Down:
+			evt->reset(Event::Down, Service::Pointer, touch.groupID);
+			break;
+		case Event::Move:
+			evt->reset(Event::Move, Service::Pointer, touch.groupID);
+			break;
+		case Event::Up:
+			evt->reset(Event::Up, Service::Pointer, touch.groupID);
+			break;
+		}
+		evt->setPosition(Vector3f(touch.xPos, touch.yPos, 0));
+		evt->setOrientation(centerTouch.xPos, centerTouch.yPos, 0, 0);
+		evt->setFlags(gesture);
+
+		evt->setExtraDataType(Event::ExtraDataFloatArray);
+		evt->setExtraDataFloat(0, touch.xWidth);
+		evt->setExtraDataFloat(1, touch.yWidth);
+		evt->setExtraDataFloat(2, touch.initXPos);
+		evt->setExtraDataFloat(3, touch.initYPos);
+		evt->setExtraDataFloat(4, -1); // Secondary event flag (used for zoom)
+		evt->setExtraDataFloat(5, groupTouchList.size()); // Includes self in count
+
+		map<int, Touch>::iterator it;
+		int extraDataIndex = 6;
+
+		touchGroup->lockTouchList();
+		for (it = groupTouchList.begin(); it != groupTouchList.end(); it++)
+		{
+			Touch t = (*it).second;
+
+			evt->setExtraDataFloat(extraDataIndex++, t.ID);
+			evt->setExtraDataFloat(extraDataIndex++, t.xPos);
+			evt->setExtraDataFloat(extraDataIndex++, t.yPos);
+		}
+		touchGroup->unlockTouchList();
+
+
+		pqsInstance->unlockEvents();
+
+	}
+	else {
 		printf("TouchGestureManager: No PQService Registered\n");
 	}
 }

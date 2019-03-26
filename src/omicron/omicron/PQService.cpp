@@ -464,7 +464,7 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 		// Basically PQ IDs recycle after the ID is done. OmegaLib increments IDs
 		// until max ID is reached.
 		touch.ID = touchID[tp.id];
-
+		touch.groupID = touch.ID;
 		if( debugRawPQInfo )
 		{
 			ofmsg("PQService: Incoming touch point ID: %1% type: %6% at (%2%,%3%) size: (%4%,%5%)", %touch.ID %tp.x %tp.y %tp.dx %tp.dy %tp.point_event);
@@ -480,6 +480,7 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 		if (tp.point_event == TP_DOWN)
 		{
 			touch.ID = nextID;
+			touch.groupID = touch.ID;
 			touchID[tp.id] = nextID;
 			if (nextID < maxTouches - 100) {
 				nextID++;
@@ -512,7 +513,7 @@ void PQService::OnTouchPoint(const TouchPoint & tp)
 		switch(tp.point_event)
 		{
 			case TP_DOWN:
-				evt->reset(Event::Down, Service::Pointer, nextID);
+				evt->reset(Event::Down, Service::Pointer, touch.ID);
 				if (isDebugEnabled())
 				{
 					ofmsg("PQService: Touch ID: %1% as DOWN event at (%2%,%3%) size: (%4%,%5%)", %touch.ID %touch.xPos %touch.yPos %touch.xWidth %touch.yWidth);

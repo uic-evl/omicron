@@ -37,7 +37,8 @@ struct Touch{
 	enum TouchState { INACTIVE, ACTIVE, IDLE };
 	int state;
 
-	int ID;
+	int ID = -1;
+	int groupID;
 	float xPos;
 	float yPos;
 	float xWidth;
@@ -69,11 +70,13 @@ namespace omicron {
 		private:
 			TouchGestureManager* gestureManager;
 			Touch centerTouch;
+			Touch mainTouch; // Touch that created/manages the group
 
 			bool remove;
 			Event::Type eventType; // Down, Move, Up
 			int gestureFlag; // Single touch, double, multi, etc.
-			int ID;
+			int ID; // Original touch ID that created group
+			int mainID; // Touch ID that manages group (usually the original, but can change if original touch is released)
 			float xPos;
 			float yPos;
 			float init_xPos;
@@ -125,6 +128,7 @@ namespace omicron {
 
 			int getTouchCount();
 			Touch getCenterTouch();
+			Touch getMainTouch();
 			int getGestureFlag();
 			bool isRemovable();
 			void setRemove();
@@ -150,7 +154,7 @@ namespace omicron {
 
 		void generatePQServiceEvent(Event::Type eventType, Touch touch, int advancedGesture);
 		void generatePQServiceEvent(Event::Type eventType, Touch mainTouch, map<int, Touch> touchList, int advancedGesture);
-		void generateZoomEvent(Event::Type eventType, Touch touch, float deltaDistance);
+		void generateZoomEvent(Event::Type eventType, Touch touch, map<int, Touch> touchList, float deltaDistance);
 	private:
 		Service* pqsInstance;
 		Lock* touchListLock;

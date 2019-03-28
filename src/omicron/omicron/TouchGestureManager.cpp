@@ -129,22 +129,25 @@ void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID,
 	ftime( &tb );
 	int curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
 
-	
+	// Touch not in list but inside touch (likely from other touchgroup)
+	if (touchList.count(touchID) == 0 && eventType != Event::Down)
+	{
 
-	if( eventType == Event::Up ){
-		lockTouchList();
-		touchList.erase(touchID);
-		unlockTouchList();
+	}
+
+	if( eventType == Event::Up )
+	{
+		removeTouch(touchID);
 
 		ofmsg("TouchGroup %1% removed touch ID %2% new size: %3%", %ID %touchID %getTouchCount() );
 
 		if (getTouchCount() == 0)
 		{
 			setRemove();
-			gestureManager->generatePQServiceEvent(Event::Up, this, GESTURE_SINGLE_TOUCH);
 		}
 	}
-	else {
+	else
+	{
 		Touch t;
 		t.xPos = x;
 		t.yPos = y;
@@ -166,36 +169,39 @@ void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID,
 			t.initXPos = touchList[touchID].initXPos;
 			t.initYPos = touchList[touchID].initYPos;
 		}
-	
+		
+
 		touchList[touchID] = t;
 
 		unlockTouchList();
 
 		if (eventType == Event::Down)
 		{
-			if (getTouchCount() == 0)
+			if (getTouchCount() == 1)
 			{
 				mainTouch = t;
 				centerTouch = t;
+				gestureManager->generatePQServiceEvent(Event::Down, this, GESTURE_SINGLE_TOUCH);
 			}
 			ofmsg("TouchGroup %1% added touch ID %2% new size: %3%", %ID %touchID %getTouchCount());
 		}
-
-		// If new touch ID == main ID, update ID
-		if (touchID == mainID)
-		{
-			mainTouch = t;
-		}
-
-		if (getTouchCount() == 1)
-		{
-			gestureManager->generatePQServiceEvent(Event::Down, this, GESTURE_SINGLE_TOUCH);
-		}
 		else
 		{
-			gestureManager->generatePQServiceEvent(Event::Move, this, GESTURE_MULTI_TOUCH);
+			// If new touch ID == main ID, update ID
+			if (touchID == mainID)
+			{
+				mainTouch = t;
+			}
+
+			if (getTouchCount() == 1)
+			{
+				gestureManager->generatePQServiceEvent(Event::Move, this, GESTURE_SINGLE_TOUCH);
+			}
+			else
+			{
+				gestureManager->generatePQServiceEvent(Event::Move, this, GESTURE_MULTI_TOUCH);
+			}
 		}
-		
 	}
 
 	
@@ -219,6 +225,7 @@ void TouchGroup::addLongRangeTouch( Event::Type eventType, float x, float y, int
 			t.xWidth = w;
 			t.yWidth = h;
 			t.ID = ID;
+			t.groupID = this->ID;
 			t.timestamp = lastUpdated;
 			longRangeTouchList[ID] = t;
 		} else { // Add new touch
@@ -228,6 +235,7 @@ void TouchGroup::addLongRangeTouch( Event::Type eventType, float x, float y, int
 			t.xWidth = w;
 			t.yWidth = h;
 			t.ID = ID;
+			t.groupID = this->ID;
 			t.timestamp = lastUpdated;
 			touchList[ID] = t;
 		}
@@ -511,6 +519,31 @@ float TouchGroup::getDiameter() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+float TouchGroup::getLongRangeDiameter() {
+	return longRangeDiameter;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void TouchGroup::removeTouch(int id) {
+	touchListLock->lock();
+	touchList.erase(id);
+
+	if (id == mainID)
+	{
+		// Main ID (controlling group) has been removed
+		// Set next available touch to take over group
+		map<int, Touch>::iterator it;
+		for (it = touchList.begin(); it != touchList.end(); it++)
+		{
+			Touch t = (*it).second;
+			mainID = t.ID;
+			break;
+		}
+	}
+	touchListLock->unlock();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Gets the event type
 Event::Type TouchGroup::getEventType(){
 	return eventType;
@@ -606,7 +639,6 @@ bool TouchGestureManager::addTouch(Event::Type eventType, Touch touch)
 
 	// Let the touch groups determine if the touch is new or an update
 	addTouchGroup(eventType, x, y, ID, w, h );
-	touchList[ID] = touch;
 	return true;
 }
 
@@ -808,17 +840,17 @@ void TouchGestureManager::generatePQServiceEvent(Event::Type eventType, TouchGro
 		switch (eventType)
 		{
 		case Event::Down:
-			evt->reset(Event::Down, Service::Pointer, touch.groupID);
+			evt->reset(Event::Down, Service::Pointer, touchGroup->getID());
 			break;
 		case Event::Move:
-			evt->reset(Event::Move, Service::Pointer, touch.groupID);
+			evt->reset(Event::Move, Service::Pointer, touchGroup->getID());
 			break;
 		case Event::Up:
-			evt->reset(Event::Up, Service::Pointer, touch.groupID);
+			evt->reset(Event::Up, Service::Pointer, touchGroup->getID());
 			break;
 		}
 		evt->setPosition(Vector3f(touch.xPos, touch.yPos, 0));
-		evt->setOrientation(centerTouch.xPos, centerTouch.yPos, touchGroup->getDiameter(), 0);
+		evt->setOrientation(centerTouch.xPos, centerTouch.yPos, touchGroup->getDiameter(), touchGroup->getLongRangeDiameter());
 		evt->setFlags(gesture);
 
 		evt->setExtraDataType(Event::ExtraDataFloatArray);

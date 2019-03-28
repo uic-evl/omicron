@@ -133,8 +133,15 @@ namespace omicron {
 			bool isRemovable();
 			void setRemove();
 
-			float getZoomDelta();
+			map<int, Touch> getTouchList();
+			void lockTouchList();
+			void unlockTouchList();
 
+			float getZoomDelta();
+			float getDiameter();
+			float getLongRangeDiameter();
+
+			void removeTouch(int id);
 			Event::Type getEventType();
 	};
 
@@ -152,14 +159,14 @@ namespace omicron {
 		bool addTouch(Event::Type eventType, Touch touch);
 		void setNextID( int ID );
 
-		void generatePQServiceEvent(Event::Type eventType, Touch touch, int advancedGesture);
-		void generatePQServiceEvent(Event::Type eventType, Touch mainTouch, map<int, Touch> touchList, int advancedGesture);
-		void generateZoomEvent(Event::Type eventType, Touch touch, map<int, Touch> touchList, float deltaDistance);
+		void generatePQServiceEvent(Event::Type eventType, TouchGroup* touchGroup, int advancedGesture);
+		//void generatePQServiceEvent(Event::Type eventType, Touch touch, int advancedGesture);
+		//void generatePQServiceEvent(Event::Type eventType, Touch mainTouch, map<int, Touch> touchList, int advancedGesture);
+		//void generateZoomEvent(Event::Type eventType, Touch touch, map<int, Touch> touchList, float deltaDistance);
 	private:
 		Service* pqsInstance;
 		Lock* touchListLock;
 		Lock* touchGroupListLock;
-		map<int,Touch> touchList;
 		map<int,TouchGroup*> touchGroupList;
 		set<int> groupedIDs;
 

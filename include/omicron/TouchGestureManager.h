@@ -157,6 +157,7 @@ namespace omicron {
 		void poll();
 		
 		bool addTouch(Event::Type eventType, Touch touch);
+		TouchGroup* getTouchGroup(int ID);
 		void setNextID( int ID );
 
 		void generatePQServiceEvent(Event::Type eventType, TouchGroup* touchGroup, int advancedGesture);

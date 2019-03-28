@@ -130,21 +130,21 @@ void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID,
 	int curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
 
 	// Touch not in list but inside touch (likely from other touchgroup)
+	// Lower ID touch group takes priority
 	if (touchList.count(touchID) == 0 && eventType != Event::Down)
 	{
-
+		TouchGroup* tg = gestureManager->getTouchGroup(touchID);
+		if (tg != NULL)
+		{
+			tg->removeTouch(touchID);
+			ofmsg("TouchGroup %1% absorbed touch ID %2%", %ID %touchID);
+		}
 	}
 
 	if( eventType == Event::Up )
 	{
 		removeTouch(touchID);
-
 		ofmsg("TouchGroup %1% removed touch ID %2% new size: %3%", %ID %touchID %getTouchCount() );
-
-		if (getTouchCount() == 0)
-		{
-			setRemove();
-		}
 	}
 	else
 	{
@@ -528,6 +528,7 @@ void TouchGroup::removeTouch(int id) {
 	touchListLock->lock();
 	touchList.erase(id);
 
+	ofmsg("TouchGroup %1% removed touch ID %2%", %ID %id);
 	if (id == mainID)
 	{
 		// Main ID (controlling group) has been removed
@@ -537,10 +538,15 @@ void TouchGroup::removeTouch(int id) {
 		{
 			Touch t = (*it).second;
 			mainID = t.ID;
-			break;
+			ofmsg("   Remaining IDs: %1%", %t.ID);
 		}
 	}
 	touchListLock->unlock();
+	ofmsg("   Remaining IDs count %1%", %getTouchCount());
+	if (getTouchCount() == 0)
+	{
+		setRemove();
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -640,6 +646,19 @@ bool TouchGestureManager::addTouch(Event::Type eventType, Touch touch)
 	// Let the touch groups determine if the touch is new or an update
 	addTouchGroup(eventType, x, y, ID, w, h );
 	return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+TouchGroup* TouchGestureManager::getTouchGroup(int ID)
+{
+	if (touchGroupList.count(ID) > 0)
+	{
+		return touchGroupList[ID];
+	}
+	else
+	{
+		return NULL;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

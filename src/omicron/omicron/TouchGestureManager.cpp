@@ -196,7 +196,25 @@ void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID,
 
 			if (getTouchCount() == 1)
 			{
-				gestureManager->generatePQServiceEvent(Event::Move, this, GESTURE_SINGLE_TOUCH);
+				// Big touch
+				float bigTouchMinSize = 0.05f;
+				if (mainTouch.xWidth > bigTouchMinSize)
+				{
+					if (!bigTouchGestureTriggered)
+					{
+						ofmsg("TouchGroup ID: %1% BIG touch", %ID);
+						gestureManager->generatePQServiceEvent(Event::Down, this, GESTURE_BIG_TOUCH);
+						bigTouchGestureTriggered = true;
+					}
+					else
+					{
+						gestureManager->generatePQServiceEvent(Event::Move, this, GESTURE_BIG_TOUCH);
+					}
+				}
+				else
+				{
+					gestureManager->generatePQServiceEvent(Event::Move, this, GESTURE_SINGLE_TOUCH);
+				}
 			}
 			else
 			{

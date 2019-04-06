@@ -93,6 +93,7 @@ TouchGroup::TouchGroup(TouchGestureManager* gm, int ID){
 	threeFingerGestureTriggered = false;
 	zoomGestureTriggered = false;
 	bigTouchGestureTriggered = false;
+	singleClickTriggered = false;
 	doubleClickTriggered = false;
 }
 
@@ -137,14 +138,14 @@ void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID,
 		if (tg != NULL)
 		{
 			tg->removeTouch(touchID);
-			ofmsg("TouchGroup %1% absorbed touch ID %2%", %ID %touchID);
+			// ofmsg("TouchGroup %1% absorbed touch ID %2%", %ID %touchID);
 		}
 	}
 
 	if( eventType == Event::Up )
 	{
 		removeTouch(touchID);
-		ofmsg("TouchGroup %1% removed touch ID %2% new size: %3%", %ID %touchID %getTouchCount() );
+		// ofmsg("TouchGroup %1% removed touch ID %2% new size: %3%", %ID %touchID %getTouchCount() );
 	}
 	else
 	{
@@ -183,7 +184,7 @@ void TouchGroup::addTouch( Event::Type eventType, float x, float y, int touchID,
 				centerTouch = t;
 				gestureManager->generatePQServiceEvent(Event::Down, this, GESTURE_SINGLE_TOUCH);
 			}
-			ofmsg("TouchGroup %1% added touch ID %2% new size: %3%", %ID %touchID %getTouchCount());
+			// ofmsg("TouchGroup %1% added touch ID %2% new size: %3%", %ID %touchID %getTouchCount());
 		}
 		else
 		{
@@ -312,8 +313,13 @@ void TouchGroup::process(){
 
 	unlockTouchList();
 
-	centerTouch.xPos = newCenterX;
-	centerTouch.yPos = newCenterY;
+	// Don't update center if list is empty to preserve touch group's position
+	// for double click detection
+	if (touchList.size() > 0)
+	{
+		centerTouch.xPos = newCenterX;
+		centerTouch.yPos = newCenterY;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -480,7 +486,21 @@ int TouchGroup::getGestureFlag(){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Returns the remove flag
 bool TouchGroup::isRemovable(){
-	return remove;
+	timeb tb;
+	ftime(&tb);
+	int curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
+	int timeSinceLastUpdate = curTime - lastUpdated;
+
+	// Allow a small delay between when the group was marked for removed (due to touch group size 0)
+	// and when it is really removed to allow for double click detection
+	if (timeSinceLastUpdate > touchGroupTimeout)
+	{
+		return remove;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -524,11 +544,21 @@ float TouchGroup::getLongRangeDiameter() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool TouchGroup::isSingleClickTriggered() {
+	return singleClickTriggered;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool TouchGroup::isDoubleClickTriggered() {
+	return doubleClickTriggered;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void TouchGroup::removeTouch(int id) {
 	touchListLock->lock();
 	touchList.erase(id);
 
-	ofmsg("TouchGroup %1% removed touch ID %2%", %ID %id);
+	// ofmsg("TouchGroup %1% removed touch ID %2%", %ID %id);
 	if (id == mainID)
 	{
 		// Main ID (controlling group) has been removed
@@ -538,13 +568,25 @@ void TouchGroup::removeTouch(int id) {
 		{
 			Touch t = (*it).second;
 			mainID = t.ID;
-			ofmsg("   Remaining IDs: %1%", %t.ID);
 		}
 	}
 	touchListLock->unlock();
-	ofmsg("   Remaining IDs count %1%", %getTouchCount());
+
 	if (getTouchCount() == 0)
 	{
+		// If touch group size and zero and inital position < clickMaxDistance, trigger click gesture
+		float distFromInitPos = sqrt(abs(mainTouch.initXPos - mainTouch.xPos) * abs(mainTouch.initXPos - mainTouch.xPos) + abs(mainTouch.initYPos - mainTouch.yPos) * abs(mainTouch.initYPos - mainTouch.yPos));
+		if (distFromInitPos <= clickMaxDistance)
+		{
+			if (!singleClickTriggered)
+			{
+				singleClickTriggered = true;
+			}
+			else
+			{
+				doubleClickTriggered = true;
+			}
+		}
 		setRemove();
 	}
 }
@@ -616,6 +658,19 @@ void TouchGestureManager::poll()
 		}
 		else
 		{
+			Touch mainTouch = tg->getMainTouch();
+
+			if (tg->isDoubleClickTriggered())
+			{
+				ofmsg("TouchGestureManager: TouchGroup %1% double click", %tg->getID());
+				generatePQServiceEvent(Event::Down, tg, GESTURE_DOUBLE_CLICK);
+			}
+			else if (tg->isSingleClickTriggered())
+			{
+				ofmsg("TouchGestureManager: TouchGroup %1% single click", %tg->getID());
+				generatePQServiceEvent(Event::Down, tg, GESTURE_SINGLE_CLICK);
+			}
+
 			ofmsg("TouchGestureManager: TouchGroup %1% empty. Removed.", %tg->getID());
 			generatePQServiceEvent( Event::Up, tg, tg->getGestureFlag() );
 		}

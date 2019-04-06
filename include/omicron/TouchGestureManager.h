@@ -111,6 +111,7 @@ namespace omicron {
 			bool threeFingerGestureTriggered;
 			bool bigTouchGestureTriggered;
 			bool zoomGestureTriggered;
+			bool singleClickTriggered;
 			bool doubleClickTriggered;
 		public:
 			TouchGroup(TouchGestureManager*, int);
@@ -140,6 +141,9 @@ namespace omicron {
 			float getZoomDelta();
 			float getDiameter();
 			float getLongRangeDiameter();
+			
+			bool isSingleClickTriggered();
+			bool isDoubleClickTriggered();
 
 			void removeTouch(int id);
 			Event::Type getEventType();
@@ -167,6 +171,7 @@ namespace omicron {
 	private:
 		Service* pqsInstance;
 		Lock* touchListLock;
+		map<int, Touch> rawTouchList;
 		Lock* touchGroupListLock;
 		map<int,TouchGroup*> touchGroupList;
 		set<int> groupedIDs;

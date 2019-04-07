@@ -1,11 +1,11 @@
 /**************************************************************************************************
  * THE OMICRON PROJECT
  *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2018		Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2019		Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto		anishimoto42@gmail.com
  *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2018, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2019, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted 
  * provided that the following conditions are met:
@@ -333,11 +333,28 @@ void TouchGroup::process(){
 
 	// Don't update center if list is empty to preserve touch group's position
 	// for double click detection
-	if (touchList.size() > 0)
+	if (getTouchCount() > 0)
 	{
 		centerTouch.xPos = newCenterX;
 		centerTouch.yPos = newCenterY;
 	}
+
+	// Determine the farthest point from the group center (thumb?)
+	int farthestTouchID = -1;
+	farthestTouchDistance = 0;
+
+	for (it = touchList.begin(); it != touchList.end(); it++)
+	{
+		Touch t = (*it).second;
+
+		float curDistance = sqrt(abs(centerTouch.xPos - t.xPos) * abs(centerTouch.xPos - t.xPos) + abs(centerTouch.yPos - t.yPos) * abs(centerTouch.yPos - t.yPos));
+		if (curDistance > farthestTouchDistance) {
+			farthestTouchDistance = curDistance;
+			farthestTouchID = t.ID;
+		}
+	}
+
+	generateGestures();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -347,6 +364,38 @@ void TouchGroup::generateGestures(){
 	timeb tb;
 	ftime( &tb );
 	int curTime = tb.millitm + (tb.time & 0xfffff) * 1000;
+
+	// Basic 2-touch zoom
+	if (touchList.size() == 2 && idleTouchList.size() <= 1 && !zoomGestureTriggered) {
+		zoomGestureTriggered = true;
+
+		initialZoomDistance = farthestTouchDistance;
+		zoomDistance = farthestTouchDistance;
+		zoomLastDistance = initialZoomDistance;
+
+		gestureManager->generateZoomEvent(Event::Down, this, 0);
+		ofmsg("TouchGroup ID: %1% zoom start", %ID);
+	}
+	else if (touchList.size() < 2 && zoomGestureTriggered) {
+		zoomGestureTriggered = false;
+
+		gestureManager->generateZoomEvent(Event::Up, this, 0);
+		ofmsg("TouchGroup ID: %1% zoom end", %ID);
+	}
+
+	if (zoomGestureTriggered)
+	{
+		zoomLastDistance = zoomDistance;
+		zoomDistance = farthestTouchDistance;
+
+		float zoomDelta = (zoomDistance - zoomLastDistance) * zoomGestureMultiplier;
+
+		if (zoomDelta != 0)
+		{
+			gestureManager->generateZoomEvent(Event::Move, this, zoomDelta);
+			//ofmsg("TouchGroup ID: %1% zoom delta: %2%", %ID %zoomDelta);
+		}
+	}
 
 	/*
 	// Single finger gestures
@@ -967,6 +1016,46 @@ void TouchGestureManager::generatePQServiceEvent(Event::Type eventType, TouchGro
 		}
 		touchGroup->unlockTouchList();
 
+
+		pqsInstance->unlockEvents();
+
+	}
+	else {
+		printf("TouchGestureManager: No PQService Registered\n");
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void TouchGestureManager::generateZoomEvent(Event::Type eventType, TouchGroup* touchGroup, float zoomDelta)
+{
+	if (pqsInstance) {
+		pqsInstance->lockEvents();
+
+		Event* evt = pqsInstance->writeHead();
+
+		Touch touch = touchGroup->getMainTouch();
+		Touch centerTouch = touchGroup->getCenterTouch();
+		map<int, Touch> groupTouchList = touchGroup->getTouchList();
+
+		evt->reset(Event::Zoom, Service::Pointer, touchGroup->getID());
+		evt->setPosition(Vector3f(touch.xPos, touch.yPos, 0));
+		evt->setOrientation(centerTouch.xPos, centerTouch.yPos, touchGroup->getDiameter(), touchGroup->getLongRangeDiameter());
+		evt->setFlags(GESTURE_ZOOM);
+
+		evt->setExtraDataType(Event::ExtraDataFloatArray);
+		evt->setExtraDataFloat(0, touch.xWidth);
+		evt->setExtraDataFloat(1, touch.yWidth);
+		evt->setExtraDataFloat(2, touch.initXPos);
+		evt->setExtraDataFloat(3, touch.initYPos);
+		
+		switch (eventType)
+		{
+		case(Event::Down): evt->setExtraDataFloat(4, 1); break;
+		case(Event::Move): evt->setExtraDataFloat(4, 2); break;
+		case(Event::Up): evt->setExtraDataFloat(4, 3); break;
+		}
+
+		evt->setExtraDataFloat(5, zoomDelta);
 
 		pqsInstance->unlockEvents();
 

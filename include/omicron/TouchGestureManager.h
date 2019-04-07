@@ -1,11 +1,11 @@
 /**************************************************************************************************
  * THE OMICRON PROJECT
  *-------------------------------------------------------------------------------------------------
- * Copyright 2010-2014		Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright 2010-2019		Electronic Visualization Laboratory, University of Illinois at Chicago
  * Authors:										
  *  Arthur Nishimoto		anishimoto42@gmail.com
  *-------------------------------------------------------------------------------------------------
- * Copyright (c) 2010-2014, Electronic Visualization Laboratory, University of Illinois at Chicago
+ * Copyright (c) 2010-2019, Electronic Visualization Laboratory, University of Illinois at Chicago
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification, are permitted 
  * provided that the following conditions are met:
@@ -165,9 +165,9 @@ namespace omicron {
 		void setNextID( int ID );
 
 		void generatePQServiceEvent(Event::Type eventType, TouchGroup* touchGroup, int advancedGesture);
+		void generateZoomEvent(Event::Type eventType, TouchGroup* touchGroup, float deltaDistance);
 		//void generatePQServiceEvent(Event::Type eventType, Touch touch, int advancedGesture);
 		//void generatePQServiceEvent(Event::Type eventType, Touch mainTouch, map<int, Touch> touchList, int advancedGesture);
-		//void generateZoomEvent(Event::Type eventType, Touch touch, map<int, Touch> touchList, float deltaDistance);
 	private:
 		Service* pqsInstance;
 		Lock* touchListLock;

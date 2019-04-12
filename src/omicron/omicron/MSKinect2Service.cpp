@@ -182,7 +182,7 @@ void MSKinectService::poll()
 		{
 			memcpy(imageEventBuffer, &color_pImage[currentPacket * dataPacketSize], dataPacketSize);
 			Event* evt = mysInstance->writeHead();
-			evt->reset(Event::Update, Service::Image, currentFrameTimestamp);
+			evt->reset(Event::Down, Service::Image, currentFrameTimestamp);
 			evt->setPosition(cColorWidth, cColorHeight, 0); // Position: imageWidth, imageHeight, typeFlag (Color = 0, Depth = 1)
 			evt->setOrientation(currentPacket, nPackets, 0, 0);
 

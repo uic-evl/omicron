@@ -267,8 +267,8 @@ void InputServer::handleEvent(const Event& evt)
 				}
 				else
 				{
-					// If client supports dual TCP/UDP (V2), send single events as TCP
-					if (client->getMode() == data_omicronV2)
+					// If client supports dual TCP/UDP (V2+), send single events as TCP
+					if (client->getMode() == data_omicronV2 || client->getMode() == data_omicronV3)
 					{
 						if (evt.isExtraDataLarge())
 						{

@@ -43,7 +43,7 @@
 
 // Preprocessor macro, bleah.. Forced to use this instead of static constant as a quick workaround 
 // to a gcc 4.2 build error. Think of a better solution in the future.
-#define OMICRON_MAX_EVENTS 1024
+#define OMICRON_MAX_EVENTS 2048
 
 namespace omicron
 {

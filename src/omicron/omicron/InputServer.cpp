@@ -751,7 +751,7 @@ SOCKET InputServer::startListening()
     // sent, resulting in the 'recv failed' error that is commented out.
     bool gotData = false;
     float timer = 0.0f;
-    int timeout = 1; // seconds
+    int timeout = 100; // milliseconds
     int startTime = time (NULL);
     int timeoutTime = startTime + timeout;
 

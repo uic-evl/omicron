@@ -92,6 +92,9 @@
 #ifdef OMICRON_USE_PSMOVEAPI
     #include "omicron/PSMoveService.h"
 #endif
+#ifdef OMICRON_USE_OPENVR
+	#include "omicron/OpenVRService.h"
+#endif
 using namespace omicron;
 using namespace std;
 
@@ -168,6 +171,9 @@ void ServiceManager::registerDefaultServices()
 #endif
 #ifdef OMICRON_USE_KINECT_FOR_WINDOWS
 	registerService("MSKinectService", (ServiceAllocator)MSKinectService::New);
+#endif
+#ifdef OMICRON_USE_OPENVR
+	registerService("OpenVRService", (ServiceAllocator)OpenVRService::New);
 #endif
 #ifdef OMICRON_USE_OSC
 	//registerService("OSCService", (ServiceAllocator)OSCService::New);

@@ -302,6 +302,18 @@ if(WIN32)
     endif()
 endif()
 
+# OpenVR module support
+if(WIN32)
+    set(OMICRON_USE_OPENVR false CACHE BOOL "Enable/disable OpenVR support")
+    if(OMICRON_USE_OPENVR)
+        set( srcs	 ${srcs} omicron/OpenVRService.cpp )
+        set( headers ${headers} ${CMAKE_SOURCE_DIR}/include/omicron/OpenVRService.h
+            )
+        include_directories( ${CMAKE_SOURCE_DIR}/include/omicron/OpenVRService.h
+            )
+    endif()
+endif()
+
 ###############################################################################
 # Group source files into separate folders for visual studio project (this is just eye candy)
 source_group(omicron REGULAR_EXPRESSION omicron/)		
@@ -448,6 +460,22 @@ if(OMICRON_USE_THINKGEAR)
 		endif()
 	endif(WIN32)
 endif(OMICRON_USE_THINKGEAR)
+
+if(OMICRON_USE_OPENVR)
+	if(WIN32)
+		if(OMICRON_ARCH_32)
+			target_link_libraries( omicron ${EXT_LIB_DIR}/openvr_api.lib)
+			# Copy the dll into the destination bin directory
+			configure_file(${EXT_LIB_DIR}/openvr_api.dll ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG} COPYONLY)
+			configure_file(${EXT_LIB_DIR}/openvr_api.dll ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE} COPYONLY)
+		elseif(OMICRON_ARCH_64)
+			target_link_libraries( omicron ${EXT_LIB_DIR}/openvr_api.lib)
+			# Copy the dll into the destination bin directory
+			configure_file(${EXT_LIB_DIR}/openvr_api.dll ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG} COPYONLY)
+			configure_file(${EXT_LIB_DIR}/openvr_api.dll ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE} COPYONLY)
+		endif()
+	endif(WIN32)
+endif(OMICRON_USE_OPENVR)
 
 ###############################################################################
 configure_file(omicron/omicronConfig.h.in ${CMAKE_BINARY_DIR}/include/omicronConfig.h)

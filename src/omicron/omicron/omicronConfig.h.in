@@ -74,5 +74,6 @@
 #cmakedefine OMICRON_USE_VRPN
 #cmakedefine OMICRON_USE_THINKGEAR
 #cmakedefine OMICRON_USE_OSC
+#cmakedefine OMICRON_USE_OPENVR
 
 #define OMICRON_DATA_PATH "${OMICRON_DATA_PATH}"
